@@ -10,6 +10,7 @@ struct crazypod_alpha_jump_state {
     int group;
     int direction;
     int steps;
+    int events;
     long last_tick;
     bool valid;
     bool jumping;
@@ -21,6 +22,6 @@ bool crazypod_alpha_jump_consume(
     struct crazypod_alpha_jump_state *state,
     enum crazypod_route route, int group,
     int direction, int steps, long now,
-    long window_ticks, int threshold);
+    long window_ticks, int threshold, int min_events);
 
 #endif

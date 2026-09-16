@@ -191,22 +191,64 @@ static void test_alpha_jump_burst(void)
     crazypod_alpha_jump_reset(&state);
     assert(!crazypod_alpha_jump_consume(
         &state, MUSIC_ROUTE_SONGS, -1,
-        1, 3, 100, 32, 7));
+        1, 3, 100, 32, 7, 1));
     assert(crazypod_alpha_jump_consume(
         &state, MUSIC_ROUTE_SONGS, -1,
-        1, 4, 110, 32, 7));
+        1, 4, 110, 32, 7, 1));
     assert(crazypod_alpha_jump_consume(
         &state, MUSIC_ROUTE_SONGS, -1,
-        1, 1, 120, 32, 7));
+        1, 1, 120, 32, 7, 1));
     assert(!crazypod_alpha_jump_consume(
         &state, MUSIC_ROUTE_SONGS, -1,
-        -1, 1, 121, 32, 7));
+        -1, 1, 121, 32, 7, 1));
     assert(!crazypod_alpha_jump_consume(
         &state, MUSIC_ROUTE_SONGS, -1,
-        -1, 6, 200, 32, 7));
+        -1, 6, 200, 32, 7, 1));
     assert(!crazypod_alpha_jump_consume(
         &state, MUSIC_ROUTE_ARTISTS, -1,
-        -1, 1, 201, 32, 7));
+        -1, 1, 201, 32, 7, 1));
+}
+
+/*
+ * One flick of the wheel reports many steps at once. However far it turns,
+ * a single event must never reach the letter jump.
+ */
+static void test_alpha_jump_needs_sustained_spin(void)
+{
+    struct crazypod_alpha_jump_state state;
+    int i;
+
+    crazypod_alpha_jump_reset(&state);
+    assert(!crazypod_alpha_jump_consume(
+        &state, MUSIC_ROUTE_SONGS, -1,
+        1, 12, 100, 32, 24, 4));
+    assert(!crazypod_alpha_jump_consume(
+        &state, MUSIC_ROUTE_SONGS, -1,
+        1, 12, 110, 32, 24, 4));
+    /* Steps are there from the third event on; the event floor is not. */
+    assert(!crazypod_alpha_jump_consume(
+        &state, MUSIC_ROUTE_SONGS, -1,
+        1, 12, 120, 32, 24, 4));
+    assert(crazypod_alpha_jump_consume(
+        &state, MUSIC_ROUTE_SONGS, -1,
+        1, 12, 130, 32, 24, 4));
+
+    /* Enough events, but a slow turn never reaches the step threshold. */
+    crazypod_alpha_jump_reset(&state);
+    for(i = 0; i < 8; ++i)
+        assert(!crazypod_alpha_jump_consume(
+            &state, MUSIC_ROUTE_SONGS, -1,
+            1, 1, 100 + i * 10, 32, 24, 4));
+
+    /* A pause longer than the window starts the count over. */
+    crazypod_alpha_jump_reset(&state);
+    for(i = 0; i < 3; ++i)
+        assert(!crazypod_alpha_jump_consume(
+            &state, MUSIC_ROUTE_SONGS, -1,
+            1, 12, 100 + i * 10, 32, 24, 4));
+    assert(!crazypod_alpha_jump_consume(
+        &state, MUSIC_ROUTE_SONGS, -1,
+        1, 12, 400, 32, 24, 4));
 }
 
 static void test_route_registry(void)
@@ -385,6 +427,7 @@ int main(void)
     test_menu_layout();
     test_collation();
     test_alpha_jump_burst();
+    test_alpha_jump_needs_sustained_spin();
     test_route_registry();
     test_navigation_commands();
     test_scene_motion();

@@ -13,7 +13,7 @@ bool crazypod_alpha_jump_consume(
     struct crazypod_alpha_jump_state *state,
     enum crazypod_route route, int group,
     int direction, int steps, long now,
-    long window_ticks, int threshold)
+    long window_ticks, int threshold, int min_events)
 {
     int sign;
     bool same_burst;
@@ -21,6 +21,8 @@ bool crazypod_alpha_jump_consume(
     if(state == NULL || direction == 0 ||
        steps <= 0 || window_ticks <= 0 || threshold <= 0)
         return false;
+    if(min_events < 1)
+        min_events = 1;
     sign = direction > 0 ? 1 : -1;
     same_burst =
         state->valid &&
@@ -34,6 +36,7 @@ bool crazypod_alpha_jump_consume(
         state->group = group;
         state->direction = sign;
         state->steps = 0;
+        state->events = 0;
         state->jumping = false;
         state->valid = true;
     }
@@ -43,7 +46,15 @@ bool crazypod_alpha_jump_consume(
         if(state->steps > threshold)
             state->steps = threshold;
     }
-    if(state->steps >= threshold)
+    if(state->events < min_events)
+        ++state->events;
+    /*
+     * Counting steps alone let one flick of the wheel jump a letter: a
+     * single wheel event reports up to twelve steps, so the threshold was
+     * reachable before the list had scrolled at all. Ask for a spin that is
+     * both long and sustained across several events.
+     */
+    if(state->steps >= threshold && state->events >= min_events)
         state->jumping = true;
     return state->jumping;
 }

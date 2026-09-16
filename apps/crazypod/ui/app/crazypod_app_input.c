@@ -89,7 +89,14 @@ static bool remote_home_select_held;
 #define CAPTURE_HOLD_MS 500
 #define ALPHA_JUMP_WINDOW_TICKS \
     ((HZ * 320 / 1000) > 0 ? (HZ * 320 / 1000) : 1)
-#define ALPHA_JUMP_STEP_THRESHOLD 7
+/*
+ * The letter jump needs a deliberate, sustained spin. Seven steps with no
+ * event floor fired on a single flick of the wheel: the list leapt to a
+ * letter the listener had not asked for, and picking one song out of a long
+ * list meant turning the wheel carefully enough not to trip it.
+ */
+#define ALPHA_JUMP_STEP_THRESHOLD 24
+#define ALPHA_JUMP_MIN_EVENTS 4
 #define REMOTE_MULTITAP_WINDOW_MS 500
 #define REMOTE_MULTITAP_WINDOW_TICKS \
     ((HZ * REMOTE_MULTITAP_WINDOW_MS / 1000) > 0 \
@@ -152,7 +159,8 @@ static void move_wheel(
            &alpha_jump, state->route, state->group,
            direction, steps, now,
            ALPHA_JUMP_WINDOW_TICKS,
-           ALPHA_JUMP_STEP_THRESHOLD) &&
+           ALPHA_JUMP_STEP_THRESHOLD,
+           ALPHA_JUMP_MIN_EVENTS) &&
        crazypod_route_actions_alpha_jump(direction, now))
         return;
     if(!alpha_available)
