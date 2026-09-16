@@ -29,7 +29,7 @@ void pcmbuf_write_complete(int count, unsigned long elapsed, off_t offset);
 
 /* Init */
 size_t pcmbuf_size_reqd(void);
-size_t pcmbuf_init(void *bufend);
+size_t pcmbuf_init(void *bufstart, void *bufend);
 
 /* Playback */
 void pcmbuf_play_start(void);

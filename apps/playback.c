@@ -918,7 +918,7 @@ static void audio_reset_buffer_noalloc(
     size_t allocsize;
     /* Subtract whatever the pcm buffer says it used plus the guard
        buffer */
-    allocsize = pcmbuf_init(filebuf + filebuflen);
+    allocsize = pcmbuf_init(filebuf, filebuf + filebuflen);
 
     /* Make sure filebuflen is a pointer sized multiple after
        adjustment */

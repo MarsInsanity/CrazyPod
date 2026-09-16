@@ -23,6 +23,7 @@
 #include "config.h"
 #include "system.h"
 #include "debug.h"
+#include "panic.h"
 #include <kernel.h>
 #include "pcm.h"
 #include "pcm_mixer.h"
@@ -604,7 +605,7 @@ size_t pcmbuf_size_reqd(void)
 
 /* Initialize the PCM buffer. The structure looks like this:
  * ...|---------PCMBUF---------|GUARDBUF|DESCS| */
-size_t pcmbuf_init(void *bufend)
+size_t pcmbuf_init(void *bufhead, void *bufend)
 {
     void *bufstart;
 
@@ -618,6 +619,25 @@ size_t pcmbuf_init(void *bufend)
 
     /* Mem-align buffer chunks for more efficient handling in lower layers */
     pcmbuf_buffer = ALIGN_DOWN(pcmbuf_buffer, (uintptr_t)MEM_ALIGN_SIZE);
+
+    /*
+     * All of the above is pointer arithmetic on a buffer this function is
+     * handed, and none of it was checked. A bad end or length walks the
+     * descriptors clean out of the buffer, and init_buffer_state() then
+     * writes through a pointer that is merely non-NULL: on a target with no
+     * MMU that is a data abort whose panic screen carries a PC and nothing
+     * else. Say which of the numbers does not fit instead.
+     */
+    if (bufend < bufhead ||
+        (void *)pcmbuf_descriptors < bufhead ||
+        (void *)pcmbuf_descriptors > bufend ||
+        pcmbuf_buffer < bufhead || pcmbuf_buffer > bufend)
+        panicf("pcmbuf_init(): %lu bytes at %lx\nhold neither %u chunks "
+               "nor their descriptors at %lx",
+               (unsigned long)((char *)bufend - (char *)bufhead),
+               (unsigned long)(uintptr_t)bufhead,
+               pcmbuf_desc_count,
+               (unsigned long)(uintptr_t)pcmbuf_descriptors);
 
     pcmbuf_guardbuf = pcmbuf_buffer + pcmbuf_size;
     bufstart = pcmbuf_buffer;
