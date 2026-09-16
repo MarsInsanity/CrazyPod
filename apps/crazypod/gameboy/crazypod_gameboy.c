@@ -88,6 +88,27 @@ const char *crazypod_gameboy_title(int index)
     return name != NULL ? name + 1 : games[index];
 }
 
+/*
+ * How much of the cartridge RAM the game has actually written.
+ *
+ * A blank cartridge saves and reloads perfectly and still starts the player
+ * at the title screen, which looks exactly like a broken save from the
+ * outside. Counting the bytes that are not erase-state tells the two apart
+ * in the log.
+ */
+static unsigned long save_ram_used(void)
+{
+    unsigned long used = 0;
+    uint32_t i;
+
+    if(save_ram == NULL)
+        return 0;
+    for(i = 0; i < cartridge.ram_size; ++i)
+        if(save_ram[i] != 0xff)
+            ++used;
+    return used;
+}
+
 static void save_digest(const uint8_t header[SAVE_HEADER_SIZE],
                         uint8_t digest[32])
 {
@@ -199,8 +220,9 @@ static void load_save(void)
 
     save_state = CRAZYPOD_GAMEBOY_SAVE_LOADED;
     snprintf(save_detail, sizeof(save_detail),
-             "ram %lu file %ld: loaded",
-             (unsigned long)cartridge.ram_size, (long)size);
+             "ram %lu file %ld used %lu: loaded",
+             (unsigned long)cartridge.ram_size, (long)size,
+             save_ram_used());
     crazypod_diag_log("gb-load", "%s path=%s", save_detail, save_path);
     saved_at = read_u32(header + 12);
     now = (uint32_t)mktime(get_time());
@@ -338,8 +360,8 @@ bool crazypod_gameboy_save(void)
     }
     save_state = CRAZYPOD_GAMEBOY_SAVE_WRITTEN;
     snprintf(save_detail, sizeof(save_detail),
-             "ram %lu: written",
-             (unsigned long)cartridge.ram_size);
+             "ram %lu used %lu: written",
+             (unsigned long)cartridge.ram_size, save_ram_used());
     crazypod_diag_log("gb-save", "%s path=%s", save_detail, save_path);
     return true;
 }

@@ -897,6 +897,30 @@ static char scan_folder_artist[CRAZYPOD_MUSIC_NAME_SIZE];
 static char scan_name_artist[CRAZYPOD_MUSIC_NAME_SIZE];
 static char scan_name_title[CRAZYPOD_MUSIC_TITLE_SIZE];
 
+/*
+ * The first bytes of a file whose tags the parser found nothing in.
+ *
+ * "No title, no artist, no album" is the same line whether the file has no
+ * tag at all, carries a tag the parser walked past, or starts with something
+ * before the tag. The header settles which without needing the file.
+ */
+static void scan_file_head(int fd, char *text, size_t size)
+{
+    unsigned char head[12];
+    ssize_t got;
+    size_t used = 0;
+    int i;
+
+    if(size == 0)
+        return;
+    text[0] = '\0';
+    if(lseek(fd, 0, SEEK_SET) != 0)
+        return;
+    got = read(fd, head, sizeof(head));
+    for(i = 0; i < (int)got && used + 3 < size; ++i)
+        used += snprintf(text + used, size - used, "%02x", head[i]);
+}
+
 static void NO_INLINE add_track(const char *path, off_t source_size,
                                 time_t source_mtime, int format)
 {
@@ -963,15 +987,23 @@ static void NO_INLINE add_track(const char *path, off_t source_size,
         copy_text(scan_album_artist, sizeof(scan_album_artist),
                   scan_metadata.albumartist,
                   scan_artist[0] != '\0' ? scan_artist : CP_TR("Unknown Artist"));
-        if(!tagged_title || !tagged_album)
+        if(!tagged_title || !tagged_album) {
+            char head[32];
+
+            head[0] = '\0';
+            if(!tagged_title && !tagged_artist && !tagged_album)
+                scan_file_head(fd, head, sizeof(head));
             crazypod_diag_log(
                 "track",
-                "id3=%d t=%d a=%d al=%d aa=%d fmt=%d %s",
+                "id3=%d t=%d a=%d al=%d aa=%d fmt=%d v2len=%lu head=%s %s",
                 (int)scan_metadata.id3version, tagged_title ? 1 : 0,
                 tagged_artist ? 1 : 0, tagged_album ? 1 : 0,
                 scan_metadata.albumartist != NULL &&
                     scan_metadata.albumartist[0] != '\0' ? 1 : 0,
-                (int)scan_metadata.codectype, path_basename_local(path));
+                (int)scan_metadata.codectype,
+                (unsigned long)scan_metadata.id3v2len,
+                head, path_basename_local(path));
+        }
         offsets[0] = add_pool_text(path, MAX_PATH - 1);
         offsets[1] = add_pool_display_text(scan_title, sizeof(scan_title) - 1);
         offsets[2] = add_pool_display_text(scan_artist, sizeof(scan_artist) - 1);
