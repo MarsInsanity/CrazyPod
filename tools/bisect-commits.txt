@@ -2,7 +2,7 @@
 # Artifacts come back numbered in this order. Blank lines and lines
 # starting with # are ignored. Editing this file and pushing is what
 # triggers the build -- there is nothing to click.
-# Settled: 01 (present fix, row cache reverted) boots, so the row cache
-# was the fault and the present fix is innocent. The branch tip now
-# carries that combination. Nothing to build until the next question --
-# add commits below and push to start a run.
+# Current tip: buffered diagnostics log (the disk churn that made
+# everything feel slow) and no panic when the audio reserve cannot be
+# re-acquired after the emulator.
+4aa40226
