@@ -1,0 +1,12 @@
+# Commits whose firmware the bisect workflow builds, oldest first.
+# Artifacts come back numbered in this order. Blank lines and lines
+# starting with # are ignored. Editing this file and pushing is what
+# triggers the build -- there is nothing to click.
+612030eb
+b9f8402b
+ff80f68c
+bd524ac3
+8287b4e9
+b3be1d2f
+52c52c5d
+2721cdad

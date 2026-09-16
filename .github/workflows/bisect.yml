@@ -5,18 +5,26 @@ name: CrazyPod bisect firmwares
 # The artifacts are numbered in commit order: with N of them, try the middle
 # one first, then the middle of whichever half still contains the fault.
 
+# Push-triggered rather than dispatched: workflow_dispatch only offers its
+# button for workflows that already live on the default branch, which this
+# one does not. A push runs the workflow from the branch pushed, so editing
+# the commit list is the whole trigger.
 on:
+  push:
+    branches:
+      - 'claude/**'
+    paths:
+      - 'tools/bisect-commits.txt'
+      - '.github/workflows/bisect.yml'
   workflow_dispatch:
     inputs:
       commits:
         description: >-
-          Commits to build, oldest first, separated by spaces or commas.
-          Artifacts come back numbered in this order.
+          Commits to build, oldest first, space or comma separated. Leave
+          empty to use tools/bisect-commits.txt.
         type: string
-        required: true
-        default: >-
-          612030eb b9f8402b ff80f68c bd524ac3
-          8287b4e9 b3be1d2f 52c52c5d 2721cdad
+        required: false
+        default: ''
 
 permissions:
   contents: read
@@ -28,12 +36,18 @@ jobs:
     outputs:
       matrix: ${{ steps.plan.outputs.matrix }}
     steps:
+      - name: Check out source
+        uses: actions/checkout@v5
+
       - name: Number the commits
         id: plan
         shell: bash
         run: |
           set -euo pipefail
           list="${{ inputs.commits }}"
+          if [ -z "${list// /}" ]; then
+            list="$(sed -e 's/#.*//' tools/bisect-commits.txt | tr '\n' ' ')"
+          fi
           entries=""
           index=0
           for commit in ${list//,/ }; do
