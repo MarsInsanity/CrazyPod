@@ -20,6 +20,8 @@ void core_unpin(int handle);
 unsigned core_pin_count(int handle);
 /* Walk the whole arena and say whether its block list still adds up. */
 bool core_audit(size_t *blocks, void **bad);
+/* Where the arena actually is, for checking a pointer taken out of it. */
+void core_arena_bounds(void **start, void **end);
 int core_free(int handle);
 size_t core_available(void);
 size_t core_allocatable(void);

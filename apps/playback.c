@@ -53,6 +53,8 @@
 #ifdef HAVE_CRAZYPOD_UI
 #include "crazypod/crazypod_audio_memory_policy.h"
 #include "crazypod/crazypod_audio_reserve.h"
+#include "crazypod/crazypod_diag_log.h"
+#include "crazypod/crazypod_music.h"
 #endif
 
 #ifdef HAVE_TAGCACHE
@@ -1182,12 +1184,58 @@ static void audio_reset_buffer(void)
     {
         size_t blocks = 0;
         void *bad = NULL;
+        void *arena_start = NULL;
+        void *arena_end = NULL;
 
         if (!core_audit(&blocks, &bad))
             panicf("audio buffer: arena broken\n"
                    "after %lu blocks at %lx\nhandle %d len %lu",
                    (unsigned long)blocks, (unsigned long)(uintptr_t)bad,
                    audiobuf_handle, (unsigned long)filebuflen);
+        /*
+         * And then ask the separate question. A walk of the block list says
+         * the list is intact; it does not say the pointer this handle is
+         * about to hand over is real. The fourth panic from the same store
+         * happened on a build where the walk passed, so check the pointer
+         * itself lands inside the arena it is supposed to come from.
+         */
+        core_arena_bounds(&arena_start, &arena_end);
+        if (audiobuf_handle > 0)
+        {
+            char *buffer = core_get_data(audiobuf_handle);
+
+            if ((void *)buffer < arena_start ||
+                (void *)(buffer + filebuflen) > arena_end)
+                panicf("audio buffer: %lx+%lu\noutside arena %lx-%lx\n"
+                       "handle %d",
+                       (unsigned long)(uintptr_t)buffer,
+                       (unsigned long)filebuflen,
+                       (unsigned long)(uintptr_t)arena_start,
+                       (unsigned long)(uintptr_t)arena_end,
+                       audiobuf_handle);
+            /*
+             * Record what the buffer was about to be, because the crash
+             * that follows takes the device down before anything can be
+             * written. This runs when playback starts or the sample rate
+             * changes, so one write here is cheap, and the last line in
+             * the log is then the state the abort happened with.
+             *
+             * The scan flag is the question: the library scan runs on its
+             * own thread and allocates from the same pool, and buflib has
+             * no lock of its own. Threads here are cooperative, so that is
+             * only a hazard where one side yields inside an allocation --
+             * which audio_reset_buffer() does, through the shrink callback.
+             */
+            crazypod_diag_log(
+                "audiobuf",
+                "h=%d buf=%lx len=%lu arena=%lx-%lx scan=%d",
+                audiobuf_handle, (unsigned long)(uintptr_t)buffer,
+                (unsigned long)filebuflen,
+                (unsigned long)(uintptr_t)arena_start,
+                (unsigned long)(uintptr_t)arena_end,
+                crazypod_music_is_scanning() ? 1 : 0);
+            crazypod_diag_log_flush();
+        }
     }
 #endif
     if (audiobuf_handle > 0

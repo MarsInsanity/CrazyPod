@@ -115,6 +115,26 @@ int main(void)
         assert(bad == NULL);
         assert(blocks > 0);
 
+        /*
+         * A stomped handle-table pointer leaves the block list walking
+         * perfectly while buflib_get_data() returns an address that is
+         * nowhere. That is the shape of the crash on the device, so the
+         * audit has to catch it as well as a bad length.
+         */
+        {
+            union buflib_data *first = (union buflib_data *)(void *)test_pool;
+            union buflib_data saved = first[1];
+
+            first[1].handle = (union buflib_data *)(uintptr_t)0x0c0c4608;
+            bad = NULL;
+            blocks = buflib_audit(&context, &bad);
+            assert(bad == (void *)&first[1]);
+            first[1] = saved;
+            bad = (void *)1;
+            (void)buflib_audit(&context, &bad);
+            assert(bad == NULL);
+        }
+
         /* Zero a length field, which is what the device reported. */
         header = (long *)(void *)test_pool;
         *header = 0;

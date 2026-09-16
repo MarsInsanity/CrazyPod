@@ -114,6 +114,14 @@ unsigned core_pin_count(int handle)
     return buflib_pin_count(&core_ctx, handle);
 }
 
+void core_arena_bounds(void **start, void **end)
+{
+    if (start != NULL)
+        *start = core_ctx.buf_start;
+    if (end != NULL)
+        *end = core_ctx.alloc_end;
+}
+
 bool core_audit(size_t *blocks, void **bad)
 {
     void *offender = NULL;

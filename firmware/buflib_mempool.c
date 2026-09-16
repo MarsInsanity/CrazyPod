@@ -1028,6 +1028,28 @@ size_t buflib_audit(struct buflib_context *ctx, void **bad)
                 *bad = &block[BUFLIB_IDX_LEN];
             return blocks;
         }
+        /*
+         * An intact block list is not the same as an intact allocator. Each
+         * allocated block points back at its handle-table entry, and that
+         * entry holds the pointer callers are handed: stomp the entry and
+         * the list still walks perfectly while core_get_data() returns an
+         * address that is nowhere. That is the shape of the crash this is
+         * chasing, so check the way back as well as the way forward.
+         */
+        if (length > 0)
+        {
+            union buflib_data *h_entry = block[BUFLIB_IDX_HANDLE].handle;
+
+            if (!IS_ALIGNED((uintptr_t)h_entry, alignof(*h_entry)) ||
+                h_entry < ctx->last_handle || h_entry >= ctx->handle_table ||
+                (void *)h_entry->alloc < (void *)block ||
+                (void *)h_entry->alloc > (void *)(block + length))
+            {
+                if (bad != NULL)
+                    *bad = &block[BUFLIB_IDX_HANDLE];
+                return blocks;
+            }
+        }
         block += abs(length);
     }
     return blocks;
