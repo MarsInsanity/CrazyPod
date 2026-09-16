@@ -102,6 +102,28 @@ int main(void)
     assert(buflib_get_data(&context, audio_handle) == audio_data);
     assert(audio_data[0] == 0x5a);
 
+    /*
+     * A healthy arena walks end to end, and a stray write into a block
+     * header is found by the walk rather than by whatever allocation next
+     * happens to step through it.
+     */
+    {
+        void *bad = (void *)1;
+        size_t blocks = buflib_audit(&context, &bad);
+        long *header;
+
+        assert(bad == NULL);
+        assert(blocks > 0);
+
+        /* Zero a length field, which is what the device reported. */
+        header = (long *)(void *)test_pool;
+        *header = 0;
+        bad = NULL;
+        blocks = buflib_audit(&context, &bad);
+        assert(bad == (void *)header);
+        assert(blocks == 0);
+    }
+
     puts("crazypod audio buflib integration tests passed");
     return 0;
 }

@@ -281,6 +281,15 @@ void buflib_unpin(struct buflib_context *ctx, int handle);
 unsigned buflib_pin_count(struct buflib_context *ctx, int handle);
 
 /**
+ * Walk the whole block list without panicking on a bad one.
+ *
+ * Returns how many blocks were walked before the list stopped adding up,
+ * and sets *bad to the length field that does not, or to NULL when the
+ * arena is intact.
+ */
+size_t buflib_audit(struct buflib_context *ctx, void **bad);
+
+/**
  * \brief Free an allocation and return its memory to the pool
  * \param ctx       Buflib context of the allocation
  * \param handle    Handle identifying the allocation

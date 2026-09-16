@@ -12,6 +12,7 @@
 #include "rbunicode.h"
 
 #include "crazypod_books.h"
+#include "crazypod_diag_log.h"
 #include "crazypod_epub.h"
 
 #define BOOKS_DIRECTORY "/Books"
@@ -1127,6 +1128,7 @@ static bool prepare_epub_book(int index)
     book->details_loaded = true;
     if(book->content_size != previous_content_size || !details_were_loaded)
         (void)books_catalog_save();
+    (void)crazypod_diag_audit_arena("epub prepare");
     return true;
 }
 

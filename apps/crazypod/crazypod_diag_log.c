@@ -10,6 +10,8 @@
 #include "file.h"
 #include "kernel.h"
 #include "storage.h"
+#include "version.h"
+#include "core_alloc.h"
 
 #define DIAG_LOG_PATH "/.crazypod/diag.log"
 /* Small enough to paste into a message, large enough for a session. */
@@ -81,6 +83,17 @@ static void flush_pending(void)
  */
 void crazypod_diag_log_service(void)
 {
+    static long last_audit;
+
+    /*
+     * The arena walk is cheap but not free, and this runs on every UI
+     * tick. Once every twenty seconds still names the twenty-second
+     * window the damage happened in, which is what it is for.
+     */
+    if(!TIME_BEFORE(current_tick, last_audit + DIAG_FLUSH_INTERVAL)) {
+        last_audit = current_tick;
+        (void)crazypod_diag_audit_arena("tick");
+    }
     if(pending_length == 0 || flushing || stopped)
         return;
     if(TIME_BEFORE(current_tick, last_flush + DIAG_FLUSH_INTERVAL))
@@ -94,9 +107,18 @@ void crazypod_diag_log(const char *tag, const char *format, ...)
     va_list arguments;
     int prefix;
     int written;
+    /*
+     * Which build produced these lines. Without it a log and a report can
+     * be read against the wrong firmware, which has already happened.
+     */
+    static bool stamped;
 
     if(tag == NULL || format == NULL || stopped)
         return;
+    if(!stamped) {
+        stamped = true;
+        crazypod_diag_log("build", "%s", rbversion);
+    }
     prefix = snprintf(line, sizeof(line), "%ld %s ",
                       (long)(current_tick / HZ), tag);
     if(prefix < 0 || (size_t)prefix >= sizeof(line))
@@ -131,6 +153,28 @@ void crazypod_diag_log(const char *tag, const char *format, ...)
 void crazypod_diag_log_flush(void)
 {
     flush_pending();
+}
+
+bool crazypod_diag_audit_arena(const char *where)
+{
+    static bool reported;
+    size_t blocks = 0;
+    void *bad = NULL;
+
+    if(core_audit(&blocks, &bad))
+        return true;
+    /*
+     * One line, not one per tick: once the arena is broken every later
+     * audit fails too, and the first one is the one that says when.
+     */
+    if(!reported) {
+        reported = true;
+        crazypod_diag_log(
+            "arena", "%s: block list breaks after %lu blocks at %p",
+            where != NULL ? where : "?", (unsigned long)blocks, bad);
+        crazypod_diag_log_flush();
+    }
+    return false;
 }
 
 #endif

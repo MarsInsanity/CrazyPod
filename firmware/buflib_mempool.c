@@ -992,6 +992,47 @@ void *buflib_get_data(struct buflib_context *ctx, int handle)
 }
 #endif
 
+/*
+ * Walk the block list without panicking, and say where it stops making
+ * sense.
+ *
+ * buflib already checks a block's length, but only as it passes through
+ * one during an allocation -- so a stray write into the arena is not found
+ * until something happens to walk over it, by which time the operation that
+ * did the damage is long gone. This walks the whole arena on demand, so a
+ * caller can audit after each suspect operation and name the one that
+ * breaks it.
+ *
+ * Returns the number of good blocks walked; *bad is left NULL when the
+ * whole arena checks out, and otherwise points at the block that does not.
+ */
+size_t buflib_audit(struct buflib_context *ctx, void **bad)
+{
+    union buflib_data *block;
+    size_t blocks = 0;
+
+    if (bad != NULL)
+        *bad = NULL;
+    if (ctx == NULL || ctx->buf_start == NULL)
+        return 0;
+    for (block = ctx->buf_start; block < ctx->alloc_end; ++blocks)
+    {
+        intptr_t length = block[BUFLIB_IDX_LEN].val;
+
+        /* The same three questions check_block_length() asks, minus the
+         * panic: a zero length would not advance the walk at all, and one
+         * that reaches past the end is the corruption being looked for. */
+        if (length == 0 || block > ctx->alloc_end - abs(length))
+        {
+            if (bad != NULL)
+                *bad = &block[BUFLIB_IDX_LEN];
+            return blocks;
+        }
+        block += abs(length);
+    }
+    return blocks;
+}
+
 #ifdef BUFLIB_DEBUG_CHECK_VALID
 void buflib_check_valid(struct buflib_context *ctx)
 {

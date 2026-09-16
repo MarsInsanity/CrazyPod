@@ -389,4 +389,5 @@ void crazypod_gameboy_close(void)
     memory_handle = 0;
     save_ram = NULL;
     opened = false;
+    (void)crazypod_diag_audit_arena("gameboy close");
 }

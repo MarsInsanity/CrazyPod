@@ -269,6 +269,18 @@ void crazypod_epub_remove_cache(const char *path)
     (void)path;
 }
 
+void crazypod_diag_log(const char *tag, const char *format, ...)
+{
+    (void)tag;
+    (void)format;
+}
+
+bool crazypod_diag_audit_arena(const char *where)
+{
+    (void)where;
+    return true;
+}
+
 int main(void)
 {
     const struct crazypod_book *book;

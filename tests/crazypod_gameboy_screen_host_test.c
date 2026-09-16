@@ -155,6 +155,7 @@ const char *crazypod_gameboy_save_detail(void)
     return "ram 8192: test";
 }
 void crazypod_diag_log_flush(void) { }
+bool crazypod_diag_audit_arena(const char *w) { (void)w; return true; }
 
 int main(void)
 {

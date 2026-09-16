@@ -114,6 +114,18 @@ unsigned core_pin_count(int handle)
     return buflib_pin_count(&core_ctx, handle);
 }
 
+bool core_audit(size_t *blocks, void **bad)
+{
+    void *offender = NULL;
+    size_t walked = buflib_audit(&core_ctx, &offender);
+
+    if (blocks != NULL)
+        *blocks = walked;
+    if (bad != NULL)
+        *bad = offender;
+    return offender == NULL;
+}
+
 #ifdef BUFLIB_DEBUG_PRINT
 int core_get_num_blocks(void)
 {

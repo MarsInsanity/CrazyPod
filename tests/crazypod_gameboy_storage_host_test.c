@@ -86,6 +86,11 @@ void crazypod_diag_log(const char *tag, const char *format, ...)
     (void)tag;
     (void)format;
 }
+bool crazypod_diag_audit_arena(const char *where)
+{
+    (void)where;
+    return true;
+}
 int gb_test_close(int fd) { (void)fd; --handles; return 0; }
 int gb_test_fsync(int fd) { (void)fd; return fail_sync ? -1 : 0; }
 int gb_test_remove(const char *path)

@@ -18,6 +18,8 @@ bool core_shrink(int handle, void* new_start, size_t new_size);
 void core_pin(int handle);
 void core_unpin(int handle);
 unsigned core_pin_count(int handle);
+/* Walk the whole arena and say whether its block list still adds up. */
+bool core_audit(size_t *blocks, void **bad);
 int core_free(int handle);
 size_t core_available(void);
 size_t core_allocatable(void);

@@ -1,6 +1,8 @@
 #ifndef CRAZYPOD_DIAG_LOG_H
 #define CRAZYPOD_DIAG_LOG_H
 
+#include <stdbool.h>
+
 #include "config.h"
 
 /*
@@ -25,6 +27,14 @@ void crazypod_diag_log(const char *tag, const char *format, ...)
 /* Push whatever is buffered to disk now, for a clean shutdown or before
  * something that is about to make the device unreachable. */
 void crazypod_diag_log_flush(void);
+
+/*
+ * Walk the buflib arena and log it if the block list no longer adds up.
+ * Returns true while the arena is intact. "where" names the operation
+ * that has just finished, so the first audit that fails names the
+ * operation that broke it.
+ */
+bool crazypod_diag_audit_arena(const char *where);
 /* Called from the runtime tick: writes held lines out once they have
  * waited long enough, so a power-off never costs more than a few
  * seconds of them. Does nothing when there is nothing held. */
