@@ -2,9 +2,7 @@
 # Artifacts come back numbered in this order. Blank lines and lines
 # starting with # are ignored. Editing this file and pushing is what
 # triggers the build -- there is nothing to click.
-# 04 booted and 06 booted, so 07 is where it breaks. 07 did two
-# unrelated things at once; 09 and 10 are each of them on its own.
-# 09 = present fix only (row cache reverted)
-# 10 = row cache only (present fix reverted)
-7c91a243
-16fdcf61
+# Settled: 01 (present fix, row cache reverted) boots, so the row cache
+# was the fault and the present fix is innocent. The branch tip now
+# carries that combination. Nothing to build until the next question --
+# add commits below and push to start a run.
