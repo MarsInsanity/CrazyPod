@@ -24,7 +24,7 @@
 #define BOOKS_VERSION 2u
 #define BOOKS_VERSION_LEGACY 1u
 #define BOOKS_CATALOG_MAGIC 0x43504243u
-#define BOOKS_CATALOG_VERSION 1u
+#define BOOKS_CATALOG_VERSION 2u
 #define BOOKS_MAX 64
 #define BOOKS_SCAN_DEPTH 6
 #define BOOK_PAGE_INPUT_SIZE 1536
@@ -64,12 +64,22 @@ struct books_catalog_header_disk {
     uint32_t checksum;
 };
 
+/*
+ * Version 2 carries what the epub probe costs to find out. Version 1 stored
+ * only what a directory listing gives, so every boot re-opened every epub to
+ * read its title back out of the container -- seconds of card reads before
+ * the library would draw, every single time.
+ */
 struct book_catalog_entry_disk {
     char path[MAX_PATH];
     uint32_t format;
     uint32_t size;
     uint32_t content_size;
     uint32_t mtime;
+    char title[96];
+    char author[96];
+    char cover_path[MAX_PATH];
+    uint32_t details_loaded;
 };
 
 static struct crazypod_book books[BOOKS_MAX];
@@ -79,6 +89,7 @@ static bool book_utf8_bom[BOOKS_MAX];
 static int book_count;
 static bool books_scan_loaded;
 static bool books_scan_dirty;
+static bool books_catalog_dirty;
 static int active_epub_index = -1;
 static struct books_state_disk persisted;
 static unsigned char page_input[BOOK_PAGE_INPUT_SIZE];
@@ -592,12 +603,20 @@ static void catalog_entry_from_book(
     entry->size = book->size;
     entry->content_size = book->content_size;
     entry->mtime = book->mtime;
+    snprintf(entry->title, sizeof(entry->title), "%s", book->title);
+    snprintf(entry->author, sizeof(entry->author), "%s", book->author);
+    snprintf(entry->cover_path, sizeof(entry->cover_path), "%s",
+             book->cover_path);
+    entry->details_loaded = book->details_loaded ? 1u : 0u;
 }
+
+/* Nearly a kilobyte since version 2, so not on any caller's stack. */
+static struct book_catalog_entry_disk catalog_entry;
 
 static bool books_catalog_save(void)
 {
     struct books_catalog_header_disk header;
-    struct book_catalog_entry_disk entry;
+    struct book_catalog_entry_disk *entry = &catalog_entry;
     uint32_t hash;
     int fd;
     int i;
@@ -606,12 +625,12 @@ static bool books_catalog_save(void)
     memset(&header, 0, sizeof(header));
     header.magic = BOOKS_CATALOG_MAGIC;
     header.version = BOOKS_CATALOG_VERSION;
-    header.entry_size = sizeof(entry);
+    header.entry_size = sizeof(*entry);
     header.count = (uint32_t)book_count;
     hash = catalog_hash_header(&header);
     for(i = 0; i < book_count; ++i) {
-        catalog_entry_from_book(&entry, &books[i]);
-        hash = hash_bytes(hash, &entry, sizeof(entry));
+        catalog_entry_from_book(entry, &books[i]);
+        hash = hash_bytes(hash, entry, sizeof(*entry));
     }
     header.checksum = hash;
 
@@ -623,8 +642,8 @@ static bool books_catalog_save(void)
         return false;
     success = write_exact(fd, &header, sizeof(header));
     for(i = 0; success && i < book_count; ++i) {
-        catalog_entry_from_book(&entry, &books[i]);
-        success = write_exact(fd, &entry, sizeof(entry));
+        catalog_entry_from_book(entry, &books[i]);
+        success = write_exact(fd, entry, sizeof(*entry));
     }
     if(fsync(fd) < 0)
         success = false;
@@ -634,13 +653,14 @@ static bool books_catalog_save(void)
         remove(BOOKS_CATALOG_TEMP);
         return false;
     }
+    books_catalog_dirty = false;
     return true;
 }
 
 static bool books_catalog_load(void)
 {
     struct books_catalog_header_disk header;
-    struct book_catalog_entry_disk entry;
+    struct book_catalog_entry_disk *entry = &catalog_entry;
     uint32_t hash;
     uint32_t i;
     int fd = open(BOOKS_CATALOG_PATH, O_RDONLY);
@@ -651,33 +671,51 @@ static bool books_catalog_load(void)
     valid = read_exact(fd, &header, sizeof(header)) &&
         header.magic == BOOKS_CATALOG_MAGIC &&
         header.version == BOOKS_CATALOG_VERSION &&
-        header.entry_size == sizeof(entry) &&
+        header.entry_size == sizeof(*entry) &&
         header.count <= BOOKS_MAX &&
         filesize(fd) == (off_t)(sizeof(header) +
-            header.count * sizeof(entry));
+            header.count * sizeof(*entry));
     hash = valid ? catalog_hash_header(&header) : 0;
     reset_book_catalog();
     for(i = 0; valid && i < header.count; ++i) {
         const struct book_progress_disk *saved;
         struct crazypod_book *book;
 
-        valid = read_exact(fd, &entry, sizeof(entry)) &&
-            memchr(entry.path, '\0', sizeof(entry.path)) != NULL &&
-            strncmp(entry.path, BOOKS_DIRECTORY "/",
+        valid = read_exact(fd, entry, sizeof(*entry)) &&
+            memchr(entry->path, '\0', sizeof(entry->path)) != NULL &&
+            memchr(entry->title, '\0', sizeof(entry->title)) != NULL &&
+            memchr(entry->author, '\0', sizeof(entry->author)) != NULL &&
+            memchr(entry->cover_path, '\0',
+                   sizeof(entry->cover_path)) != NULL &&
+            strncmp(entry->path, BOOKS_DIRECTORY "/",
                     sizeof(BOOKS_DIRECTORY)) == 0 &&
-            entry.format <= CRAZYPOD_BOOK_EPUB;
+            entry->format <= CRAZYPOD_BOOK_EPUB;
         if(!valid)
             break;
-        hash = hash_bytes(hash, &entry, sizeof(entry));
+        hash = hash_bytes(hash, entry, sizeof(*entry));
         book = &books[book_count];
         memset(book, 0, sizeof(*book));
-        snprintf(book->path, sizeof(book->path), "%s", entry.path);
-        title_from_path(book->title, sizeof(book->title), entry.path);
-        book->format = (enum crazypod_book_format)entry.format;
-        book->size = entry.size;
+        snprintf(book->path, sizeof(book->path), "%s", entry->path);
+        title_from_path(book->title, sizeof(book->title), entry->path);
+        book->format = (enum crazypod_book_format)entry->format;
+        book->size = entry->size;
         book->content_size = book->format == CRAZYPOD_BOOK_EPUB
-            ? entry.content_size : entry.size;
-        book->mtime = entry.mtime;
+            ? entry->content_size : entry->size;
+        book->mtime = entry->mtime;
+        /*
+         * Only trust a stored title once the probe that produced it has
+         * run; title_from_path() above is the fallback either way.
+         */
+        if(entry->details_loaded) {
+            if(entry->title[0] != '\0')
+                snprintf(book->title, sizeof(book->title), "%s",
+                         entry->title);
+            snprintf(book->author, sizeof(book->author), "%s",
+                     entry->author);
+            snprintf(book->cover_path, sizeof(book->cover_path), "%s",
+                     entry->cover_path);
+            book->details_loaded = true;
+        }
         book->bookmark = CRAZYPOD_BOOKMARK_NONE;
         saved = saved_progress(path_hash(book->path));
         if(saved != NULL) {
@@ -1065,6 +1103,7 @@ static bool prepare_epub_book(int index)
     char text_path[MAX_PATH];
     char title[96];
     uint32_t previous_content_size;
+    bool details_were_loaded;
 
     if(book == NULL || book->format != CRAZYPOD_BOOK_EPUB)
         return false;
@@ -1072,6 +1111,7 @@ static bool prepare_epub_book(int index)
        book->details_loaded)
         return true;
     previous_content_size = book->content_size;
+    details_were_loaded = book->details_loaded;
     if(!crazypod_epub_prepare(
            book->path, book->size, book->mtime,
            text_path, sizeof(text_path), &book->content_size))
@@ -1085,7 +1125,7 @@ static bool prepare_epub_book(int index)
     if(title[0] != '\0')
         snprintf(book->title, sizeof(book->title), "%s", title);
     book->details_loaded = true;
-    if(book->content_size != previous_content_size)
+    if(book->content_size != previous_content_size || !details_were_loaded)
         (void)books_catalog_save();
     return true;
 }
@@ -1114,7 +1154,25 @@ bool crazypod_book_probe(int index)
     if(title[0] != '\0')
         snprintf(book->title, sizeof(book->title), "%s", title);
     book->details_loaded = true;
+    /*
+     * The next boot should have this title, this author and this cover
+     * without opening the epub again -- but the probe runs from inside a
+     * render, and a write per probe would put a whole catalog on the card
+     * for every row the reader scrolls past. Leave it to the service tick.
+     */
+    books_catalog_dirty = true;
     return true;
+}
+
+/*
+ * Write out details the probes have gathered, away from any render.
+ */
+void crazypod_books_service(void)
+{
+    if(!books_catalog_dirty)
+        return;
+    books_catalog_dirty = false;
+    (void)books_catalog_save();
 }
 
 bool crazypod_book_prepare(int index)

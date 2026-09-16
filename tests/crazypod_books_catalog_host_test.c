@@ -191,12 +191,15 @@ void crazypod_epub_set_progress_callback(
     (void)context;
 }
 
+int probe_count;
+
 bool crazypod_epub_probe(
     const char *path, uint32_t size, uint32_t mtime,
     char *title, size_t title_size,
     char *author, size_t author_size,
     char *cover, size_t cover_size)
 {
+    ++probe_count;
     (void)path;
     (void)size;
     (void)mtime;
@@ -289,6 +292,18 @@ int main(void)
     assert(strcmp(book->path, "/Books/Novel.epub") == 0);
     assert(book->size == 1234 && book->mtime == 5678);
     assert(book->content_size == 900);
+
+    /*
+     * What the first boot read out of the epub comes back with the catalog.
+     * Before version 2 the title, the author and the cover were dropped, so
+     * every boot paid for the probe again the moment the library drew.
+     */
+    assert(strcmp(book->title, "Cached Novel") == 0);
+    assert(strcmp(book->author, "Author") == 0);
+    assert(book->details_loaded);
+    probe_count = 0;
+    assert(crazypod_book_probe(0));
+    assert(probe_count == 0);
 
     catalog.data[0] ^= 1;
     crazypod_books_init();

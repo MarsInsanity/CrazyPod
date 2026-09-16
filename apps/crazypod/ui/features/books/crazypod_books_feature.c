@@ -4,6 +4,8 @@
 
 #ifdef HAVE_CRAZYPOD_UI
 
+#include <stdio.h>
+
 #include "kernel.h"
 
 #include "../../../crazypod_audiobooks.h"

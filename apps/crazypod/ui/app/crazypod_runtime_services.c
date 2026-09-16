@@ -17,6 +17,7 @@
 #include "../../crazypod_videos.h"
 #include "../../miniapps/runtime/crazypod_miniapp_alarm_service.h"
 #include "../../miniapps/runtime/crazypod_miniapp_host_system.h"
+#include "../../crazypod_books.h"
 #include "../features/books/crazypod_books_feature.h"
 #include "../features/customize/crazypod_customize_feature.h"
 #include "../features/miniapps/crazypod_miniapps_feature.h"
@@ -216,6 +217,7 @@ void crazypod_runtime_services_tick(
         crazypod_miniapp_host_epoch_seconds());
     crazypod_miniapps_feature_service_rescan();
     crazypod_diag_log_service();
+    crazypod_books_service();
     crazypod_audiobooks_tick(now);
 
     crazypod_music_set_scan_suspended(locked);

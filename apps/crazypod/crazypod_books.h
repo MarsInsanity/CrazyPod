@@ -57,6 +57,7 @@ bool crazypod_book_set_progress(int index, uint32_t offset);
 bool crazypod_book_toggle_bookmark(int index, uint32_t offset);
 bool crazypod_book_toggle_favorite(int index);
 bool crazypod_book_probe(int index);
+void crazypod_books_service(void);
 bool crazypod_book_prepare(int index);
 bool crazypod_book_prepare_with_progress(
     int index, crazypod_book_progress_callback callback, void *context);
