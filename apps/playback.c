@@ -1204,15 +1204,41 @@ static void audio_reset_buffer(void)
         {
             char *buffer = core_get_data(audiobuf_handle);
 
+            /*
+             * A pointer outside the arena is not something to crash over
+             * when it can be asked for again. Give the block back, take
+             * the floor instead, and only give up if that is bad too --
+             * the alternative is a device that cannot play a song.
+             */
             if ((void *)buffer < arena_start ||
                 (void *)(buffer + filebuflen) > arena_end)
-                panicf("audio buffer: %lx+%lu\noutside arena %lx-%lx\n"
-                       "handle %d",
-                       (unsigned long)(uintptr_t)buffer,
-                       (unsigned long)filebuflen,
-                       (unsigned long)(uintptr_t)arena_start,
-                       (unsigned long)(uintptr_t)arena_end,
-                       audiobuf_handle);
+            {
+                crazypod_diag_log(
+                    "audiobuf",
+                    "refused %lx+%lu outside arena %lx-%lx h=%d",
+                    (unsigned long)(uintptr_t)buffer,
+                    (unsigned long)filebuflen,
+                    (unsigned long)(uintptr_t)arena_start,
+                    (unsigned long)(uintptr_t)arena_end,
+                    audiobuf_handle);
+                crazypod_diag_log_flush();
+                audiobuf_handle = core_free(audiobuf_handle);
+                filebuflen = crazypod_audio_buffer_floor();
+                audiobuf_handle = core_alloc_ex(filebuflen, &ops);
+                core_arena_bounds(&arena_start, &arena_end);
+                buffer = audiobuf_handle > 0
+                    ? core_get_data(audiobuf_handle) : NULL;
+                if (audiobuf_handle <= 0 || buffer == NULL ||
+                    (void *)buffer < arena_start ||
+                    (void *)(buffer + filebuflen) > arena_end)
+                    panicf("audio buffer: %lx+%lu\noutside arena %lx-%lx\n"
+                           "handle %d, retry failed",
+                           (unsigned long)(uintptr_t)buffer,
+                           (unsigned long)filebuflen,
+                           (unsigned long)(uintptr_t)arena_start,
+                           (unsigned long)(uintptr_t)arena_end,
+                           audiobuf_handle);
+            }
             /*
              * Record what the buffer was about to be, because the crash
              * that follows takes the device down before anything can be
