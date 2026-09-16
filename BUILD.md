@@ -262,6 +262,21 @@ inline-remote support. Boot, library scanning and playback have run on a
 30 GB unit; playback still stutters and the UI is slow, which is what the
 performance log is for.
 
+## Cover art must be baseline JPEG
+
+The JPEG decoder is baseline only. A progressive JPEG -- which is what
+the Cover Art Archive usually serves, and therefore what Picard writes --
+is refused outright, so the artwork never appears and no smaller size
+helps. `tools/check-cover-jpegs.py` reports which files in a music tree
+the decoder will refuse, and with `--convert` rewrites them through
+jpegtran, which changes only the coefficient ordering and so loses
+nothing.
+
+```sh
+python3 tools/check-cover-jpegs.py /Volumes/IPOD/Music
+python3 tools/check-cover-jpegs.py /Volumes/IPOD/Music --convert
+```
+
 ## Verification
 
 Run the structural and host tests from the repository root:
