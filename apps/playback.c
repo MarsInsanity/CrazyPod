@@ -1165,6 +1165,31 @@ static void audio_reset_buffer(void)
     arena_after_reserve = core_allocatable();
 #endif
 
+#ifdef HAVE_CRAZYPOD_UI
+    /*
+     * Ask the allocator whether it still believes its own block list before
+     * taking a pointer out of it.
+     *
+     * Three panics have now come back from the same store in
+     * init_buffer_state(), through a pcmbuf_descriptors that pcmbuf_init's
+     * own bounds check had just passed - which it would, because the
+     * descriptors sit correctly inside a buffer that is itself nowhere. The
+     * device has separately reported "block len wacky", so a corrupted
+     * arena handing back a plausible-looking pointer fits all of it. Say so
+     * here, where the numbers still mean something, rather than aborting on
+     * the first write two calls later.
+     */
+    {
+        size_t blocks = 0;
+        void *bad = NULL;
+
+        if (!core_audit(&blocks, &bad))
+            panicf("audio buffer: arena broken\n"
+                   "after %lu blocks at %lx\nhandle %d len %lu",
+                   (unsigned long)blocks, (unsigned long)(uintptr_t)bad,
+                   audiobuf_handle, (unsigned long)filebuflen);
+    }
+#endif
     if (audiobuf_handle > 0
 #ifdef HAVE_CRAZYPOD_UI
         && crazypod_audio_buffer_meets_floor(filebuflen)
