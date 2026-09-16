@@ -90,11 +90,19 @@ static bool remote_home_select_held;
 #define ALPHA_JUMP_WINDOW_TICKS \
     ((HZ * 320 / 1000) > 0 ? (HZ * 320 / 1000) : 1)
 /*
- * The letter jump needs a deliberate, sustained spin. Seven steps with no
- * event floor fired on a single flick of the wheel: the list leapt to a
- * letter the listener had not asked for, and picking one song out of a long
- * list meant turning the wheel carefully enough not to trip it.
+ * The letter jump is off.
+ *
+ * Asked for twice: first "disable skipping to songs by letters, or at least
+ * make it significantly harder", then, after it was made harder, "still way
+ * too sensitive". Raising the bar cannot fix it, because nothing about a
+ * wheel distinguishes wanting to jump a letter from scrolling a long list
+ * quickly -- which is what someone scrolling a long list is doing. Scrolling
+ * a song list is the common case and it was losing to the rare one.
+ *
+ * The threshold and the burst logic stay, tested, ready for the day this
+ * becomes a setting rather than a default.
  */
+#define ALPHA_JUMP_ENABLED 0
 #define ALPHA_JUMP_STEP_THRESHOLD 24
 #define ALPHA_JUMP_MIN_EVENTS 4
 #define REMOTE_MULTITAP_WINDOW_MS 500
@@ -151,7 +159,7 @@ static void move_wheel(
                 ? 15 : 12;
     int steps = crazypod_menu_preview_is_skeuomorphic_route(
         state->route) ? 1 : wheel_step(data, maximum);
-    bool alpha_available =
+    bool alpha_available = ALPHA_JUMP_ENABLED &&
         crazypod_music_feature_alpha_jump_available(state);
 
     if(alpha_available &&
