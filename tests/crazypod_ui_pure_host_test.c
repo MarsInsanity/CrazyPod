@@ -35,6 +35,31 @@ static void test_calendar(void)
     assert(strcmp(time, "9:30 AM") == 0);
 }
 
+/*
+ * A nine-hour audiobook is what broke the hand-written version of this:
+ * 281 * elapsed overflows a 32-bit unsigned at 4.25 hours, so the bar
+ * wrapped and drew the last chapter near the start.
+ */
+static void test_bar_fill(void)
+{
+    const uint32_t book = 33471471;   /* 9.3 hours, from a real file */
+
+    assert(crazypod_ui_text_bar_fill(281, 0, book) == 0);
+    assert(crazypod_ui_text_bar_fill(281, book, book) == 281);
+    assert(crazypod_ui_text_bar_fill(281, book + 1, book) == 281);
+    /* Just under and just over where 32-bit arithmetic gives up. */
+    assert(crazypod_ui_text_bar_fill(281, 15284581, book) == 128);
+    assert(crazypod_ui_text_bar_fill(281, 15284582, book) == 128);
+    /* The two positions that were reported wrong on the device. */
+    assert(crazypod_ui_text_bar_fill(281, 30000000, book) == 251);
+    assert(crazypod_ui_text_bar_fill(281, 32270814, book) == 270);
+    /* The capsule's narrower bar overflows later but still overflows. */
+    assert(crazypod_ui_text_bar_fill(171, 32270814, book) == 164);
+    /* Degenerate inputs must not divide by zero or return rubbish. */
+    assert(crazypod_ui_text_bar_fill(281, 1000, 0) == 0);
+    assert(crazypod_ui_text_bar_fill(0, 1000, book) == 0);
+}
+
 /* Midnight and noon are where hand-rolled twelve-hour clocks go wrong. */
 static void test_clock_format(void)
 {
@@ -354,6 +379,7 @@ int main(void)
 {
     test_calendar();
     test_clock_format();
+    test_bar_fill();
     test_note_layout();
     test_editor();
     test_menu_layout();

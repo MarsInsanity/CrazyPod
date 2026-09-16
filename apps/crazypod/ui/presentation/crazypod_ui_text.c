@@ -4,6 +4,19 @@
 
 #include "crazypod_ui_text.h"
 
+int crazypod_ui_text_bar_fill(int width, uint32_t elapsed_ms,
+                              uint32_t length_ms)
+{
+    uint64_t fill;
+
+    if(width <= 0 || length_ms == 0)
+        return 0;
+    if(elapsed_ms >= length_ms)
+        return width;
+    fill = (uint64_t)width * elapsed_ms / length_ms;
+    return (int)fill;
+}
+
 const char *crazypod_ui_text_clock(char *output, size_t size,
                                    int hour, int minute, int second,
                                    bool with_seconds, bool twelve_hour)

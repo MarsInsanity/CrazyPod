@@ -416,7 +416,12 @@ cleanup:
     /* The session's diagnostics are worth more on disk than in RAM: this
      * is the point the emulator was most likely to be killed at. */
     crazypod_diag_log_flush();
-    if(reserve_lost && result == CRAZYPOD_GAMEBOY_OK)
-        result = CRAZYPOD_GAMEBOY_NO_MEMORY;
+    /*
+     * The reserve is headroom for the audio buffer, not part of the
+     * game. Reporting its loss as "Not enough memory for the game" told
+     * an owner their save had failed when the log shows it was written a
+     * moment earlier. It is recorded and nothing more.
+     */
+    (void)reserve_lost;
     return result;
 }

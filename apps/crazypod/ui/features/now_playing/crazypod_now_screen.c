@@ -1,3 +1,4 @@
+#include "../../presentation/crazypod_ui_text.h"
 #include "config.h"
 
 #include "../../../crazypod_l10n.h"
@@ -604,7 +605,14 @@ void crazypod_now_screen_update_playback(
                 previous, current, next, current_changed);
     }
     if(length_ms > 0 && now_view.progress_marker != NULL) {
-        int x = 281 * elapsed_ms / length_ms;
+        /*
+         * 64-bit because both operands are milliseconds: 281 * elapsed
+         * overflows a 32-bit unsigned once elapsed passes 4.25 hours, and
+         * then wraps. A nine-hour audiobook showed 90% as 44% and its
+         * last chapter as 5%, which is exactly what was reported -- while
+         * every ordinary track, being well under the limit, was right.
+         */
+        int x = crazypod_ui_text_bar_fill(281, elapsed_ms, length_ms);
         char elapsed[16];
         char remaining[16];
         uint32_t left =

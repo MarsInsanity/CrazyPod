@@ -1,3 +1,4 @@
+#include "../presentation/crazypod_ui_text.h"
 #include "config.h"
 
 #include "../../crazypod_l10n.h"
@@ -578,7 +579,9 @@ void crazypod_now_capsule_update(
     }
     crazypod_now_capsule_update_artwork(track);
     if(length_ms > 0) {
-        width = 171 * elapsed_ms / length_ms;
+        /* 64-bit: 171 * elapsed overflows a 32-bit unsigned at seven
+         * hours, and an audiobook reaches that. */
+        width = crazypod_ui_text_bar_fill(171, elapsed_ms, length_ms);
         if(width < 6)
             width = 6;
         if(width > 171)

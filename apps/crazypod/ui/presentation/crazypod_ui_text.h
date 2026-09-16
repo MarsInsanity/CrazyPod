@@ -2,6 +2,7 @@
 #define CRAZYPOD_UI_TEXT_H
 
 #include <stdbool.h>
+#include <stdint.h>
 #include <stddef.h>
 
 /*
@@ -17,6 +18,18 @@
 const char *crazypod_ui_text_clock(char *output, size_t size,
                                    int hour, int minute, int second,
                                    bool with_seconds, bool twelve_hour);
+
+/*
+ * Where along a bar of `width` pixels a position of `elapsed_ms` in a
+ * track of `length_ms` falls.
+ *
+ * It exists to be one function rather than a multiply and a divide
+ * written out at each bar, because written out they were written in 32
+ * bits: 281 * elapsed overflows an unsigned at 4.25 hours and wraps, so
+ * a nine-hour audiobook drew 90% as 44% and its last chapter as 5%.
+ */
+int crazypod_ui_text_bar_fill(int width, uint32_t elapsed_ms,
+                              uint32_t length_ms);
 
 int crazypod_ui_text_character_size(const char *text);
 int crazypod_ui_text_note_line_count(const char *body);
