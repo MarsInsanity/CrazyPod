@@ -20,6 +20,7 @@
  *
  ****************************************************************************/
 #include <stdio.h>
+#include <stdalign.h>
 #include "config.h"
 #include "system.h"
 #include "debug.h"
@@ -612,6 +613,15 @@ size_t pcmbuf_init(void *bufhead, void *bufend)
     /* Set up the buffers */
     pcmbuf_desc_count = get_next_required_pcmbuf_chunks();
     pcmbuf_size = pcmbuf_desc_count * PCMBUF_CHUNK_SIZE;
+    /*
+     * The descriptors are laid out backwards from the end of the buffer, so
+     * an end that is not aligned makes every one of them unaligned, and the
+     * first halfword stored into one aborts. Callers have handed an odd end
+     * in before, from a shrink request measured in bytes; take the alignment
+     * here rather than trusting each of them to.
+     */
+    bufend = (void *)ALIGN_DOWN((uintptr_t)bufend,
+                                (uintptr_t)alignof(struct chunkdesc));
     pcmbuf_descriptors = (struct chunkdesc *)bufend - pcmbuf_desc_count;
 
     pcmbuf_buffer = (void *)pcmbuf_descriptors -
@@ -629,6 +639,8 @@ size_t pcmbuf_init(void *bufhead, void *bufend)
      * else. Say which of the numbers does not fit instead.
      */
     if (bufend < bufhead ||
+        !IS_ALIGNED((uintptr_t)pcmbuf_descriptors,
+                    alignof(struct chunkdesc)) ||
         (void *)pcmbuf_descriptors < bufhead ||
         (void *)pcmbuf_descriptors > bufend ||
         pcmbuf_buffer < bufhead || pcmbuf_buffer > bufend)

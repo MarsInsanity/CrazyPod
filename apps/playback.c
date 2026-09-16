@@ -986,6 +986,20 @@ static int shrink_callback(int handle, unsigned hints, void* start, size_t old_s
     size_t wanted_size = (hints & BUFLIB_SHRINK_SIZE_MASK);
     ssize_t size = (ssize_t)old_size - wanted_size;
 
+    /*
+     * Keep what is left of the buffer a whole number of words.
+     *
+     * wanted_size is a byte count from whichever allocation asked for the
+     * room, so it can be any value at all -- and what is left of the buffer
+     * then ends on an odd address. pcmbuf_init() lays its descriptors out
+     * backwards from that end, so they land odd too, and the first halfword
+     * written to one is an unaligned store: a data abort on a core that has
+     * no MMU and no fault address register, from an address that passes
+     * every bounds check because it really is inside the buffer.
+     */
+    if (size > 0)
+        size = ALIGN_DOWN(size, (ssize_t)sizeof(intptr_t));
+
 #ifdef HAVE_CRAZYPOD_UI
     bool playback_active = (audio_status() & AUDIO_STATUS_PLAY) != 0;
 
