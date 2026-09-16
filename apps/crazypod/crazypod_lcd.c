@@ -423,13 +423,18 @@ static const lv_font_t *lcd_localized_font(const lv_font_t *font,
     return font;
 }
 
+static int draw_text(const lv_font_t *font, const char *text,
+                     int x, int y, int maximum_x, fb_data color);
+
 static void show_message(const char *title, const char *message,
-                         fb_data background)
+                         const char *footer, fb_data background)
 {
     const lv_font_t *title_font = &lv_font_montserrat_16;
     const lv_font_t *body_font = &lv_font_montserrat_12;
     const fb_data foreground = LCD_RGBPACK(255, 255, 255);
     const char *cursor;
+    int footer_y;
+    int bottom;
     int x = 14;
     int y = 18;
 
@@ -439,6 +444,15 @@ static void show_message(const char *title, const char *message,
     body_font = lcd_localized_font(body_font, message);
     cursor = message;
     fill_screen(background);
+    /*
+     * The footer gets a reserved line of its own rather than trailing the
+     * message. Appended, it was the eleventh line of a ten-line screen and
+     * a report that wrapped once pushed it off entirely -- which is how the
+     * first build stamp failed to appear on the one panic it was written
+     * for.
+     */
+    footer_y = LCD_HEIGHT - 12 - body_font->line_height;
+    bottom = footer != NULL ? footer_y : LCD_HEIGHT - 12;
 
     while(*title != '\0') {
         lv_font_glyph_dsc_t glyph;
@@ -452,7 +466,7 @@ static void show_message(const char *title, const char *message,
 
     x = 14;
     y = 48;
-    while(*cursor != '\0' && y + body_font->line_height < LCD_HEIGHT - 12) {
+    while(*cursor != '\0' && y + body_font->line_height < bottom) {
         const char *line_start = cursor;
         int line_width = x;
 
@@ -491,6 +505,9 @@ static void show_message(const char *title, const char *message,
         y += body_font->line_height + 3;
     }
 
+    if(footer != NULL)
+        (void)draw_text(body_font, footer, 14, footer_y,
+                        LCD_WIDTH - 14, foreground);
     lcd_update();
 }
 
@@ -629,14 +646,11 @@ void crazypod_lcd_show_panic(const char *message)
     /*
      * Say which build this is. A panic screen is often the only thing that
      * comes back from a device, and a report against a build nobody can
-     * identify costs a whole round to sort out: two of these have now been
-     * traced to addresses that matched no build on the branch. rbversion
-     * already carries the commit, it was simply never shown.
+     * identify costs a round to sort out. It goes in the reserved footer
+     * line: appended to the message it sat one line below the bottom of a
+     * screen whose report had wrapped, and did not appear at all.
      */
-    static char report[320];
-
-    snprintf(report, sizeof(report), "%s\n\n%s", message, rbversion);
-    show_message(CP_TR("CRAZYPOD PANIC"), report,
+    show_message(CP_TR("CRAZYPOD PANIC"), message, rbversion,
                  LCD_RGBPACK(132, 20, 35));
 }
 
