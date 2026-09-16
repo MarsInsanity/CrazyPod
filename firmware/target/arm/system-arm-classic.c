@@ -42,6 +42,31 @@ static const char* const uiename[] = {
     "SWI"
 };
 
+#if defined(HAVE_CRAZYPOD_UI) && !defined(BOOTLOADER)
+/*
+ * The registers the faulting instruction was using.
+ *
+ * Without them a data abort says which instruction stored, and nothing at
+ * all about where it stored to -- and this core has no MMU, so there is no
+ * fault address register to ask. Five panics have now come back from one
+ * store through a base register whose value had to be guessed at, and every
+ * guess so far has been wrong. Abort mode banks only sp and lr, so r0-r12
+ * on entry are still the interrupted code's; r0 is spent addressing this
+ * array, the rest are what matter.
+ */
+unsigned long crazypod_abort_regs[12]; /* r1 through r12 */
+
+void __attribute__((weak,naked)) data_abort_handler(void)
+{
+    asm volatile(
+        "ldr    r0, =crazypod_abort_regs \n"
+        "stmia  r0, {r1-r12}             \n"
+        "sub    r0, lr, #8               \n"
+        "mov    r1, #2                   \n"
+        "b      UIE                      \n"
+        );
+}
+#else
 void __attribute__((weak,naked)) data_abort_handler(void)
 {
     asm volatile(
@@ -50,6 +75,7 @@ void __attribute__((weak,naked)) data_abort_handler(void)
         "b      UIE         \n"
         );
 }
+#endif
 
 void __attribute__((weak,naked)) software_int_handler(void)
 {
@@ -110,7 +136,7 @@ void NORETURN_ATTR UIE(unsigned int pc, unsigned int num)
     unsigned long banked[2] = { 0, 0 };  /* interrupted mode's sp, lr */
     unsigned long code_limit = (unsigned long)_edata;
     unsigned long sp;
-    unsigned int frames[4];
+    unsigned int frames[3];
     unsigned int nframes = 0;
     int len;
     unsigned int i;
@@ -148,7 +174,7 @@ void NORETURN_ATTR UIE(unsigned int pc, unsigned int num)
     sp = banked[0];
     if((sp & 3) == 0 && CRAZYPOD_PANIC_READABLE(sp)) {
         unsigned long addr;
-        for(addr = sp; addr + 4 <= sp + 512 && nframes < 4; addr += 4) {
+        for(addr = sp; addr + 4 <= sp + 512 && nframes < 3; addr += 4) {
             unsigned long value;
 
             if(!CRAZYPOD_PANIC_READABLE(addr))
@@ -170,6 +196,13 @@ void NORETURN_ATTR UIE(unsigned int pc, unsigned int num)
     if(have_code && len > 0 && (size_t)len < sizeof(report))
         len += snprintf(report + len, sizeof(report) - len,
                         "\nAT %08x %08x", code[0], code[1]);
+    /* Only a data abort has registers worth reporting, and only these
+     * three are ever the base of the store that faulted. */
+    if(num == 2 && len > 0 && (size_t)len < sizeof(report))
+        len += snprintf(report + len, sizeof(report) - len,
+                        "\nR1 %08lx R2 %08lx R3 %08lx",
+                        crazypod_abort_regs[0], crazypod_abort_regs[1],
+                        crazypod_abort_regs[2]);
     for(i = 0; i < nframes && len > 0 && (size_t)len < sizeof(report); i++)
         len += snprintf(report + len, sizeof(report) - len,
                         "%s%08x", i == 0 ? "\nSTACK " : " ", frames[i]);
