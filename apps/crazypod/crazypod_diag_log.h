@@ -25,6 +25,10 @@ void crazypod_diag_log(const char *tag, const char *format, ...)
 /* Push whatever is buffered to disk now, for a clean shutdown or before
  * something that is about to make the device unreachable. */
 void crazypod_diag_log_flush(void);
+/* Called from the runtime tick: writes held lines out once they have
+ * waited long enough, so a power-off never costs more than a few
+ * seconds of them. Does nothing when there is nothing held. */
+void crazypod_diag_log_service(void);
 #else
 static inline void crazypod_diag_log(const char *tag, const char *format, ...)
 {
@@ -32,6 +36,7 @@ static inline void crazypod_diag_log(const char *tag, const char *format, ...)
     (void)format;
 }
 static inline void crazypod_diag_log_flush(void) {}
+static inline void crazypod_diag_log_service(void) {}
 #endif
 
 #endif

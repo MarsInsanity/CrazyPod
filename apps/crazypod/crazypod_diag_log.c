@@ -17,6 +17,9 @@
 #define DIAG_BUFFER_SIZE 3072
 /* Flush before an append can be refused for want of room. */
 #define DIAG_HIGH_WATER (DIAG_BUFFER_SIZE - 256)
+/* Long enough that a burst costs one write, short enough that losing
+ * power never costs more than the last few seconds of diagnostics. */
+#define DIAG_FLUSH_INTERVAL (20 * HZ)
 
 /*
  * Lines are held in RAM and written only when the disk is already awake,
@@ -34,6 +37,7 @@ static char pending[DIAG_BUFFER_SIZE];
 static size_t pending_length;
 static bool flushing;
 static bool stopped;
+static long last_flush;
 
 static void flush_pending(void)
 {
@@ -65,7 +69,23 @@ static void flush_pending(void)
     if(pending_length > written)
         memmove(pending, pending + written, pending_length - written);
     pending_length -= written;
+    last_flush = current_tick;
     flushing = false;
+}
+
+/*
+ * Held lines have to reach the disk on their own eventually. Waiting for
+ * the buffer to fill is fine on a machine that keeps running; it is not
+ * fine when the device is switched off, which is how a whole session's
+ * diagnostics went missing once already.
+ */
+void crazypod_diag_log_service(void)
+{
+    if(pending_length == 0 || flushing || stopped)
+        return;
+    if(TIME_BEFORE(current_tick, last_flush + DIAG_FLUSH_INTERVAL))
+        return;
+    flush_pending();
 }
 
 void crazypod_diag_log(const char *tag, const char *format, ...)

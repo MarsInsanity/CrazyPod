@@ -2,7 +2,6 @@
 # Artifacts come back numbered in this order. Blank lines and lines
 # starting with # are ignored. Editing this file and pushing is what
 # triggers the build -- there is nothing to click.
-# Current tip: buffered diagnostics log (the disk churn that made
-# everything feel slow) and no panic when the audio reserve cannot be
-# re-acquired after the emulator.
-4aa40226
+# Current tip: buffered diagnostics with a timed flush, and no panic
+# when the audio reserve cannot be re-acquired after the emulator.
+HEAD
