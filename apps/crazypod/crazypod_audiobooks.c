@@ -651,11 +651,38 @@ static int index_of_path(const char *path)
     return -1;
 }
 
+/* Whether a path could be a book at all, without touching the disk. */
+static bool path_under_book_directory(const char *path)
+{
+    return path != NULL &&
+        (strncmp(path, AUDIOBOOKS_DIRECTORY "/",
+                 sizeof(AUDIOBOOKS_DIRECTORY)) == 0 ||
+         strncmp(path, BOOKS_DIRECTORY "/",
+                 sizeof(BOOKS_DIRECTORY)) == 0);
+}
+
 int crazypod_audiobooks_current_index(void)
 {
     const struct mp3entry *entry = current_entry();
+    int index;
 
-    return entry != NULL ? index_of_path(entry->path) : -1;
+    if(entry == NULL)
+        return -1;
+    index = index_of_path(entry->path);
+    /*
+     * The catalog is built when the Books app is opened, and nothing else
+     * built it. Resume an audiobook straight from Now Playing after a
+     * reboot and the lookup found an empty catalog, so the book showed as
+     * an untitled local music track with no cover, and its progress screen
+     * drew as if it were a song. Build the catalog here when the file that
+     * is playing lives where books live -- ordinary music never pays for
+     * it, and a book pays once.
+     */
+    if(index < 0 && !scan_done && path_under_book_directory(entry->path)) {
+        crazypod_audiobooks_scan();
+        index = index_of_path(entry->path);
+    }
+    return index;
 }
 
 /* Registers the book with the music layer so every player surface shows
