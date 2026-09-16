@@ -87,6 +87,16 @@ static struct {
     unsigned route_count;
     unsigned route_max_us;
     int route_worst;
+    /*
+     * Which route is doing the rebuilding, which is not the same question
+     * as which single rebuild was slowest. A screen nobody is touching
+     * that rebuilds five times a second costs far more than one slow
+     * build, and the worst-route column cannot tell the two apart.
+     */
+    int route_hot;
+    unsigned route_hot_count;
+    int route_last;
+    unsigned route_run;
     unsigned draw_start_us;
     unsigned draw_depth;
     /* Window accumulators, reset after every line. */
@@ -296,6 +306,12 @@ void crazypod_perf_log_route_end(int route)
 
     perf.route_build_us += now - perf.route_mark_us;
     ++perf.route_count;
+    perf.route_run = route == perf.route_last ? perf.route_run + 1 : 1;
+    perf.route_last = route;
+    if(perf.route_run > perf.route_hot_count) {
+        perf.route_hot_count = perf.route_run;
+        perf.route_hot = route;
+    }
     if(total > perf.route_max_us) {
         perf.route_max_us = total;
         perf.route_worst = route;
@@ -405,6 +421,10 @@ static void reset_window(void)
     perf.route_count = 0;
     perf.route_max_us = 0;
     perf.route_worst = -1;
+    perf.route_hot = -1;
+    perf.route_hot_count = 0;
+    perf.route_last = -1;
+    perf.route_run = 0;
     perf.samples = 0;
     perf.lowdata_samples = 0;
     perf.pcm_free_min = (size_t)-1;
@@ -555,6 +575,7 @@ static void format_line(long now)
                "pre=services_ms/scheduler_ms "
                "refr=layout_ms/join_ms/draw_ms/flushwait_ms/layout_max_ms "
                "route=renders/clean_ms/build_ms/max_ms@worst_route "
+               "hot=route/longest_unbroken_run "
                "dt=type:count/ms,... "
                "inv=count/total_ms,x1.y1-x2.y2:count@class/caller,... "
                "lay=count,x1.y1-x2.y2:count@class/type "
@@ -622,10 +643,10 @@ static void format_line(long now)
              perf.refr_total_us[2] / 1000, perf.refr_total_us[3] / 1000,
              perf.refr_layout_max_us / 1000);
     append(text);
-    snprintf(text, sizeof(text), " route=%u/%u/%u/%u@%d",
+    snprintf(text, sizeof(text), " route=%u/%u/%u/%u@%d hot=%d/%u",
              perf.route_count, perf.route_clean_us / 1000,
              perf.route_build_us / 1000, perf.route_max_us / 1000,
-             perf.route_worst);
+             perf.route_worst, perf.route_hot, perf.route_hot_count);
     append(text);
     {
         struct crazypod_artwork_diagnostics art;
