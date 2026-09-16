@@ -70,11 +70,25 @@ jobs:
       matrix:
         entry: ${{ fromJSON(needs.plan.outputs.matrix) }}
     steps:
-      - name: Check out ${{ matrix.entry.commit }}
+      # checkout's own "ref" resolves branches, tags and full 40-character
+      # SHAs only -- an abbreviated one fails as "could not be found". Take
+      # the branch with its whole history and detach by hand instead, which
+      # accepts short SHAs, tags and branch names alike.
+      - name: Check out source
         uses: actions/checkout@v5
         with:
-          ref: ${{ matrix.entry.commit }}
           fetch-depth: 0
+
+      - name: Detach at ${{ matrix.entry.commit }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          if ! git rev-parse --verify --quiet \
+              "${{ matrix.entry.commit }}^{commit}" > /dev/null; then
+            echo "::error::${{ matrix.entry.commit }} is not a commit in this repository"
+            exit 1
+          fi
+          git checkout --detach "${{ matrix.entry.commit }}"
 
       # Firmware-only needs no Node or zip, so this installs less than the
       # full build does and finishes sooner.
