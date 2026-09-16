@@ -22,12 +22,16 @@
 #define CRAZYPOD_DIAG_LOG
 void crazypod_diag_log(const char *tag, const char *format, ...)
     __attribute__((format(printf, 2, 3)));
+/* Push whatever is buffered to disk now, for a clean shutdown or before
+ * something that is about to make the device unreachable. */
+void crazypod_diag_log_flush(void);
 #else
 static inline void crazypod_diag_log(const char *tag, const char *format, ...)
 {
     (void)tag;
     (void)format;
 }
+static inline void crazypod_diag_log_flush(void) {}
 #endif
 
 #endif

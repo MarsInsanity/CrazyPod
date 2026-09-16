@@ -1024,6 +1024,9 @@ static bool decode_artwork_at(const struct artwork_source *source,
 /* JPEG_ERROR_NOT_BASELINE: the loader's marker switch returns this for
  * every progressive and arithmetic-coded SOF. */
 #define CRAZYPOD_JPEG_NOT_BASELINE (-4)
+#define CRAZYPOD_DECODE_REPORT_LIMIT 8
+
+static unsigned decode_reports;
 
 static bool decode_artwork(const struct artwork_source *source,
                            int target_size,
@@ -1042,6 +1045,19 @@ static bool decode_artwork(const struct artwork_source *source,
                          descriptor)) {
         ++artwork_diagnostics.decoded;
         return true;
+    }
+    /*
+     * A library whose covers are all the wrong JPEG flavour produces one
+     * of these per album, and the tenth says nothing the first did not.
+     * Report a handful and then keep counting silently; the diagnostics
+     * line in the perf log carries the totals.
+     */
+    if(++decode_reports > CRAZYPOD_DECODE_REPORT_LIMIT) {
+        if(last_decode_error == CRAZYPOD_JPEG_NOT_BASELINE)
+            ++artwork_diagnostics.unsupported_type;
+        else
+            ++artwork_diagnostics.decode_failed;
+        return false;
     }
     if(last_decode_error == CRAZYPOD_JPEG_NOT_BASELINE) {
         /* Not a fault in this cover or this buffer: the format is one the

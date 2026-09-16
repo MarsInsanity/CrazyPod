@@ -14,6 +14,7 @@
 #include "usb.h"
 #include "../../../crazypod_artwork.h"
 #include "../../../crazypod_audio_reserve.h"
+#include "../../../crazypod_diag_log.h"
 #include "../../../crazypod_l10n.h"
 #include "../../../crazypod_lcd.h"
 #include "../../../crazypod_music.h"
@@ -259,6 +260,7 @@ enum crazypod_gameboy_result crazypod_gameboy_screen_run(int index)
     unsigned long old_elapsed = track != NULL ? track->elapsed : 0;
     unsigned long old_offset = track != NULL ? track->offset : 0;
     bool started = false;
+    bool reserve_lost = false;
 
     (void)crazypod_screen_recording_stop(current_tick);
     crazypod_music_set_scan_suspended(true);
@@ -390,8 +392,14 @@ cleanup:
     game_audio_stop();
     crazypod_gameboy_close();
     mixer_set_frequency(old_frequency);
+    /*
+     * Losing the reserve is not worth a panic. It costs headroom for the
+     * audio buffer, not correctness, and a panic here takes the device
+     * down without unmounting -- which is how a diagnostics log written
+     * during the session went missing. Say so and carry on.
+     */
     if(!crazypod_audio_reserve_acquire())
-        panicf("audio reserve after gameboy");
+        reserve_lost = true;
     if(!started && (old_audio_state & AUDIO_STATUS_PLAY)) {
         audio_play(old_elapsed, old_offset);
         if(old_audio_state & AUDIO_STATUS_PAUSE)
@@ -405,5 +413,10 @@ cleanup:
     /* Keep any queued USB/power events; only the consumed one is reposted. */
     if(system_event != 0)
         button_queue_post(system_event, system_data);
+    /* The session's diagnostics are worth more on disk than in RAM: this
+     * is the point the emulator was most likely to be killed at. */
+    crazypod_diag_log_flush();
+    if(reserve_lost && result == CRAZYPOD_GAMEBOY_OK)
+        result = CRAZYPOD_GAMEBOY_NO_MEMORY;
     return result;
 }
