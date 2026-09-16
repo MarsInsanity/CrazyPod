@@ -10,6 +10,7 @@
 #include "buffering.h"
 #include "file.h"
 #include "kernel.h"
+#include "version.h"
 #include "pcmbuf.h"
 #include "storage.h"
 #include "system.h"
@@ -562,6 +563,9 @@ static void format_line(long now)
     char text[256];
 
     if(!perf.header_written) {
+        /* Which build wrote the numbers below. */
+        snprintf(text, sizeof(text), "# build %s\n", rbversion);
+        append(text);
         append("# t=seconds st=audio_status boost=cpu_boost_counter "
                "scan=music_scanning pcm=min_free/max_free/size "
                "low=lowdata_samples/samples "

@@ -11,6 +11,7 @@
 
 #include "lcd.h"
 #include "system.h"
+#include "version.h"
 
 #include "crazypod_boot_logo.h"
 #include "lvgl.h"
@@ -625,7 +626,17 @@ void crazypod_lcd_draw_video_frame(
 
 void crazypod_lcd_show_panic(const char *message)
 {
-    show_message(CP_TR("CRAZYPOD PANIC"), message,
+    /*
+     * Say which build this is. A panic screen is often the only thing that
+     * comes back from a device, and a report against a build nobody can
+     * identify costs a whole round to sort out: two of these have now been
+     * traced to addresses that matched no build on the branch. rbversion
+     * already carries the commit, it was simply never shown.
+     */
+    static char report[320];
+
+    snprintf(report, sizeof(report), "%s\n\n%s", message, rbversion);
+    show_message(CP_TR("CRAZYPOD PANIC"), report,
                  LCD_RGBPACK(132, 20, 35));
 }
 
