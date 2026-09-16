@@ -46,6 +46,12 @@
 
 static struct crazypod_route_renderer_host host;
 
+/*
+ * Whether a Now Playing theme or a Mini App surface has been on screen and
+ * still holds the fonts it loaded for itself.
+ */
+static bool surface_fonts_loaded;
+
 static void reset_feature_surfaces(void)
 {
     if(crazypod_coverflow_active())
@@ -373,6 +379,7 @@ void crazypod_route_renderer_render(
             1, foreground, background);
         crazypod_status_bar_foreground(1);
         crazypod_screen_corners_refresh();
+        surface_fonts_loaded = true;
         return;
     }
 
@@ -380,11 +387,21 @@ void crazypod_route_renderer_render(
     reset_feature_surfaces();
     lv_obj_clean(content);
     crazypod_perf_log_route_cleaned();
-    if(state->route == MUSIC_ROUTE_NOW_PLAYING &&
+    /*
+     * Hand the theme's fonts back once it leaves the screen -- but only
+     * then. Unloading on every render of the stock Now Playing screen made
+     * each of its labels reload a .fnt from the card, and this route
+     * rebuilds on every track change, so a change of track cost seconds
+     * before a single pixel moved.
+     */
+    if(surface_fonts_loaded &&
+       state->route == MUSIC_ROUTE_NOW_PLAYING &&
        crazypod_now_playing_theme_enabled() &&
        !crazypod_now_playing_theme_open() &&
-       !crazypod_miniapps_feature_is_open())
+       !crazypod_miniapps_feature_is_open()) {
         crazypod_runtime_asset_fonts_reset();
+        surface_fonts_loaded = false;
+    }
     lv_obj_set_pos(content, 0, 0);
     lv_obj_set_style_bg_color(
         content,
