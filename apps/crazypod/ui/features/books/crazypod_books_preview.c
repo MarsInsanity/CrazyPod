@@ -1,5 +1,7 @@
 #include "config.h"
 
+#include "kernel.h"
+
 #include "../../../crazypod_l10n.h"
 
 #ifdef HAVE_CRAZYPOD_UI
@@ -13,6 +15,7 @@
 #include "../../presentation/crazypod_ui_widgets.h"
 #include "../../presentation/crazypod_preview_motion.h"
 #include "crazypod_book_preview_cover.h"
+#include "../../navigation/crazypod_render_scheduler.h"
 #include "../../presentation/crazypod_preview_primitives.h"
 #include "crazypod_books_feature.h"
 #include "crazypod_books_preview.h"
@@ -545,6 +548,17 @@ void crazypod_books_preview_render(
     lv_obj_t *label;
     lv_obj_t *text_panel;
     char detail_text[64];
+    long cover_due = 0;
+
+    /*
+     * Covers decode on this thread, so hold them back until the selection
+     * stops moving and ask to be drawn again once it has. Scrolling then
+     * costs no decodes at all rather than one per row.
+     */
+    crazypod_book_preview_cover_mark(
+        (int)state->route * 4096 + state->selected, current_tick);
+    if(crazypod_book_preview_cover_waiting(current_tick, &cover_due))
+        crazypod_render_scheduler_schedule_route(cover_due + 1);
 
     if(route_audiobook_index(state) >= 0) {
         render_audiobook_preview(

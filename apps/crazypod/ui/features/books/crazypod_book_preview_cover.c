@@ -1,5 +1,7 @@
 #include "config.h"
 
+#include "kernel.h"
+
 #include "../../../crazypod_l10n.h"
 
 #ifdef HAVE_CRAZYPOD_UI
@@ -54,13 +56,59 @@ static uint32_t artwork_color(const char *text)
                    (sizeof(palette) / sizeof(palette[0]))];
 }
 
+/*
+ * Whether a real cover may be decoded right now.
+ *
+ * crazypod_book_cover_get() probes the epub and decodes a JPEG, both
+ * synchronously, inside the render -- and the cache holds four. Scrolling
+ * a shelf of more than four books therefore decoded one per row, on the
+ * wheel, which is the fifteen to twenty seconds of freezing reported with
+ * Reduce Effects off. Wait for the selection to stop moving: the procedural
+ * sleeve below is what shows in the meantime, and it is already the
+ * fallback for a book that has no cover at all.
+ */
+#define COVER_SETTLE_MS 260
+#define COVER_SETTLE_TICKS     ((HZ * COVER_SETTLE_MS / 1000) > 0 ? (HZ * COVER_SETTLE_MS / 1000) : 1)
+
+static int settled_key = -1;
+static long settled_since;
+
+void crazypod_book_preview_cover_mark(int key, long now)
+{
+    if(key != settled_key) {
+        settled_key = key;
+        settled_since = now;
+    }
+}
+
+/*
+ * Both of these answer from the clock alone and keep no "pending" flag.
+ * A flag that only something else can clear is a way to schedule a render
+ * that schedules a render.
+ */
+bool crazypod_book_preview_cover_settled(long now)
+{
+    return settled_key < 0 ||
+        !TIME_BEFORE(now, settled_since + COVER_SETTLE_TICKS);
+}
+
+bool crazypod_book_preview_cover_waiting(long now, long *due)
+{
+    if(crazypod_book_preview_cover_settled(now))
+        return false;
+    if(due != NULL)
+        *due = settled_since + COVER_SETTLE_TICKS;
+    return true;
+}
+
 lv_obj_t *crazypod_book_preview_cover_create(
     lv_obj_t *parent, const struct crazypod_book *book,
     int x, int y, int width, int height)
 {
     int book_index = crazypod_book_index(book);
     const lv_image_dsc_t *image =
-        book_index >= 0 && width >= 50
+        book_index >= 0 && width >= 50 &&
+        crazypod_book_preview_cover_settled(current_tick)
             ? crazypod_book_cover_get(
                   book_index, width, height) : NULL;
     uint32_t color = book != NULL
