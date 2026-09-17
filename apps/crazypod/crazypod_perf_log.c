@@ -556,16 +556,14 @@ static unsigned count_objects(lv_obj_t *object)
     return count;
 }
 
-static void format_line(long now)
+static void append_header(void)
 {
-    struct crazypod_present_diagnostics present;
-    struct buffering_debug buffering;
     char text[256];
 
-    if(!perf.header_written) {
-        /* Which build wrote the numbers below. */
-        snprintf(text, sizeof(text), "# build %s\n", rbversion);
-        append(text);
+    /* Which build wrote the numbers below. */
+    snprintf(text, sizeof(text), "# build %s\n", rbversion);
+    append(text);
+    {
         append("# t=seconds st=audio_status boost=cpu_boost_counter "
                "scan=music_scanning pcm=min_free/max_free/size "
                "low=lowdata_samples/samples "
@@ -584,8 +582,18 @@ static void format_line(long now)
                "inv=count/total_ms,x1.y1-x2.y2:count@class/caller,... "
                "lay=count,x1.y1-x2.y2:count@class/type "
                "(t1 simple, t2 transform, t3 clip_corner)\n");
-        perf.header_written = true;
     }
+    perf.header_written = true;
+}
+
+static void format_line(long now)
+{
+    struct crazypod_present_diagnostics present;
+    struct buffering_debug buffering;
+    char text[256];
+
+    if(!perf.header_written)
+        append_header();
     crazypod_present_get_diagnostics(&present);
     buffering_get_debugdata(&buffering);
     snprintf(text, sizeof(text),
@@ -680,10 +688,27 @@ static void write_lines(void)
     fd = open(PERF_LOG_PATH, O_WRONLY | O_CREAT | O_APPEND, 0666);
     if(fd < 0)
         return;
-    if(filesize(fd) >= PERF_LOG_MAX_BYTES)
-        perf.stopped = true;
-    else
-        write(fd, perf.lines, perf.line_length);
+    /*
+     * Start the file over when it fills rather than stopping for good.
+     *
+     * Stopping is how this log went quiet: it reached half a megabyte and
+     * every boot since has opened it, seen it full and written nothing, in
+     * silence. Three rounds of measurements were taken against a file that
+     * had not changed in days, and nobody could tell from looking at it.
+     * The diagnostics log has always truncated and carried on; this one now
+     * does the same, and re-emits the header so what follows says which
+     * build wrote it.
+     */
+    if(filesize(fd) >= PERF_LOG_MAX_BYTES) {
+        close(fd);
+        fd = open(PERF_LOG_PATH, O_WRONLY | O_CREAT | O_TRUNC, 0666);
+        if(fd < 0)
+            return;
+        /* The header goes at the top of the next batch: appending it here
+         * would put it after the line already waiting to be written. */
+        perf.header_written = false;
+    }
+    write(fd, perf.lines, perf.line_length);
     close(fd);
     perf.line_length = 0;
     perf.lines[0] = '\0';
