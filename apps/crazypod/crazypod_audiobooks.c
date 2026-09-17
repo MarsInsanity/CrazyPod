@@ -661,6 +661,48 @@ static bool path_under_book_directory(const char *path)
                  sizeof(BOOKS_DIRECTORY)) == 0);
 }
 
+/*
+ * Describe the book that is playing as if it were a track.
+ *
+ * A book plays through the music queue but is not in the music catalog, so
+ * every screen that names what is playing by looking the file up there came
+ * back with nothing and drew "No Track" and "Local Music". Three screens did
+ * that lookup separately; they all call this when it fails.
+ */
+bool crazypod_audiobooks_describe_current(struct crazypod_track *track)
+{
+    int index = crazypod_audiobooks_current_index();
+    const struct crazypod_audiobook *book;
+
+    if(track == NULL || index < 0)
+        return false;
+    (void)crazypod_audiobook_probe(index);
+    book = crazypod_audiobook_get(index);
+    if(book == NULL)
+        return false;
+    memset(track, 0, sizeof(*track));
+    snprintf(track->path, sizeof(track->path), "%s", book->path);
+    snprintf(track->title, sizeof(track->title), "%s", book->title);
+    snprintf(track->artist, sizeof(track->artist), "%s", book->author);
+    snprintf(track->album, sizeof(track->album), "%s", book->title);
+    snprintf(track->album_artist, sizeof(track->album_artist), "%s",
+             book->author);
+    track->duration_ms = book->length_ms;
+    return true;
+}
+
+/* The length of the playing book, or 0. The codec does not always have a
+ * length yet when a book is resumed at boot, and a progress bar with no
+ * length draws 0:00 of 0:00. */
+uint32_t crazypod_audiobooks_current_length_ms(void)
+{
+    int index = crazypod_audiobooks_current_index();
+    const struct crazypod_audiobook *book =
+        index >= 0 ? crazypod_audiobook_get(index) : NULL;
+
+    return book != NULL ? book->length_ms : 0;
+}
+
 int crazypod_audiobooks_current_index(void)
 {
     const struct mp3entry *entry = current_entry();

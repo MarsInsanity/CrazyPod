@@ -57,6 +57,10 @@ int crazypod_audiobook_chapter_at(int index, uint32_t position_ms);
 bool crazypod_audiobook_play(int index);
 /* Index of the book the queue is playing, or -1. */
 int crazypod_audiobooks_current_index(void);
+struct crazypod_track;
+/* Fills a track record from the playing book. False when none is playing. */
+bool crazypod_audiobooks_describe_current(struct crazypod_track *track);
+uint32_t crazypod_audiobooks_current_length_ms(void);
 bool crazypod_audiobook_is_current(int index);
 bool crazypod_audiobook_is_playing(int index);
 uint32_t crazypod_audiobook_position_ms(int index);

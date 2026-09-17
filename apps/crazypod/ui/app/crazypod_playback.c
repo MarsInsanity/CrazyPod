@@ -916,12 +916,19 @@ void crazypod_playback_update_timer(lv_timer_t *timer)
         return;
     }
     crazypod_now_playing_overlay_refresh_tick();
-    if(id3 != NULL)
+    if(id3 != NULL) {
+        uint32_t length = (uint32_t)id3->length;
+
+        /* Resumed at boot, the codec has not always reported a length yet,
+         * and a bar with no length draws 0:00 of 0:00. The book knows. */
+        if(length == 0)
+            length = crazypod_audiobooks_current_length_ms();
         crazypod_now_playing_feature_update_playback(
             playback.seeking
                 ? playback.seek_target_ms
                 : (uint32_t)id3->elapsed,
-            (uint32_t)id3->length);
+            length);
+    }
 }
 
 void crazypod_playback_request_refresh_after_unlock(

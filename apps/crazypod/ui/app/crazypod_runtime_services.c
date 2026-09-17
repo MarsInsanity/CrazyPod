@@ -219,6 +219,14 @@ void crazypod_runtime_services_tick(
     crazypod_diag_log_service();
     crazypod_books_service();
     crazypod_audiobooks_tick(now);
+    /*
+     * Have the book catalog ready before anything draws. Building it from
+     * the lookup meant the first render of Now Playing after a boot still
+     * missed -- the catalog only existed by the second one, which is why
+     * the title appeared on the way back into the screen rather than on
+     * the way in.
+     */
+    (void)crazypod_audiobooks_current_index();
 
     crazypod_music_set_scan_suspended(locked);
     crazypod_artwork_set_lock_suspended(

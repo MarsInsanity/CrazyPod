@@ -8,6 +8,7 @@
 #include <string.h>
 
 #include "../../../crazypod_artwork.h"
+#include "../../../crazypod_audiobooks.h"
 #include "../../../crazypod_music.h"
 #include "../../../crazypod_playlist.h"
 #include "../../presentation/crazypod_preview_motion.h"
@@ -59,7 +60,12 @@ static bool copy_current_track(struct crazypod_track *track)
     int index = crazypod_queue_copy_path(
             crazypod_queue_index(), path, sizeof(path))
         ? crazypod_music_find_track(path) : -1;
-    return crazypod_music_copy_track(index, track);
+
+    /* A book is not in the music catalog; the home widget named it
+     * "Local Music" for the same reason Now Playing did. */
+    if(crazypod_music_copy_track(index, track))
+        return true;
+    return crazypod_audiobooks_describe_current(track);
 }
 
 static lv_obj_t *make_procedural_record_sleeve(
