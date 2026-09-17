@@ -228,6 +228,39 @@ static void cache_store(uint32_t key, const struct book_cover_slot *slot,
         remove(temporary);
 }
 
+static bool cover_key(int book_index, int max_width, int max_height,
+                      uint32_t *key)
+{
+    const struct crazypod_book *book = crazypod_book_get(book_index);
+
+    /* Without the probe there is no cover path to key on, and running it
+     * is the expensive half -- so this answers "not yet" rather than
+     * going and finding out. */
+    if(book == NULL || !book->details_loaded ||
+       book->cover_path[0] == '\0')
+        return false;
+    *key = path_hash(book->cover_path) ^
+        book->size ^ (book->mtime * 16777619u) ^
+        ((uint32_t)max_width << 16) ^ (uint32_t)max_height;
+    return true;
+}
+
+const lv_image_dsc_t *crazypod_book_cover_ready(
+    int book_index, int max_width, int max_height)
+{
+    uint32_t key;
+    int i;
+
+    if(max_width <= 0 || max_width > BOOK_COVER_WIDTH ||
+       max_height <= 0 || max_height > BOOK_COVER_HEIGHT ||
+       !cover_key(book_index, max_width, max_height, &key))
+        return NULL;
+    for(i = 0; i < BOOK_COVER_SLOTS; ++i)
+        if(cover_slots[i].valid && cover_slots[i].key == key)
+            return &cover_slots[i].descriptor;
+    return NULL;
+}
+
 const lv_image_dsc_t *crazypod_book_cover_get(
     int book_index, int max_width, int max_height)
 {

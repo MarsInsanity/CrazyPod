@@ -587,6 +587,7 @@ void crazypod_books_preview_render(
      */
     crazypod_book_preview_cover_mark(
         (int)state->route * 4096 + state->selected, current_tick);
+    crazypod_book_preview_cover_begin_pass();
     if(crazypod_book_preview_cover_waiting(current_tick, &cover_due))
         crazypod_render_scheduler_schedule_route(cover_due + 1);
 

@@ -13,6 +13,7 @@
 #include "../../../crazypod_book_cover.h"
 #include "../../presentation/crazypod_ui_widgets.h"
 #include "../photos/crazypod_photos_feature.h"
+#include "../../navigation/crazypod_render_scheduler.h"
 #include "../../presentation/crazypod_preview_primitives.h"
 #include "crazypod_book_preview_cover.h"
 
@@ -73,11 +74,47 @@ static uint32_t artwork_color(const char *text)
 static int settled_key = -1;
 static long settled_since;
 
+/*
+ * One decode per pass, and each book tried once per selection.
+ *
+ * Without the second half of that, a book with no cover at all would take
+ * the budget on every pass -- it never becomes "ready", so it would be
+ * tried again and again and the books behind it in the stack would never
+ * get their turn.
+ */
+#define COVER_ATTEMPTS_MAX 8
+
+static int decode_budget;
+static int attempted[COVER_ATTEMPTS_MAX];
+static int attempted_count;
+
+static bool already_attempted(int book_index)
+{
+    int i;
+
+    for(i = 0; i < attempted_count; ++i)
+        if(attempted[i] == book_index)
+            return true;
+    return false;
+}
+
+static void remember_attempt(int book_index)
+{
+    if(attempted_count < COVER_ATTEMPTS_MAX)
+        attempted[attempted_count++] = book_index;
+}
+
+void crazypod_book_preview_cover_begin_pass(void)
+{
+    decode_budget = 1;
+}
+
 void crazypod_book_preview_cover_mark(int key, long now)
 {
     if(key != settled_key) {
         settled_key = key;
         settled_since = now;
+        attempted_count = 0;
     }
 }
 
@@ -106,18 +143,35 @@ lv_obj_t *crazypod_book_preview_cover_create(
     int x, int y, int width, int height)
 {
     int book_index = crazypod_book_index(book);
-    const lv_image_dsc_t *image =
-        book_index >= 0 && width >= 50 &&
-        crazypod_book_preview_cover_settled(current_tick)
-            ? crazypod_book_cover_get(
-                  book_index, width, height) : NULL;
+    const lv_image_dsc_t *image = NULL;
     uint32_t color = book != NULL
         ? artwork_color(book->path) : 0x70462A;
-    lv_obj_t *cover = make_box(
+    int spine_width = width > 50 ? 7 : 4;
+    lv_obj_t *cover;
+    lv_obj_t *label;
+
+    if(book_index >= 0 && width >= 50) {
+        /* Free: it is either in memory or it is not. */
+        image = crazypod_book_cover_ready(book_index, width, height);
+        if(image == NULL &&
+           crazypod_book_preview_cover_settled(current_tick) &&
+           !already_attempted(book_index)) {
+            if(decode_budget > 0) {
+                --decode_budget;
+                remember_attempt(book_index);
+                image = crazypod_book_cover_get(
+                    book_index, width, height);
+            }
+            else
+                /* Come back for this one: the next pass finds the cover
+                 * above it already decoded and spends the budget here. */
+                crazypod_render_scheduler_schedule_route(
+                    current_tick + 1);
+        }
+    }
+    cover = make_box(
         parent, x, y, width, height, 4,
         image != NULL ? 0x090806 : color, LV_OPA_COVER);
-    lv_obj_t *label;
-    int spine_width = width > 50 ? 7 : 4;
 
     if(image != NULL) {
         crazypod_photos_feature_render_image(
