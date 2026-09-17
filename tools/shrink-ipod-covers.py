@@ -56,7 +56,10 @@ firmware refuses a book cover by its file name, so that cover is not
 being drawn today, and fixing it properly means a second manifest entry
 rather than a JPEG smuggled in under the old name.
 
-It reports by default and changes nothing until you pass --shrink. Needs
+It reports by default and changes nothing until you pass --shrink, keeps
+the original beside each file it rewrites as <name>.bak unless told not
+to, and reads every rewrite back and checks it before letting it replace
+anything. Needs
 ImageMagick, or djpeg and cjpeg from libjpeg-turbo, only when actually
 shrinking; the report reads the image headers itself and needs nothing.
 """
@@ -480,11 +483,73 @@ def cover_entry(archive):
     return None
 
 
+def verify_epub(original, rewritten, entry, image):
+    """Read the new archive back and prove it before it replaces a book.
+
+    A book is not something to be optimistic about. Every entry the
+    original had must be present, every one of them except the cover must
+    come back byte for byte, the archive must pass its own CRC check, and
+    "mimetype" must still be the first entry and uncompressed -- which is
+    what an epub reader looks at before anything else.
+    """
+    with zipfile.ZipFile(original, "r") as before:
+        names = before.namelist()
+        expected = dict((name, before.read(name)) for name in names)
+    with zipfile.ZipFile(rewritten, "r") as after:
+        damaged = after.testzip()
+        if damaged is not None:
+            raise CoverError("the rewritten archive fails its own "
+                             "checksum at %s" % damaged)
+        infos = after.infolist()
+        if [info.filename for info in infos] != names:
+            raise CoverError("the rewritten archive has different entries")
+        if "mimetype" in names:
+            if infos[0].filename != "mimetype":
+                raise CoverError("mimetype is no longer the first entry")
+            if infos[0].compress_type != zipfile.ZIP_STORED:
+                raise CoverError("mimetype is no longer uncompressed")
+        for name in names:
+            data = after.read(name)
+            if name == entry:
+                if data != image:
+                    raise CoverError("the new cover did not survive")
+            elif data != expected[name]:
+                raise CoverError("%s changed, and should not have" % name)
+
+
+def write_out(temporary, path, backup):
+    """Put the rewritten file in place, durably.
+
+    fsync before the rename because this runs on a memory card that gets
+    unplugged: without it the directory entry can reach the card while the
+    data behind it has not, which is a file that looks right in a listing
+    and is rubble when opened.
+    """
+    with open(temporary, "rb+") as handle:
+        handle.flush()
+        os.fsync(handle.fileno())
+    if backup:
+        shutil.copy2(path, path + ".bak")
+    os.replace(temporary, path)
+    try:
+        directory = os.open(os.path.dirname(os.path.abspath(path)),
+                            os.O_RDONLY)
+        try:
+            os.fsync(directory)
+        finally:
+            os.close(directory)
+    except (OSError, AttributeError):
+        # Directory fsync is not available everywhere; the file's own
+        # fsync has already done the part that matters.
+        pass
+
+
 def rewrite_epub(path, entry, image, backup):
     """Copy the archive across with one entry replaced.
 
-    Written beside the original and renamed over it, so an interrupted run
-    leaves the book as it was rather than half a file.
+    Written beside the original, read back and checked, and only then
+    renamed over it -- so a rewrite that went wrong in any way at all
+    leaves the book exactly as it was.
     """
     directory = os.path.dirname(os.path.abspath(path))
     handle, temporary = tempfile.mkstemp(suffix=".epub", dir=directory)
@@ -508,9 +573,8 @@ def rewrite_epub(path, entry, image, backup):
                     copy.internal_attr = info.internal_attr
                     copy.create_system = info.create_system
                     target.writestr(copy, data)
-        if backup:
-            shutil.copy2(path, path + ".bak")
-        os.replace(temporary, path)
+        verify_epub(path, temporary, entry, image)
+        write_out(temporary, path, backup)
     except BaseException:
         if os.path.exists(temporary):
             os.remove(temporary)
@@ -759,7 +823,8 @@ def find_covr_data(data):
 def rewrite_m4b_cover(path, image, backup):
     """Overwrite the cover in place, keeping moov exactly as long."""
     with open(path, "rb") as handle:
-        data = bytearray(handle.read())
+        original = handle.read()
+    data = bytearray(original)
     found = find_covr_data(data)
     if found is None:
         raise CoverError("no cover atom to replace")
@@ -789,14 +854,28 @@ def rewrite_m4b_cover(path, image, backup):
         data[cut + 4:cut + 8] = b"free"
         for offset in range(cut + 8, covr_end):
             data[offset] = 0
+    # Prove it before it goes anywhere near the original: the cover is the
+    # only thing allowed to have changed, the file may not change length,
+    # and the atom tree has to still parse from end to end.
+    if len(data) != len(original):
+        raise CoverError("the file changed length")
+    if (data[:covr_start] != original[:covr_start] or
+            data[covr_end:] != original[covr_end:]):
+        raise CoverError("something outside the cover changed")
+    verify = find_covr_data(data)
+    if verify is None or bytes(data[verify[0]:verify[0] + len(image)]) \
+            != image:
+        raise CoverError("the new cover did not survive")
+    for kind, start, header_end, end in atom_children(data, 0, len(data)):
+        if end > len(data):
+            raise CoverError("the atom tree no longer adds up")
+
     directory = os.path.dirname(os.path.abspath(path))
     handle, temporary = tempfile.mkstemp(suffix=".m4b", dir=directory)
     try:
         with os.fdopen(handle, "wb") as out:
             out.write(data)
-        if backup:
-            shutil.copy2(path, path + ".bak")
-        os.replace(temporary, path)
+        write_out(temporary, path, backup)
     except BaseException:
         if os.path.exists(temporary):
             os.remove(temporary)
@@ -970,8 +1049,9 @@ def main():
         "--shrink", action="store_true",
         help="actually rewrite; without it nothing is changed")
     parser.add_argument(
-        "--backup", action="store_true",
-        help="keep the original alongside as <name>.bak")
+        "--no-backup", dest="backup", action="store_false",
+        help="do not keep the original alongside as <name>.bak. These "
+             "are books and music, so a backup is kept by default")
     parser.add_argument(
         "--verbose", action="store_true",
         help="mention the books that were already small enough")

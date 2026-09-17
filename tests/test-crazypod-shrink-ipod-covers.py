@@ -339,6 +339,54 @@ def test_the_cap_follows_the_folder(directory):
     assert "would replace" in book, book
 
 
+def test_a_rewrite_that_fails_its_check_never_lands(directory):
+    """The safety net: if anything about the new archive is wrong, the
+    book on disk must be the one that was there before."""
+    path = os.path.join(directory, "guarded.epub")
+    build_epub(path, "cover.jpg", jpeg_bytes(1400, 2100), "property",
+               extra={"OEBPS/notes.txt": "keep me"})
+    before = open(path, "rb").read()
+
+    # Drop an entry on the way through, which is exactly the shape of
+    # damage the check exists to catch.
+    original_writestr = zipfile.ZipFile.writestr
+
+    def skip_notes(self, info, data, *args, **kwargs):
+        name = info.filename if hasattr(info, "filename") else info
+        if name.endswith("notes.txt"):
+            return None
+        return original_writestr(self, info, data, *args, **kwargs)
+
+    zipfile.ZipFile.writestr = skip_notes
+    try:
+        shrink.rewrite_epub(path, "OEBPS/cover.jpg",
+                            jpeg_bytes(85, 128), backup=False)
+        raise AssertionError("a damaged rewrite must be refused")
+    except shrink.CoverError as error:
+        assert "different entries" in str(error), error
+    finally:
+        zipfile.ZipFile.writestr = original_writestr
+
+    assert open(path, "rb").read() == before, "the book was modified"
+    leftovers = [name for name in os.listdir(directory)
+                 if name.startswith("tmp")]
+    assert not leftovers, leftovers
+
+
+def test_backups_are_kept_unless_refused(directory):
+    path = os.path.join(directory, "backed-up.epub")
+    build_epub(path, "cover.jpg", jpeg_bytes(1400, 2100), "property")
+    code, output = run_tool(path, "--shrink", "--cap", "64")
+    # No image tool here, so the run stops at the scaler -- what matters
+    # is that the option exists and the default is to keep a backup.
+    assert "--no-backup" in subprocess.run(
+        [sys.executable, TOOL, "--help"],
+        stdout=subprocess.PIPE).stdout.decode()
+    assert "--backup" not in subprocess.run(
+        [sys.executable, TOOL, "--help"],
+        stdout=subprocess.PIPE).stdout.decode().replace("--no-backup", "")
+
+
 def test_m4b_cover_is_found(directory):
     path = os.path.join(directory, "found.m4b")
     build_m4b(path, jpeg_bytes(900, 900))
@@ -479,6 +527,10 @@ def main():
         folders = os.path.join(directory, "folders")
         os.mkdir(folders)
         test_the_cap_follows_the_folder(folders)
+        guarded = os.path.join(directory, "guarded")
+        os.mkdir(guarded)
+        test_a_rewrite_that_fails_its_check_never_lands(guarded)
+        test_backups_are_kept_unless_refused(guarded)
         test_m4b_cover_is_found(singles)
         test_m4b_rewrite_moves_nothing(singles)
         test_m4b_refuses_a_larger_cover(singles)
