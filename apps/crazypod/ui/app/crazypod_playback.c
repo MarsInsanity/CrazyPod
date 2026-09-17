@@ -161,7 +161,18 @@ static int current_track_index(void)
 
 static bool copy_current_track(struct crazypod_track *track)
 {
-    return crazypod_music_copy_track(current_track_index(), track);
+    if(crazypod_music_copy_track(current_track_index(), track))
+        return true;
+    /*
+     * A book plays through the music queue but is not in the music
+     * catalog, and this was the third place that looked a track up on its
+     * own. Without the fallback the timer below decided there was no track
+     * while the screen had plainly drawn one, so it re-rendered Now Playing
+     * on every tick and returned before it ever updated the position --
+     * which is a progress bar stuck at 0:00 of 0:00 under a title and a
+     * cover that had loaded perfectly well.
+     */
+    return crazypod_audiobooks_describe_current(track);
 }
 
 static bool copy_track_at_queue_index(int queue_index,
@@ -885,7 +896,9 @@ void crazypod_playback_update_timer(lv_timer_t *timer)
     crazypod_now_capsule_update(
         have_track ? &track : NULL,
         id3 != NULL ? (uint32_t)id3->elapsed : 0,
-        id3 != NULL ? (uint32_t)id3->length : 0);
+        id3 != NULL && id3->length > 0
+            ? (uint32_t)id3->length
+            : crazypod_audiobooks_current_length_ms());
     if(crazypod_ui_routes_depth() <= 0 ||
        current_route()->route != MUSIC_ROUTE_NOW_PLAYING)
         return;
