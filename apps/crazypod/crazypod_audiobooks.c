@@ -485,6 +485,19 @@ bool crazypod_audiobook_probe(int index)
                  probe_entry.albumartist);
     if(probe_entry.length > 0)
         book->length_ms = (uint32_t)probe_entry.length;
+    /*
+     * An m4b carries its cover inside itself, and nothing was carrying it
+     * out of here: the home widget asked the artwork layer for a cover,
+     * got a track record with no embedded art and no cover file beside
+     * the book, and drew nothing. The catalog does this for music in
+     * exactly this shape; a book is no different.
+     */
+    if(probe_entry.has_embedded_albumart) {
+        book->artwork_embedded = true;
+        book->artwork_offset = (uint32_t)probe_entry.albumart.pos;
+        book->artwork_size = (uint32_t)probe_entry.albumart.size;
+        book->artwork_type = (uint8_t)probe_entry.albumart.type;
+    }
     {
         uint32_t duration = container_duration_ms(book->path);
 
@@ -708,6 +721,12 @@ bool crazypod_audiobooks_describe_current(struct crazypod_track *track)
     snprintf(track->album_artist, sizeof(track->album_artist), "%s",
              book->author);
     track->duration_ms = book->length_ms;
+    track->artwork_embedded = book->artwork_embedded;
+    track->artwork_offset = book->artwork_offset;
+    track->artwork_size = book->artwork_size;
+    track->artwork_type = book->artwork_type;
+    track->source_size = book->size;
+    track->source_mtime = book->mtime;
     return true;
 }
 

@@ -30,6 +30,11 @@ struct crazypod_audiobook {
     uint32_t mtime;
     uint32_t length_ms;
     uint32_t position_ms;
+    /* The cover inside the file, for every surface that draws one. */
+    uint32_t artwork_offset;
+    uint32_t artwork_size;
+    uint8_t artwork_type;
+    bool artwork_embedded;
     bool details_loaded;
     bool favorite;
 };
