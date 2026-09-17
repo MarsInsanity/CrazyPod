@@ -408,6 +408,8 @@ void crazypod_audiobooks_init(void)
 
 void crazypod_audiobooks_scan(void)
 {
+    long started = current_tick;
+
     book_count = 0;
     chapter_count = 0;
     chapters_index = -1;
@@ -417,6 +419,12 @@ void crazypod_audiobooks_scan(void)
     scan_directory(BOOKS_DIRECTORY, 0, true);
     sort_books();
     scan_done = true;
+    /* It walks two directory trees, and it is one of the three things the
+     * Books preview can be inside when it stops for seconds. */
+    if(current_tick - started >= HZ / 4)
+        crazypod_diag_log("bookscan", "audiobooks n=%d ms=%ld",
+                          book_count,
+                          (current_tick - started) * 1000 / HZ);
 }
 
 bool crazypod_audiobooks_scan_needed(void)
@@ -447,6 +455,8 @@ bool crazypod_audiobook_probe(int index)
         index >= 0 && index < book_count ? &books[index] : NULL;
     int fd;
     bool ok;
+    long probe_start;
+    long probe_ticks;
 
     if(book == NULL)
         return false;
@@ -455,9 +465,11 @@ bool crazypod_audiobook_probe(int index)
     fd = open(book->path, O_RDONLY);
     if(fd < 0)
         return false;
+    probe_start = current_tick;
     memset(&probe_entry, 0, sizeof(probe_entry));
     ok = get_metadata(&probe_entry, fd, book->path);
     close(fd);
+    probe_ticks = current_tick - probe_start;
     book->details_loaded = true;
     if(!ok)
         return true;
@@ -491,12 +503,13 @@ bool crazypod_audiobook_probe(int index)
         crazypod_diag_log(
             "book",
             "tagtitle=[%s] tagartist=[%s] using=[%s] "
-            "id3len=%ld mvhd=%lu ch=%d",
+            "id3len=%ld mvhd=%lu ch=%d tag=%ldms",
             probe_entry.title != NULL ? probe_entry.title : "",
             probe_entry.artist != NULL ? probe_entry.artist : "",
             book->title,
             (long)probe_entry.length, (unsigned long)duration,
-            crazypod_audiobook_chapter_count(index));
+            crazypod_audiobook_chapter_count(index),
+            probe_ticks * 1000 / HZ);
         if(duration > 0)
             book->length_ms = duration;
     }

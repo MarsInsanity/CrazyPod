@@ -577,7 +577,15 @@ void crazypod_books_preview_render(
             parent, route_audiobook_index(state), metadata_font);
         return;
     }
-    if(index >= 0 && state->route != BOOKS_ROUTE_MENU)
+    /*
+     * The probe opens the epub and unzips several entries out of it, which
+     * is the same kind of work as decoding the cover and costs more. Last
+     * round held the cover back until the wheel stopped and left this call
+     * running on every step, which is why the list still froze while
+     * scrolling. It waits for the same settle now.
+     */
+    if(index >= 0 && state->route != BOOKS_ROUTE_MENU &&
+       crazypod_book_preview_cover_settled(current_tick))
         crazypod_book_probe(index);
     book = crazypod_book_get(index);
     crazypod_books_feature_item_title(

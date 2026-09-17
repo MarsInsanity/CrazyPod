@@ -9,6 +9,7 @@
 
 #include "dir.h"
 #include "file.h"
+#include "kernel.h"
 #include "rbunicode.h"
 
 #include "crazypod_books.h"
@@ -1132,11 +1133,28 @@ static bool prepare_epub_book(int index)
     return true;
 }
 
+/*
+ * One build of the Books menu took 13.5 seconds, and the cover timing
+ * added last round said nothing because this is the half that costs and
+ * it returns before the cover is ever reached. Say what a slow probe
+ * cost, and whether it got anywhere.
+ */
+#define BOOK_PROBE_SLOW_TICKS (HZ / 4)
+
+static void report_probe_cost(int index, long ticks, bool ok)
+{
+    if(ticks < BOOK_PROBE_SLOW_TICKS)
+        return;
+    crazypod_diag_log("bookprobe", "i=%d ms=%ld%s", index,
+                      ticks * 1000 / HZ, ok ? "" : " failed");
+}
+
 bool crazypod_book_probe(int index)
 {
     struct crazypod_book *book =
         index >= 0 && index < book_count ? &books[index] : NULL;
     char title[96];
+    long probe_start;
 
     if(book == NULL)
         return false;
@@ -1146,13 +1164,27 @@ bool crazypod_book_probe(int index)
         book->details_loaded = true;
         return true;
     }
+    /*
+     * A probe that has already failed once must not be tried again on the
+     * next render. It opens the epub and unzips several entries out of it,
+     * and on failure nothing was recorded -- so a book the parser cannot
+     * read paid the whole cost again every time the preview drew it, which
+     * is a list that freezes on the same row every time you reach it.
+     */
+    if(book->details_failed)
+        return false;
     title[0] = '\0';
+    probe_start = current_tick;
     if(!crazypod_epub_probe(
            book->path, book->size, book->mtime,
            title, sizeof(title),
            book->author, sizeof(book->author),
-           book->cover_path, sizeof(book->cover_path)))
+           book->cover_path, sizeof(book->cover_path))) {
+        book->details_failed = true;
+        report_probe_cost(index, current_tick - probe_start, false);
         return false;
+    }
+    report_probe_cost(index, current_tick - probe_start, true);
     if(title[0] != '\0')
         snprintf(book->title, sizeof(book->title), "%s", title);
     book->details_loaded = true;

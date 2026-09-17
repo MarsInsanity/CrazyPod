@@ -28,6 +28,10 @@ struct crazypod_book {
     uint32_t bookmark;
     bool favorite;
     bool details_loaded;
+    /* A probe that failed, this boot. Not written to the catalog: a file
+     * that is unreadable now may be readable after a remount, and the
+     * point is only to stop retrying it on every render. */
+    bool details_failed;
 };
 
 typedef void (*crazypod_book_progress_callback)(

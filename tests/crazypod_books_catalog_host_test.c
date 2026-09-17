@@ -269,6 +269,10 @@ void crazypod_epub_remove_cache(const char *path)
     (void)path;
 }
 
+/* The device's kernel tick, standing still: the catalog reads it to time
+ * its epub probes, and this suite never probes one. */
+long current_tick;
+
 void crazypod_diag_log(const char *tag, const char *format, ...)
 {
     (void)tag;
