@@ -275,7 +275,10 @@ static void render_books_menu_stage(
         int audiobook_count;
         lv_obj_t *disc;
 
-        if(crazypod_audiobooks_scan_needed())
+        /* Same reason as the audiobook preview: this walks two directory
+         * trees, and the wheel is no place to do it. */
+        if(crazypod_audiobooks_scan_needed() &&
+           crazypod_book_preview_cover_settled(current_tick))
             crazypod_audiobooks_scan();
         audiobook_count = crazypod_audiobooks_count();
         *detail = audiobook_count > 0
@@ -481,9 +484,18 @@ static void render_audiobook_preview(
     lv_obj_t *text_panel;
     int chapter_count;
 
-    if(crazypod_audiobooks_scan_needed())
-        crazypod_audiobooks_scan();
-    crazypod_audiobook_probe(index);
+    /*
+     * Both of these read the card: the scan walks two directory trees, and
+     * the probe runs the tag parser over a multi-hour m4b and its chapter
+     * table. Doing them while the wheel is turning is the other half of the
+     * freeze, and Recents and Favourites -- the two the owner called the
+     * worst -- are exactly where audiobooks appear in the list.
+     */
+    if(crazypod_book_preview_cover_settled(current_tick)) {
+        if(crazypod_audiobooks_scan_needed())
+            crazypod_audiobooks_scan();
+        crazypod_audiobook_probe(index);
+    }
     book = crazypod_audiobook_get(index);
 
     crazypod_preview_make_plinth(

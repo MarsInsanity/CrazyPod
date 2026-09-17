@@ -481,15 +481,22 @@ bool crazypod_audiobook_probe(int index)
          * progress bar is wrong, so record what the two duration sources
          * and the tag parser actually said about this file.
          */
+        /*
+         * Print the tag's own title separately from the one in use. They
+         * are the same string when the tag has nothing, because the
+         * fallback is the file name -- and one line saying "title=" cannot
+         * tell "the tag says this" from "the tag said nothing", which is
+         * the open question about this book.
+         */
         crazypod_diag_log(
             "book",
-            "id3len=%ld mvhd=%lu freq=%ld codec=%d samples=%ld "
-            "ch=%d title=%s",
+            "tagtitle=[%s] tagartist=[%s] using=[%s] "
+            "id3len=%ld mvhd=%lu ch=%d",
+            probe_entry.title != NULL ? probe_entry.title : "",
+            probe_entry.artist != NULL ? probe_entry.artist : "",
+            book->title,
             (long)probe_entry.length, (unsigned long)duration,
-            (long)probe_entry.frequency, (int)probe_entry.codectype,
-            (long)probe_entry.samples,
-            crazypod_audiobook_chapter_count(index),
-            book->title);
+            crazypod_audiobook_chapter_count(index));
         if(duration > 0)
             book->length_ms = duration;
     }
