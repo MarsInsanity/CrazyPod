@@ -23,6 +23,7 @@ struct crazypod_wheel_accel_state {
     long last_tick;
     int direction;
     int rate;      /* smoothed clicks per second */
+    int rate_scaled;
     bool valid;
 };
 

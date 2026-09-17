@@ -341,6 +341,37 @@ static void test_wheel_accel_fast_spin_multiplies(void)
     assert(step >= 4 * 4);
 }
 
+/*
+ * The reported fault: spinning as hard as the wheel can be spun still
+ * crawled. One click an event at forty clicks a second is a full spin, and
+ * it has to be worth more than the six it used to be worth.
+ */
+static void test_wheel_accel_a_full_spin_crosses_a_long_list(void)
+{
+    struct crazypod_wheel_accel_state state;
+    int step = 0;
+    int i;
+
+    crazypod_wheel_accel_reset(&state);
+    /* Two clicks every five ticks is forty a second. */
+    for(i = 0; i < 16; ++i)
+        step = crazypod_wheel_accel_step(
+            &state, 1, 2, 100 + i * 5, 32, 100, 40);
+    assert(step == 32);
+    /* A steady middling turn is quicker than it was, and still not a leap. */
+    crazypod_wheel_accel_reset(&state);
+    for(i = 0; i < 16; ++i)
+        step = crazypod_wheel_accel_step(
+            &state, 1, 1, 100 + i * 5, 32, 100, 40);
+    assert(step == 4);
+    /* The ceiling is still the ceiling, however hard the wheel is turned. */
+    crazypod_wheel_accel_reset(&state);
+    for(i = 0; i < 16; ++i)
+        step = crazypod_wheel_accel_step(
+            &state, 1, 8, 100 + i * 2, 32, 100, 40);
+    assert(step == 40);
+}
+
 static void test_wheel_accel_a_slow_screen_does_not_accelerate(void)
 {
     struct crazypod_wheel_accel_state slow;
@@ -589,6 +620,7 @@ int main(void)
     test_alpha_jump_needs_sustained_spin();
     test_wheel_accel_slow_turn_stays_single();
     test_wheel_accel_fast_spin_multiplies();
+    test_wheel_accel_a_full_spin_crosses_a_long_list();
     test_wheel_accel_a_slow_screen_does_not_accelerate();
     test_wheel_accel_pause_starts_from_rest();
     test_wheel_accel_turning_back_starts_from_rest();

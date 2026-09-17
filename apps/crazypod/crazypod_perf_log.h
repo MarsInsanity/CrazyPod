@@ -29,6 +29,12 @@ void crazypod_perf_log_lv_end(void);
  */
 void crazypod_perf_log_step_begin(void);
 void crazypod_perf_log_present_done(void);
+/*
+ * What the wheel was actually doing: the fastest turn measured in the
+ * window, in clicks a second, and the furthest one event moved. The
+ * acceleration curve was written against a guess at both.
+ */
+void crazypod_perf_log_wheel(int rate, int step);
 /* Where the time before LVGL runs goes. */
 enum {
     CRAZYPOD_PERF_PHASE_SERVICES = 0,
@@ -70,6 +76,11 @@ static inline void crazypod_perf_log_lv_begin(void) {}
 static inline void crazypod_perf_log_lv_end(void) {}
 static inline void crazypod_perf_log_step_begin(void) {}
 static inline void crazypod_perf_log_present_done(void) {}
+static inline void crazypod_perf_log_wheel(int rate, int step)
+{
+    (void)rate;
+    (void)step;
+}
 #define CRAZYPOD_PERF_PHASE_SERVICES 0
 #define CRAZYPOD_PERF_PHASE_SCHEDULER 1
 static inline void crazypod_perf_log_phase_begin(void) {}

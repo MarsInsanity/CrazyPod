@@ -2,14 +2,25 @@
 
 #include "crazypod_wheel_accel.h"
 
-/* Clicks per second, and what each band multiplies the base step by. */
+/*
+ * Clicks per second, and what each band multiplies the base step by.
+ *
+ * The bottom of the table is what a careful turn feels like and has not
+ * moved. The top is for the spin you make to cross four thousand songs,
+ * and it was far too gentle: six times a four-click event, against a
+ * ceiling of twelve, came to about a hundred and twenty songs a second --
+ * half a minute from A to Z. The curve now keeps climbing past the point
+ * an ordinary turn reaches, so the hardest spin the wheel can take is
+ * worth spinning.
+ */
 static const struct {
     int rate;
     int multiplier;
 } bands[] = {
-    { 34, 6 },
-    { 26, 4 },
-    { 18, 3 },
+    { 40, 16 },
+    { 32, 11 },
+    { 26, 7 },
+    { 18, 4 },
     { 10, 2 },
     {  0, 1 },
 };
@@ -55,6 +66,7 @@ int crazypod_wheel_accel_step(
        gap < 0 || gap > idle_ticks) {
         /* A new spin starts from rest however fast the last one ended. */
         state->rate = 0;
+        state->rate_scaled = 0;
         state->direction = sign;
         state->valid = true;
     }
@@ -66,8 +78,18 @@ int crazypod_wheel_accel_step(
         if(gap < 1)
             gap = 1;
         rate = (int)((long)clicks * ticks_per_second / gap);
-        /* Smooth, so one quick flick in a slow turn does not accelerate. */
-        state->rate = (state->rate * 2 + rate) / 3;
+        /*
+         * Smooth, so one quick flick in a slow turn does not accelerate.
+         *
+         * Scaled by eight, and rounded on the way out. Averaged in whole
+         * clicks per second, a two-thirds average never arrives at the rate
+         * it is averaging -- truncation stops it two or three short, and
+         * two or three short is exactly enough to put the top of the curve
+         * out of reach of any spin a hand can make.
+         */
+        state->rate_scaled =
+            (state->rate_scaled * 2 + rate * 8) / 3;
+        state->rate = (state->rate_scaled + 4) / 8;
     }
     state->last_tick = now;
 

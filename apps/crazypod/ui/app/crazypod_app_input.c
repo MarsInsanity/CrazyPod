@@ -14,6 +14,7 @@
 
 #include "../../accessory/crazypod_iap_simple.h"
 #include "../../crazypod_apps.h"
+#include "../../crazypod_perf_log.h"
 #include "../../crazypod_screen_recording.h"
 #include "../../crazypod_screenshot.h"
 #include "../features/music/crazypod_music_feature.h"
@@ -110,6 +111,16 @@ static bool remote_home_select_held;
     ((HZ * WHEEL_ACCEL_IDLE_MS / 1000) > 0 \
         ? (HZ * WHEEL_ACCEL_IDLE_MS / 1000) : 1)
 #define ALPHA_JUMP_ENABLED 0
+/*
+ * The clicks one event may carry, and the items one event may move.
+ * The first guards against a driver count that makes no sense; the
+ * second is what the acceleration curve is allowed to reach at a full
+ * spin -- roughly four hundred songs a second on the panel's own frame
+ * rate, where twelve was a hundred and twenty.
+ */
+#define WHEEL_CLICKS_MAX 12
+#define WHEEL_ACCEL_MAX_STEP 40
+#define WHEEL_ALBUM_FLOW_MAX_STEP 15
 #define ALPHA_JUMP_STEP_THRESHOLD 24
 #define ALPHA_JUMP_MIN_EVENTS 4
 #define REMOTE_MULTITAP_WINDOW_MS 500
@@ -159,25 +170,35 @@ static void move_wheel(
     struct route_state *state, int direction,
     intptr_t data, long now)
 {
-    int maximum =
+    /*
+     * How far one wheel event may move the selection. It used to be the
+     * same number as the cap on the clicks themselves, which meant the
+     * acceleration could never do more than the driver had already done:
+     * twelve, whatever the curve said. Album Flow keeps a low ceiling
+     * because every step of it decodes a cover.
+     */
+    int ceiling =
         state->route == MUSIC_ROUTE_NOW_PLAYING
             ? 1
             : state->route == MUSIC_ROUTE_ALBUM_FLOW
-                ? 15 : 12;
+                ? WHEEL_ALBUM_FLOW_MAX_STEP : WHEEL_ACCEL_MAX_STEP;
     /*
      * A skeuomorphic preview redraws far too much to be scrolled quickly,
      * and Now Playing moves one track at a time whatever the wheel does.
      */
     bool single = crazypod_menu_preview_is_skeuomorphic_route(state->route) ||
-        maximum <= 1;
+        ceiling <= 1;
     int steps = single
         ? 1
         : crazypod_wheel_accel_step(
-              &wheel_accel, direction, wheel_step(data, maximum),
-              now, WHEEL_ACCEL_IDLE_TICKS, HZ, maximum);
+              &wheel_accel, direction,
+              wheel_step(data, WHEEL_CLICKS_MAX),
+              now, WHEEL_ACCEL_IDLE_TICKS, HZ, ceiling);
 
     if(single)
         crazypod_wheel_accel_reset(&wheel_accel);
+    else
+        crazypod_perf_log_wheel(wheel_accel.rate, steps);
     bool alpha_available = ALPHA_JUMP_ENABLED &&
         crazypod_music_feature_alpha_jump_available(state);
 

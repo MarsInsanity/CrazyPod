@@ -75,6 +75,9 @@ static struct {
     unsigned step_present_total;
     unsigned step_max_us;
     unsigned step_total_us;
+    unsigned wheel_events;
+    int wheel_rate_max;
+    int wheel_step_max;
     unsigned phase_mark_us;
     unsigned phase_total_us[CRAZYPOD_PERF_PHASE_COUNT];
     /* Inside the LVGL refresh timer: relayout, area joining, drawing. */
@@ -330,6 +333,15 @@ void crazypod_perf_log_phase_end(int phase)
         perf.phase_total_us[phase] += USEC_TIMER - perf.phase_mark_us;
 }
 
+void crazypod_perf_log_wheel(int rate, int step)
+{
+    ++perf.wheel_events;
+    if(rate > perf.wheel_rate_max)
+        perf.wheel_rate_max = rate;
+    if(step > perf.wheel_step_max)
+        perf.wheel_step_max = step;
+}
+
 void crazypod_perf_log_step_begin(void)
 {
     /* A step that never reached the panel would otherwise block every
@@ -414,6 +426,9 @@ static void reset_window(void)
     perf.step_present_total = 0;
     perf.step_max_us = 0;
     perf.step_total_us = 0;
+    perf.wheel_events = 0;
+    perf.wheel_rate_max = 0;
+    perf.wheel_step_max = 0;
     memset(perf.phase_total_us, 0, sizeof(perf.phase_total_us));
     memset(perf.refr_total_us, 0, sizeof(perf.refr_total_us));
     perf.refr_layout_max_us = 0;
@@ -573,6 +588,7 @@ static void append_header(void)
                "pmax=max_present_us home=renders/timeouts "
                "wr=prev_write_us seek=last_chapter_seek_ms objs=screen_objects "
                "step=count/avg_ms/gate_ms/render_ms/present_ms/worst_ms+dropped "
+               "whl=events/fastest_clicks_per_second/furthest_step "
                "art=external/embedded/none/decoded/failed/unsupported "
                "pre=services_ms/scheduler_ms "
                "refr=layout_ms/join_ms/draw_ms/flushwait_ms/layout_max_ms "
@@ -646,6 +662,12 @@ static void format_line(long now)
     else
         snprintf(text, sizeof(text), " step=0+%u", perf.step_dropped);
     append(text);
+    if(perf.wheel_events > 0) {
+        snprintf(text, sizeof(text), " whl=%u/%d/%d",
+                 perf.wheel_events, perf.wheel_rate_max,
+                 perf.wheel_step_max);
+        append(text);
+    }
     snprintf(text, sizeof(text), " pre=%u/%u",
              perf.phase_total_us[CRAZYPOD_PERF_PHASE_SERVICES] / 1000,
              perf.phase_total_us[CRAZYPOD_PERF_PHASE_SCHEDULER] / 1000);
