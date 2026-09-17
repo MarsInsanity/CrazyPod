@@ -305,6 +305,42 @@ def report(path, note):
     print("%s: %s" % (path, note))
 
 
+# ---- What a file that is not an epub actually is -------------------------
+
+def describe_file(path):
+    """A .epub that will not open as a zip is nearly always something
+    else wearing the extension. Say which, because what to do about it
+    differs -- and CrazyPod cannot read any of them either, so a book like
+    this shows on the device with no title and no cover."""
+    try:
+        with open(path, "rb") as handle:
+            head = handle.read(132)
+        size = os.path.getsize(path)
+    except OSError as error:
+        return "cannot be opened: %s" % error
+
+    if size == 0:
+        return "the file is empty -- the copy to the device never finished"
+    if head[:4] == b"PK\x03\x04" or head[:2] == b"PK":
+        return ("a zip that is damaged or was copied part-way. Copy it "
+                "over again")
+    if head[60:68] in (b"BOOKMOBI", b"TEXtREAd"):
+        return ("a Kindle book (MOBI/AZW) named .epub. Convert it to EPUB "
+                "with Calibre, or re-download it as EPUB")
+    if head[:8] == b"\xeaDRMION\xee" or head[:4] == b"CONT":
+        return ("a Kindle KFX book, and encrypted. It cannot be converted "
+                "or read -- get the book as EPUB instead")
+    if head[:4] == b"%PDF":
+        return "a PDF named .epub. Convert it to EPUB with Calibre"
+    if head[:4] == b"\x00\x05\x16\x07":
+        return ("a macOS resource fork, not a book. Safe to delete, and "
+                "'dot_clean' removes them all at once")
+    if head[:5].lower() in (b"<?xml", b"<html"):
+        return "HTML or XML named .epub. Convert it to EPUB with Calibre"
+    return ("not a format this recognises: it starts %s" %
+            " ".join("%02x" % byte for byte in head[:8]))
+
+
 def handle_epub(path, options, tool, counts):
     cap = options.cap_books
     try:
@@ -316,9 +352,9 @@ def handle_epub(path, options, tool, counts):
                     report(path, "no cover image in the archive")
                 return
             data = archive.read(entry)
-    except (zipfile.BadZipFile, OSError) as error:
+    except (zipfile.BadZipFile, OSError):
         counts["unreadable"] += 1
-        report(path, "cannot read: %s" % error)
+        report(path, "not an epub: %s" % describe_file(path))
         return
 
     size = image_size(data)
@@ -725,6 +761,10 @@ def main():
                 "audiobook", "unreadable", "failed"):
         if counts[key]:
             print("%-14s %d" % (key, counts[key]))
+    if counts["unreadable"]:
+        print("\nThe unreadable ones are not epubs at all. CrazyPod "
+              "cannot read them either:\nthey appear in Books with no "
+              "title and no cover. Convert or remove them.")
     if not options.shrink and counts["would shrink"]:
         print("\nNothing was changed. Pass --shrink to rewrite these.")
     return 1 if counts["failed"] else 0

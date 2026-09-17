@@ -224,6 +224,37 @@ def test_it_works_on_the_volume_it_sits_in(directory):
     assert "with no arguments at all" in output, output
 
 
+def test_a_file_that_is_not_an_epub_is_named(directory):
+    """A .epub that will not open as a zip is nearly always something else
+    wearing the extension, and which one decides what to do about it."""
+    cases = {
+        "kindle.epub": (b"\x00" * 60 + b"BOOKMOBI" + b"\x00" * 64,
+                        "Kindle book (MOBI/AZW)"),
+        "kfx.epub": (b"\xeaDRMION\xee" + b"\x00" * 120, "KFX"),
+        "pdf.epub": (b"%PDF-1.7\n" + b"\x00" * 120, "PDF"),
+        "empty.epub": (b"", "empty"),
+        "half.epub": (b"PK\x03\x04" + b"\x00" * 8, "damaged"),
+        "fork.epub": (b"\x00\x05\x16\x07" + b"\x00" * 60,
+                      "resource fork"),
+        "page.epub": (b"<html><body>hi</body></html>", "HTML"),
+    }
+    for name, (data, expected) in cases.items():
+        path = os.path.join(directory, name)
+        with open(path, "wb") as handle:
+            handle.write(data)
+        described = shrink.describe_file(path)
+        assert expected in described, (name, described)
+
+    code, output = run_tool(directory)
+    assert code == 0, output
+    assert "not an epub" in output, output
+    assert "CrazyPod cannot read them either" in output, output
+    # Naming the problem is not the same as touching the file.
+    for name in cases:
+        with open(os.path.join(directory, name), "rb") as handle:
+            assert handle.read() == cases[name][0], name
+
+
 def test_m4b_cover_is_found(directory):
     path = os.path.join(directory, "found.m4b")
     build_m4b(path, jpeg_bytes(900, 900))
@@ -356,6 +387,9 @@ def main():
         onboard = os.path.join(directory, "ipod")
         os.mkdir(onboard)
         test_it_works_on_the_volume_it_sits_in(onboard)
+        broken = os.path.join(directory, "broken")
+        os.mkdir(broken)
+        test_a_file_that_is_not_an_epub_is_named(broken)
         test_m4b_cover_is_found(singles)
         test_m4b_rewrite_moves_nothing(singles)
         test_m4b_refuses_a_larger_cover(singles)
