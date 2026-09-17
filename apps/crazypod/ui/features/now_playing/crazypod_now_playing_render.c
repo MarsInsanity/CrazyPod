@@ -8,6 +8,7 @@
 #include "audio.h"
 
 #include "../../../crazypod_appearance.h"
+#include "../../../crazypod_audiobooks.h"
 #include "../../../crazypod_artwork.h"
 #include "../../../crazypod_artwork_palette.h"
 #include "../../../crazypod_playlist.h"
@@ -100,13 +101,51 @@ static uint32_t fallback_color(
         (54 * red + 183 * green + 19 * blue) >> 8);
 }
 
+/*
+ * Describe the audiobook that is playing as if it were a track.
+ *
+ * A book plays through the music queue but is not in the music catalog, so
+ * the lookup below finds nothing and the screen fell back to "No Track" and
+ * "Local Music", with a length of zero -- which is what you get resuming a
+ * book from Now Playing after a reboot, when nothing has opened the Books
+ * app to put a title on screen.
+ */
+static bool copy_current_audiobook(
+    const char *path, struct crazypod_track *track)
+{
+    int index = crazypod_audiobooks_current_index();
+    const struct crazypod_audiobook *book =
+        index >= 0 ? crazypod_audiobook_get(index) : NULL;
+
+    if(book == NULL)
+        return false;
+    if(index >= 0)
+        (void)crazypod_audiobook_probe(index);
+    book = crazypod_audiobook_get(index);
+    if(book == NULL)
+        return false;
+    memset(track, 0, sizeof(*track));
+    snprintf(track->path, sizeof(track->path), "%s", path);
+    snprintf(track->title, sizeof(track->title), "%s", book->title);
+    snprintf(track->artist, sizeof(track->artist), "%s", book->author);
+    snprintf(track->album, sizeof(track->album), "%s", book->title);
+    snprintf(track->album_artist, sizeof(track->album_artist), "%s",
+             book->author);
+    track->duration_ms = book->length_ms;
+    return true;
+}
+
 static bool copy_current_track(struct crazypod_track *track)
 {
     char path[MAX_PATH];
 
-    return crazypod_queue_copy_path(
-            crazypod_queue_index(), path, sizeof(path)) &&
-        crazypod_music_copy_track(crazypod_music_find_track(path), track);
+    if(!crazypod_queue_copy_path(
+           crazypod_queue_index(), path, sizeof(path)))
+        return false;
+    if(crazypod_music_copy_track(
+           crazypod_music_find_track(path), track))
+        return true;
+    return copy_current_audiobook(path, track);
 }
 
 static void refresh_wave_palette(
