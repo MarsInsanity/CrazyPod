@@ -127,11 +127,28 @@ def atom(kind, payload):
     return struct.pack(">I", len(payload) + 8) + kind + payload
 
 
-def build_m4b(path, cover):
+def png_cover_bytes(width, height):
+    """A real PNG -- the decoder in the tool has to actually read it."""
+    raw = b""
+    for y in range(height):
+        raw += b"\x00" + bytes(
+            ((x * 7) % 256, (y * 5) % 256, 128)[i % 3]
+            for x in range(width) for i in range(3))
+    idat = zlib.compress(raw)
+    header = struct.pack(">IIBBBBB", width, height, 8, 2, 0, 0, 0)
+    out = b"\x89PNG\r\n\x1a\n"
+    for kind, payload in ((b"IHDR", header), (b"IDAT", idat),
+                          (b"IEND", b"")):
+        out += (struct.pack(">I", len(payload)) + kind + payload
+                + struct.pack(">I", zlib.crc32(kind + payload)))
+    return out
+
+
+def build_m4b(path, cover, kind=13):
     """An m4b with the atom nesting a real one has: the cover in
     moov/udta/meta/ilst/covr/data, a chapter table beside it, and an mdat
     after moov whose position is what must not move."""
-    data_atom = atom(b"data", struct.pack(">II", 13, 0) + cover)
+    data_atom = atom(b"data", struct.pack(">II", kind, 0) + cover)
     covr = atom(b"covr", data_atom)
     ilst = atom(b"ilst", covr)
     meta = atom(b"meta", struct.pack(">I", 0) + ilst)
@@ -253,6 +270,73 @@ def test_a_file_that_is_not_an_epub_is_named(directory):
     for name in cases:
         with open(os.path.join(directory, name), "rb") as handle:
             assert handle.read() == cases[name][0], name
+
+
+def test_png_cover_becomes_a_jpeg_the_firmware_can_read(directory):
+    """CrazyPod decodes JPEG and BMP and nothing else, so a PNG cover is
+    converted rather than shrunk -- and the data atom's type flag has to
+    change with it, or the decoder is handed a JPEG and told it is a PNG."""
+    png = png_cover_bytes(64, 64)
+    assert shrink.image_size(png) == (64, 64, True)
+    width, height, rows = shrink.png_decode(png)
+    assert (width, height) == (64, 64) and len(rows) == 64
+    assert len(rows[0]) == 64 * 3
+
+    ppm, out_width, out_height = shrink.png_to_ppm(png, 16)
+    assert (out_width, out_height) == (16, 16)
+    assert ppm.startswith(b"P6\n16 16\n255\n")
+    assert len(ppm) - len(b"P6\n16 16\n255\n") == 16 * 16 * 3
+
+    # Under the cap, the pixels come back unscaled.
+    ppm, out_width, out_height = shrink.png_to_ppm(png, 200)
+    assert (out_width, out_height) == (64, 64)
+
+    path = os.path.join(directory, "png.m4b")
+    build_m4b(path, png + b"\x00" * 400, kind=14)
+    before = open(path, "rb").read()
+    payload = shrink.find_covr_data(before)[0]
+    assert int.from_bytes(before[payload - 8:payload - 4], "big") == 14
+
+    shrink.rewrite_m4b_cover(path, jpeg_bytes(16, 16), backup=False)
+    after = open(path, "rb").read()
+    payload = shrink.find_covr_data(after)[0]
+    assert int.from_bytes(after[payload - 8:payload - 4], "big") == 13, \
+        "the cover is a JPEG now and the atom must say so"
+    assert len(after) == len(before), "moov must not change length"
+
+
+def test_an_epub_png_cover_is_reported_not_mangled(directory):
+    """Writing a JPEG into the archive under the old .png name would be
+    refused by the firmware's own extension check and broken in every
+    other reader. It must be left alone and explained."""
+    path = os.path.join(directory, "png-cover.epub")
+    build_epub(path, "cover.png", png_cover_bytes(600, 900), "property")
+    before = open(path, "rb").read()
+    code, output = run_tool(path, "--shrink")
+    assert code == 0, output
+    assert "600x900 PNG cover" in output, output
+    assert "Convert the cover to JPEG" in output, output
+    assert open(path, "rb").read() == before, "the book must be untouched"
+
+
+def test_the_cap_follows_the_folder(directory):
+    """An .m4a in Music is a song; an .m4a in Audiobooks is a book. The
+    firmware reads them that way, so the caps have to as well."""
+    music = os.path.join(directory, "Music", "Kim Petras")
+    audio = os.path.join(directory, "Audiobooks")
+    os.makedirs(music)
+    os.makedirs(audio)
+    build_m4b(os.path.join(music, "song.m4a"), jpeg_bytes(120, 120))
+    build_m4b(os.path.join(audio, "book.m4a"), jpeg_bytes(120, 120))
+
+    code, output = run_tool(
+        directory, "--cap-music", "200", "--cap-audiobooks", "64",
+        "--verbose")
+    assert code == 0, output
+    song = [line for line in output.splitlines() if "song.m4a" in line][0]
+    book = [line for line in output.splitlines() if "book.m4a" in line][0]
+    assert "nothing to do" in song, song
+    assert "would replace" in book, book
 
 
 def test_m4b_cover_is_found(directory):
@@ -390,6 +474,11 @@ def main():
         broken = os.path.join(directory, "broken")
         os.mkdir(broken)
         test_a_file_that_is_not_an_epub_is_named(broken)
+        test_png_cover_becomes_a_jpeg_the_firmware_can_read(singles)
+        test_an_epub_png_cover_is_reported_not_mangled(singles)
+        folders = os.path.join(directory, "folders")
+        os.mkdir(folders)
+        test_the_cap_follows_the_folder(folders)
         test_m4b_cover_is_found(singles)
         test_m4b_rewrite_moves_nothing(singles)
         test_m4b_refuses_a_larger_cover(singles)

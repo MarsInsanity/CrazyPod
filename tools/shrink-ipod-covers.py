@@ -34,7 +34,8 @@ so nothing above it is ever seen -- it is decoded and thrown away.
 What it touches:
 
   images  album art and loose covers -- cover.jpg, folder.png and the
-          rest -- rewritten in place.
+          rest -- rewritten in place. A PNG is converted to JPEG, since
+          the firmware reads no other kind.
   .epub   the cover image inside the archive is rewritten. Everything
           else in the book is copied across byte for byte, and "mimetype"
           keeps its required place as the first, uncompressed entry.
@@ -46,7 +47,14 @@ What it touches:
           reported and left alone.
 
 Output is always baseline JPEG, which is the only kind this firmware's
-decoder reads -- so this clears progressive covers at the same time.
+decoder reads -- so this clears progressive covers at the same time, and
+converts PNG ones. Needs no image library for that: a PNG is decoded
+here and cjpeg encodes the result.
+
+An epub whose cover is a PNG is reported rather than rewritten. The
+firmware refuses a book cover by its file name, so that cover is not
+being drawn today, and fixing it properly means a second manifest entry
+rather than a JPEG smuggled in under the old name.
 
 It reports by default and changes nothing until you pass --shrink. Needs
 ImageMagick, or djpeg and cjpeg from libjpeg-turbo, only when actually
@@ -60,6 +68,7 @@ import subprocess
 import sys
 import tempfile
 import zipfile
+import zlib
 
 # What CrazyPod actually draws, measured from the firmware:
 #
@@ -150,6 +159,204 @@ def image_size(data):
     return None
 
 
+# ---- PNG, without a library ----------------------------------------------
+#
+# The firmware decodes JPEG and BMP and nothing else, so a PNG cover is not
+# shrunk, it is converted -- otherwise it would never have been drawn at
+# all. djpeg cannot read PNG and ImageMagick is one more thing to install,
+# so the decode is done here: PNG is zlib over filtered scanlines, which is
+# a hundred lines, and cjpeg takes the pixels from there.
+
+PNG_CHANNELS = {0: 1, 2: 3, 3: 1, 4: 2, 6: 4}
+
+
+def png_chunks(data):
+    offset = 8
+    while offset + 8 <= len(data):
+        length = int.from_bytes(data[offset:offset + 4], "big")
+        kind = data[offset + 4:offset + 8]
+        start = offset + 8
+        if start + length > len(data):
+            return
+        yield kind, data[start:start + length]
+        offset = start + length + 4
+
+
+def png_unpack_bits(row, depth, count):
+    """Scanline samples for bit depths below a byte."""
+    out = []
+    per_byte = 8 // depth
+    mask = (1 << depth) - 1
+    for index in range(count):
+        byte = row[index // per_byte]
+        shift = 8 - depth * (index % per_byte + 1)
+        out.append((byte >> shift) & mask)
+    return out
+
+
+def png_unfilter(data, width, height, channels, depth):
+    """Undo the per-scanline filters, returning raw samples per row."""
+    if depth == 16:
+        stride = width * channels * 2
+        step = channels * 2
+    else:
+        stride = (width * channels * depth + 7) // 8
+        step = max(1, channels * depth // 8)
+    rows = []
+    previous = bytearray(stride)
+    offset = 0
+    for _ in range(height):
+        if offset + 1 + stride > len(data):
+            raise CoverError("PNG scanlines are shorter than the header says")
+        kind = data[offset]
+        row = bytearray(data[offset + 1:offset + 1 + stride])
+        offset += 1 + stride
+        if kind == 1:
+            for i in range(step, stride):
+                row[i] = (row[i] + row[i - step]) & 0xFF
+        elif kind == 2:
+            for i in range(stride):
+                row[i] = (row[i] + previous[i]) & 0xFF
+        elif kind == 3:
+            for i in range(stride):
+                left = row[i - step] if i >= step else 0
+                row[i] = (row[i] + ((left + previous[i]) >> 1)) & 0xFF
+        elif kind == 4:
+            for i in range(stride):
+                left = row[i - step] if i >= step else 0
+                up = previous[i]
+                corner = previous[i - step] if i >= step else 0
+                estimate = left + up - corner
+                da = abs(estimate - left)
+                db = abs(estimate - up)
+                dc = abs(estimate - corner)
+                if da <= db and da <= dc:
+                    row[i] = (row[i] + left) & 0xFF
+                elif db <= dc:
+                    row[i] = (row[i] + up) & 0xFF
+                else:
+                    row[i] = (row[i] + corner) & 0xFF
+        elif kind != 0:
+            raise CoverError("unknown PNG filter %d" % kind)
+        rows.append(row)
+        previous = row
+    return rows
+
+
+def png_decode(data):
+    """(width, height, rows of RGB bytes). Alpha is composited on white,
+    which is what a cover on a white page would have looked like."""
+    header = None
+    palette = b""
+    idat = bytearray()
+    for kind, payload in png_chunks(data):
+        if kind == b"IHDR":
+            header = payload
+        elif kind == b"PLTE":
+            palette = payload
+        elif kind == b"IDAT":
+            idat += payload
+        elif kind == b"IEND":
+            break
+    if header is None or len(header) < 13:
+        raise CoverError("PNG has no header")
+    width = int.from_bytes(header[0:4], "big")
+    height = int.from_bytes(header[4:8], "big")
+    depth = header[8]
+    colour = header[9]
+    if header[12] != 0:
+        raise CoverError("interlaced PNG is not supported")
+    if colour not in PNG_CHANNELS:
+        raise CoverError("PNG colour type %d is not supported" % colour)
+    if depth not in (1, 2, 4, 8, 16):
+        raise CoverError("PNG bit depth %d is not supported" % depth)
+    if colour in (2, 4, 6) and depth < 8:
+        raise CoverError("PNG bit depth %d is not valid here" % depth)
+    channels = PNG_CHANNELS[colour]
+    raw = png_unfilter(zlib.decompress(bytes(idat)), width, height,
+                       channels, depth)
+
+    rows = []
+    for row in raw:
+        if depth == 16:
+            samples = [row[i] for i in range(0, len(row), 2)]
+        elif depth == 8:
+            samples = list(row)
+        else:
+            samples = png_unpack_bits(row, depth, width * channels)
+        out = bytearray()
+        maximum = (1 << depth) - 1 if depth < 8 else 255
+        for x in range(width):
+            base = x * channels
+            if colour == 3:
+                index = samples[base] * 3
+                if index + 2 >= len(palette):
+                    raise CoverError("PNG palette is short")
+                red, green, blue = palette[index:index + 3]
+                alpha = 255
+            elif colour == 0:
+                grey = samples[base] * 255 // maximum
+                red = green = blue = grey
+                alpha = 255
+            elif colour == 4:
+                grey = samples[base]
+                red = green = blue = grey
+                alpha = samples[base + 1]
+            elif colour == 2:
+                red, green, blue = samples[base:base + 3]
+                alpha = 255
+            else:
+                red, green, blue, alpha = samples[base:base + 4]
+            if alpha != 255:
+                red = (red * alpha + 255 * (255 - alpha)) // 255
+                green = (green * alpha + 255 * (255 - alpha)) // 255
+                blue = (blue * alpha + 255 * (255 - alpha)) // 255
+            out += bytes((red, green, blue))
+        rows.append(bytes(out))
+    return width, height, rows
+
+
+def box_resize(width, height, rows, target_width, target_height):
+    """Average each destination pixel over the source pixels it covers.
+
+    Cheap, and the right shape of cheap: going from 500 to 100 every
+    source pixel lands in exactly one box, so nothing is dropped the way
+    picking nearest neighbours would drop it.
+    """
+    out = []
+    for y in range(target_height):
+        y0 = y * height // target_height
+        y1 = max(y0 + 1, (y + 1) * height // target_height)
+        line = bytearray()
+        for x in range(target_width):
+            x0 = x * width // target_width
+            x1 = max(x0 + 1, (x + 1) * width // target_width)
+            red = green = blue = count = 0
+            for sy in range(y0, y1):
+                row = rows[sy]
+                for sx in range(x0, x1):
+                    base = sx * 3
+                    red += row[base]
+                    green += row[base + 1]
+                    blue += row[base + 2]
+                    count += 1
+            line += bytes((red // count, green // count, blue // count))
+        out.append(bytes(line))
+    return out
+
+
+def png_to_ppm(data, cap):
+    """Decode, scale to the cap, and hand back a PPM for cjpeg."""
+    width, height, rows = png_decode(data)
+    longest = max(width, height)
+    if longest > cap:
+        target_width = max(1, width * cap // longest)
+        target_height = max(1, height * cap // longest)
+        rows = box_resize(width, height, rows, target_width, target_height)
+        width, height = target_width, target_height
+    body = b"".join(rows)
+    return b"P6\n%d %d\n255\n" % (width, height) + body, width, height
+
 # ---- Shrinking, with one of two toolchains -------------------------------
 
 def which_tool():
@@ -192,18 +399,29 @@ def shrink_with_libjpeg(data, cap, quality):
     if numerator == 8:
         raise CoverError("already within the cap")
     pixels = run(["djpeg", "-scale", "%d/8" % numerator, "-ppm"], data)
+    return encode_jpeg(pixels, quality)
+
+
+def encode_jpeg(ppm, quality):
     return run(["cjpeg", "-quality", str(quality), "-optimize",
-                "-baseline"], pixels)
+                "-baseline"], ppm)
 
 
 def shrink_image(data, cap, quality, tool):
     kind, binary = tool
-    if kind == "magick":
+    if data[:8] == b"\x89PNG\r\n\x1a\n":
+        # Not a shrink but a conversion: the firmware decodes JPEG and BMP
+        # and nothing else, so a PNG cover was never drawn in the first
+        # place. ImageMagick does the whole job; otherwise the decode
+        # happens here and cjpeg does the rest.
+        if kind == "magick":
+            return shrink_with_magick(binary, data, cap, quality)
+        if kind == "libjpeg":
+            ppm, _, _ = png_to_ppm(data, cap)
+            return encode_jpeg(ppm, quality)
+    elif kind == "magick":
         return shrink_with_magick(binary, data, cap, quality)
-    if kind == "libjpeg":
-        if data[:2] != b"\xff\xd8":
-            raise CoverError(
-                "djpeg reads JPEG only; install ImageMagick for PNG covers")
+    elif kind == "libjpeg":
         return shrink_with_libjpeg(data, cap, quality)
     raise MissingToolError(
         "this cover needs scaling and no image tool is installed.\n"
@@ -305,6 +523,24 @@ def report(path, note):
     print("%s: %s" % (path, note))
 
 
+def cap_for(path, options, fallback):
+    """The cap follows the folder, not the extension.
+
+    An .m4a in Music is a song and an .m4a in Audiobooks is a book, and
+    the firmware treats them that way too -- so calling every .m4a an
+    audiobook would measure a song's cover against the wrong number.
+    """
+    parts = [part.lower()
+             for part in os.path.abspath(path).split(os.sep)]
+    if "audiobooks" in parts:
+        kind = "audiobooks"
+    elif "music" in parts or "podcasts" in parts:
+        kind = "music"
+    else:
+        kind = fallback
+    return getattr(options, "cap_" + kind)
+
+
 # ---- What a file that is not an epub actually is -------------------------
 
 def describe_file(path):
@@ -363,6 +599,18 @@ def handle_epub(path, options, tool, counts):
         report(path, "%s is neither JPEG nor PNG" % entry)
         return
     width, height, baseline = size
+    if data[:8] == b"\x89PNG\r\n\x1a\n":
+        # The firmware decodes a book cover as JPEG or BMP and refuses
+        # anything else by its file name, so this cover is not being
+        # drawn at all today. Writing a JPEG into the archive under the
+        # old .png name would leave it refused here and broken in every
+        # other reader, and doing it properly means a second manifest
+        # entry and surgery on the package file. Say so, leave it alone.
+        counts["png cover"] += 1
+        report(path, "%dx%d PNG cover: CrazyPod draws JPEG and BMP book "
+                     "covers only, so this one never appears. Convert "
+                     "the cover to JPEG in Calibre" % (width, height))
+        return
     needs_shrink = max(width, height) > cap
     needs_baseline = data[:2] == b"\xff\xd8" and not baseline
     if not needs_shrink and not needs_baseline:
@@ -397,7 +645,7 @@ def handle_epub(path, options, tool, counts):
 
 
 def handle_image(path, options, tool, counts):
-    cap = options.cap_music
+    cap = cap_for(path, options, "music")
     try:
         with open(path, "rb") as handle:
             data = handle.read()
@@ -523,6 +771,12 @@ def rewrite_m4b_cover(path, image, backup):
     if freed != 0 and freed < 8:
         raise CoverError("no room for the padding a smaller cover needs")
     data[payload:payload + len(image)] = image
+    # The well-known type in the data atom's flags says which format the
+    # bytes are: 13 JPEG, 14 PNG. Converting a PNG cover and leaving that
+    # at 14 hands the decoder a JPEG and tells it to expect a PNG, so the
+    # cover simply never appears.
+    if image[:2] == b"\xff\xd8":
+        data[payload - 8:payload - 4] = (13).to_bytes(4, "big")
     if freed:
         # Shrink covr and its data atom by what was freed, then spend the
         # same number of bytes on a free atom directly after it.
@@ -550,7 +804,7 @@ def rewrite_m4b_cover(path, image, backup):
 
 
 def handle_audiobook(path, options, tool, counts):
-    cap = options.cap_audiobooks
+    cap = cap_for(path, options, "audiobooks")
     try:
         with open(path, "rb") as handle:
             data = handle.read()
@@ -744,7 +998,7 @@ def main():
 
     counts = dict((key, 0) for key in (
         "shrunk", "would shrink", "already small", "no cover",
-        "unreadable", "failed", "audiobook"))
+        "unreadable", "failed", "png cover"))
     try:
         for path in options.paths:
             if not os.path.exists(path):
@@ -758,7 +1012,7 @@ def main():
 
     print("")
     for key in ("shrunk", "would shrink", "already small", "no cover",
-                "audiobook", "unreadable", "failed"):
+                "png cover", "unreadable", "failed"):
         if counts[key]:
             print("%-14s %d" % (key, counts[key]))
     if counts["unreadable"]:
