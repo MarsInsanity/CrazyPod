@@ -526,17 +526,35 @@ static void render_audiobook_preview(
     crazypod_preview_motion_register(
         stage, 0, 14, 226, 0, 0, 0, 240, 0, 10, 226, 0);
 
+    /*
+     * The count only, never the table. The loading version opens the m4b
+     * and walks its atom tree, it was being called on every draw of this
+     * preview outside both gates above, and it caches exactly one book --
+     * so moving between two audiobooks re-read both of them, every frame.
+     * That is the freeze that survived holding back the cover and the
+     * probe, because it is three lines below where they were held.
+     */
     chapter_count = book != NULL
-        ? crazypod_audiobook_chapter_count(index) : 0;
+        ? crazypod_audiobook_chapter_count_known(index) : 0;
     if(book == NULL)
         detail = CP_TR("Add M4B or MP3 files to /Audiobooks.");
-    else if(book->length_ms > 0) {
+    else if(book->length_ms > 0 && chapter_count > 0) {
         snprintf(detail_text, sizeof(detail_text),
                  CP_FMT("%lu%% listened · %d chapters"),
                  (unsigned long)(
                      (uint64_t)book->position_ms * 100u /
                      book->length_ms),
                  chapter_count);
+        detail = detail_text;
+    }
+    else if(book->length_ms > 0) {
+        /* Not yet counted: say what is known rather than open the file
+         * to fill in a number nobody is waiting on. */
+        snprintf(detail_text, sizeof(detail_text),
+                 CP_FMT("%lu%% listened"),
+                 (unsigned long)(
+                     (uint64_t)book->position_ms * 100u /
+                     book->length_ms));
         detail = detail_text;
     }
     else

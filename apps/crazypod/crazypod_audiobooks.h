@@ -35,6 +35,9 @@ struct crazypod_audiobook {
     uint32_t artwork_size;
     uint8_t artwork_type;
     bool artwork_embedded;
+    /* Chapters the file declares, learned with the tags and kept with
+     * them, so a preview never has to open the file to count them. */
+    int chapter_count;
     bool details_loaded;
     bool favorite;
 };
@@ -54,6 +57,12 @@ int crazypod_audiobooks_recent_index(void);
 uint32_t crazypod_audiobook_recent_sequence(int index);
 
 int crazypod_audiobook_chapter_count(int index);
+/*
+ * The same count, but only if it is already known -- it never opens the
+ * file. Anything drawing a preview wants this one: the loading version
+ * parses the file's atom tree, and it was doing so from inside a render.
+ */
+int crazypod_audiobook_chapter_count_known(int index);
 const struct crazypod_audiobook_chapter *crazypod_audiobook_chapter_get(
     int index, int chapter);
 int crazypod_audiobook_chapter_at(int index, uint32_t position_ms);

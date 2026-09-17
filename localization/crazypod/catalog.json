@@ -217,6 +217,11 @@
         "apps/crazypod/ui/features/settings/crazypod_eq_studio_controller.c:187"
       ]
     },
+    "%lu%% listened": {
+      "locations": [
+        "apps/crazypod/ui/features/books/crazypod_books_preview.c:554"
+      ]
+    },
     "%lu%% listened · %d chapters": {
       "locations": [
         "apps/crazypod/ui/features/books/crazypod_books_preview.c:500"

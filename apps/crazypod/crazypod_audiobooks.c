@@ -25,7 +25,8 @@
 #define AUDIOBOOKS_STATE_PATH AUDIOBOOKS_STATE_DIRECTORY "/audiobooks.bin"
 #define AUDIOBOOKS_STATE_TEMP AUDIOBOOKS_STATE_DIRECTORY "/audiobooks.tmp"
 #define AUDIOBOOKS_MAGIC 0x4B424141u /* "AABK" */
-#define AUDIOBOOKS_VERSION 2u
+#define AUDIOBOOKS_VERSION 3u
+#define AUDIOBOOKS_VERSION_NO_DETAILS 2u
 #define AUDIOBOOKS_VERSION_NO_FAVORITES 1u
 #define AUDIOBOOKS_SCAN_DEPTH 4
 #define TICK_INTERVAL (HZ / 2)
@@ -34,6 +35,33 @@
 #define FINISHED_MARGIN_MS 5000u
 
 struct progress_disk {
+    uint32_t path_hash;
+    uint32_t position_ms;
+    uint32_t length_ms;
+    uint32_t sequence;
+    uint32_t favorite;
+    /*
+     * What the tag parse found, so it is paid once for a book and not
+     * once for every boot. Reading an m4b's tags means walking its atom
+     * tree and its sample tables, which on a nine-hour book is seconds,
+     * and it was happening again every time the catalog was rebuilt.
+     * The file's size and date say whether this is still about the file
+     * on the card.
+     */
+    uint32_t source_size;
+    uint32_t source_mtime;
+    uint32_t artwork_offset;
+    uint32_t artwork_size;
+    uint32_t artwork_type;
+    uint32_t chapter_count;
+    uint32_t details;
+    char title[CRAZYPOD_AUDIOBOOK_TITLE_SIZE];
+    char author[CRAZYPOD_AUDIOBOOK_AUTHOR_SIZE];
+};
+
+/* Version 2 stopped at the favorite flag: every book it lists is probed
+ * again once, and then remembered. */
+struct progress_disk_v2 {
     uint32_t path_hash;
     uint32_t position_ms;
     uint32_t length_ms;
@@ -70,9 +98,20 @@ struct state_disk_v1 {
     uint32_t checksum;
 };
 
+struct state_disk_v2 {
+    uint32_t magic;
+    uint32_t version;
+    uint32_t size;
+    uint32_t count;
+    uint32_t next_sequence;
+    struct progress_disk_v2 entries[CRAZYPOD_AUDIOBOOKS_MAX];
+    uint32_t checksum;
+};
+
 static struct crazypod_audiobook books[CRAZYPOD_AUDIOBOOKS_MAX];
 static int book_count;
 static bool scan_done;
+static bool details_dirty;
 static struct state_disk persisted;
 
 static struct crazypod_audiobook_chapter chapters[
@@ -185,6 +224,27 @@ static void add_book(const char *path, const struct dirinfo *info)
         book->position_ms = saved->position_ms;
         book->length_ms = saved->length_ms;
         book->favorite = saved->favorite != 0;
+        /*
+         * Take the tag parse back out of the file it was written to,
+         * as long as it is still the same file. This is the difference
+         * between a book costing seconds once and costing seconds on
+         * every boot -- and the preview only ever wanted the title, the
+         * author, the length and how many chapters there are.
+         */
+        if(saved->details != 0 &&
+           saved->source_size == book->size &&
+           saved->source_mtime == book->mtime) {
+            snprintf(book->title, sizeof(book->title), "%s",
+                     saved->title);
+            snprintf(book->author, sizeof(book->author), "%s",
+                     saved->author);
+            book->chapter_count = (int)saved->chapter_count;
+            book->artwork_offset = saved->artwork_offset;
+            book->artwork_size = saved->artwork_size;
+            book->artwork_type = (uint8_t)saved->artwork_type;
+            book->artwork_embedded = saved->artwork_size > 0;
+            book->details_loaded = true;
+        }
     }
     ++book_count;
 }
@@ -309,18 +369,55 @@ static bool state_load_v1(int fd)
     persisted.count = loaded.count;
     persisted.next_sequence = loaded.next_sequence;
     for(i = 0; i < loaded.count; ++i) {
+        memset(&persisted.entries[i], 0, sizeof(persisted.entries[i]));
         persisted.entries[i].path_hash = loaded.entries[i].path_hash;
         persisted.entries[i].position_ms = loaded.entries[i].position_ms;
         persisted.entries[i].length_ms = loaded.entries[i].length_ms;
         persisted.entries[i].sequence = loaded.entries[i].sequence;
-        persisted.entries[i].favorite = 0;
     }
+    return true;
+}
+
+static bool state_load_v2(int fd)
+{
+    static struct state_disk_v2 loaded;
+    uint32_t i;
+
+    if(lseek(fd, 0, SEEK_SET) != 0 ||
+       !read_exact(fd, &loaded, sizeof(loaded)) ||
+       loaded.size != sizeof(loaded) ||
+       loaded.count > CRAZYPOD_AUDIOBOOKS_MAX ||
+       loaded.checksum != crazypod_checksum_with_zeroed_u32(
+           &loaded, sizeof(loaded),
+           offsetof(struct state_disk_v2, checksum)))
+        return false;
+    persisted.count = loaded.count;
+    persisted.next_sequence = loaded.next_sequence;
+    for(i = 0; i < loaded.count; ++i) {
+        memset(&persisted.entries[i], 0, sizeof(persisted.entries[i]));
+        persisted.entries[i].path_hash = loaded.entries[i].path_hash;
+        persisted.entries[i].position_ms = loaded.entries[i].position_ms;
+        persisted.entries[i].length_ms = loaded.entries[i].length_ms;
+        persisted.entries[i].sequence = loaded.entries[i].sequence;
+        persisted.entries[i].favorite = loaded.entries[i].favorite;
+    }
+    return true;
+}
+
+static bool state_load_current(int fd)
+{
+    if(lseek(fd, 0, SEEK_SET) != 0 ||
+       !read_exact(fd, &persisted, sizeof(persisted)) ||
+       persisted.size != sizeof(persisted) ||
+       persisted.count > CRAZYPOD_AUDIOBOOKS_MAX ||
+       persisted.checksum != state_checksum(&persisted))
+        return false;
     return true;
 }
 
 static void state_load(void)
 {
-    static struct state_disk loaded;
+    uint32_t header[3];
     int fd;
     bool ready = false;
 
@@ -329,18 +426,17 @@ static void state_load(void)
     fd = open(AUDIOBOOKS_STATE_PATH, O_RDONLY);
     if(fd < 0)
         return;
-    if(read_exact(fd, &loaded, sizeof(loaded)) &&
-       loaded.magic == AUDIOBOOKS_MAGIC &&
-       loaded.version == AUDIOBOOKS_VERSION &&
-       loaded.size == sizeof(loaded) &&
-       loaded.count <= CRAZYPOD_AUDIOBOOKS_MAX &&
-       loaded.checksum == state_checksum(&loaded)) {
-        persisted = loaded;
-        ready = true;
+    /* The header first: an older file is shorter than this one, so
+     * reading the whole of it would fail before saying which it is. */
+    if(read_exact(fd, header, sizeof(header)) &&
+       header[0] == AUDIOBOOKS_MAGIC) {
+        if(header[1] == AUDIOBOOKS_VERSION)
+            ready = state_load_current(fd);
+        else if(header[1] == AUDIOBOOKS_VERSION_NO_DETAILS)
+            ready = state_load_v2(fd);
+        else if(header[1] == AUDIOBOOKS_VERSION_NO_FAVORITES)
+            ready = state_load_v1(fd);
     }
-    else if(loaded.magic == AUDIOBOOKS_MAGIC &&
-            loaded.version == AUDIOBOOKS_VERSION_NO_FAVORITES)
-        ready = state_load_v1(fd);
     if(ready && persisted.next_sequence == 0)
         persisted.next_sequence = 1;
     if(!ready) {
@@ -374,6 +470,33 @@ static struct progress_disk *progress_slot(uint32_t hash)
     return entry;
 }
 
+/*
+ * Keep what the probe found. The write itself waits for the tick: a probe
+ * runs from inside a render, and a catalog written per probe would put the
+ * whole file on the card for every row scrolled past.
+ */
+static void remember_details(int index)
+{
+    struct crazypod_audiobook *book;
+    struct progress_disk *entry;
+
+    if(index < 0 || index >= book_count)
+        return;
+    book = &books[index];
+    entry = progress_slot(path_hash(book->path));
+    entry->source_size = book->size;
+    entry->source_mtime = book->mtime;
+    entry->length_ms = book->length_ms;
+    entry->artwork_offset = book->artwork_offset;
+    entry->artwork_size = book->artwork_size;
+    entry->artwork_type = book->artwork_type;
+    entry->chapter_count = (uint32_t)book->chapter_count;
+    entry->details = 1u;
+    snprintf(entry->title, sizeof(entry->title), "%s", book->title);
+    snprintf(entry->author, sizeof(entry->author), "%s", book->author);
+    details_dirty = true;
+}
+
 static bool remember_position(int index, uint32_t position_ms, bool touch)
 {
     struct crazypod_audiobook *book;
@@ -397,6 +520,7 @@ void crazypod_audiobooks_init(void)
 {
     book_count = 0;
     scan_done = false;
+    details_dirty = false;
     chapter_count = 0;
     chapters_index = -1;
     live.index = -1;
@@ -526,6 +650,14 @@ bool crazypod_audiobook_probe(int index)
         if(duration > 0)
             book->length_ms = duration;
     }
+    /*
+     * The chapter table is read here, once, because the preview wants the
+     * count and used to get it by parsing the file from inside a render --
+     * on every draw, against a cache that holds one book, so moving
+     * between two of them re-read both every time.
+     */
+    book->chapter_count = crazypod_audiobook_chapter_count(index);
+    remember_details(index);
     return true;
 }
 
@@ -642,6 +774,15 @@ int crazypod_audiobook_chapter_count(int index)
 {
     load_chapters(index);
     return chapters_index == index ? chapter_count : 0;
+}
+
+int crazypod_audiobook_chapter_count_known(int index)
+{
+    if(index < 0 || index >= book_count)
+        return 0;
+    if(chapters_index == index)
+        return chapter_count;
+    return books[index].chapter_count;
 }
 
 const struct crazypod_audiobook_chapter *crazypod_audiobook_chapter_get(
@@ -1019,6 +1160,10 @@ void crazypod_audiobooks_tick(long now)
     if(book_count == 0 || !TIME_AFTER(now, live.last_tick + TICK_INTERVAL))
         return;
     live.last_tick = now;
+    if(details_dirty) {
+        details_dirty = false;
+        (void)state_save();
+    }
     status = audio_status();
     entry = current_entry();
     index = entry != NULL ? index_of_path(entry->path) : -1;
