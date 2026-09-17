@@ -763,7 +763,13 @@ static void scan_directory(const char *path, int depth)
         info = dir_get_info(directory, entry);
         if(info.attribute & ATTR_DIRECTORY)
             scan_directory(child, depth + 1);
-        else if(book_format(child, &format))
+        else if(book_format(child, &format) && info.size > 0)
+            /*
+             * A book of no bytes is not a book. One turned up on a real
+             * device -- a copy that never finished -- and it sat in the
+             * list under its file name with no title and no cover, and
+             * every draw of it went to the parser to find that out again.
+             */
             add_book(child, &info, format);
     }
     closedir(directory);

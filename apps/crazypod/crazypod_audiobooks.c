@@ -279,7 +279,9 @@ static void scan_directory(const char *path, int depth, bool books_tree)
         info = dir_get_info(directory, entry);
         if(info.attribute & ATTR_DIRECTORY)
             scan_directory(child, depth + 1, books_tree);
-        else if(is_audiobook_file(child, books_tree))
+        else if(is_audiobook_file(child, books_tree) && info.size > 0)
+            /* A book of no bytes is not a book; the same unfinished copy
+             * that put an empty epub in the shelf can put one here. */
             add_book(child, &info);
     }
     closedir(directory);
