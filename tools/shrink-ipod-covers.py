@@ -351,14 +351,8 @@ def box_resize(width, height, rows, target_width, target_height):
 def png_to_ppm(data, cap):
     """Decode, scale to the cap, and hand back a PPM for cjpeg."""
     width, height, rows = png_decode(data)
-    longest = max(width, height)
-    if longest > cap:
-        target_width = max(1, width * cap // longest)
-        target_height = max(1, height * cap // longest)
-        rows = box_resize(width, height, rows, target_width, target_height)
-        width, height = target_width, target_height
-    body = b"".join(rows)
-    return b"P6\n%d %d\n255\n" % (width, height) + body, width, height
+    width, height, rows = fit_within(width, height, rows, cap)
+    return write_ppm(width, height, rows), width, height
 
 # ---- Shrinking, with one of two toolchains -------------------------------
 
@@ -387,22 +381,81 @@ def shrink_with_magick(binary, data, cap, quality):
                 "jpg:-"], data)
 
 
-def shrink_with_libjpeg(data, cap, quality):
-    """DCT-scaled decode, which is both faster and cleaner than resampling.
+def libjpeg_numerator(longest, cap):
+    """The eighth to decode at: the largest reduction that still leaves
+    the image at or above the cap, so the resample below has pixels to
+    work from rather than having to invent them.
 
-    libjpeg scales by eighths, so this picks the largest eighth that still
-    lands inside the cap -- the result can be smaller than the cap, never
-    larger.
+    libjpeg stops at one eighth. That is the whole reason the second
+    stage exists: a 2376-pixel cover decoded at 1/8 is still 297, which
+    is well over a cap of 128, and stopping there was why running this
+    twice found work to do both times.
     """
-    width, height, _ = jpeg_size(data)
-    longest = max(width, height)
+    if longest <= cap:
+        return 8
     numerator = 8
     while numerator > 1 and longest * (numerator - 1) // 8 >= cap:
         numerator -= 1
-    if numerator == 8:
-        raise CoverError("already within the cap")
+    return numerator
+
+
+def read_ppm(data):
+    """(width, height, rows) from the binary PPM djpeg writes."""
+    if data[:2] != b"P6":
+        raise CoverError("djpeg did not return a PPM")
+    fields = []
+    offset = 2
+    while len(fields) < 3:
+        while offset < len(data) and data[offset:offset + 1].isspace():
+            offset += 1
+        if data[offset:offset + 1] == b"#":
+            while offset < len(data) and data[offset] != 0x0A:
+                offset += 1
+            continue
+        start = offset
+        while offset < len(data) and not data[offset:offset + 1].isspace():
+            offset += 1
+        fields.append(int(data[start:offset]))
+    offset += 1                       # the single whitespace byte
+    width, height, maximum = fields
+    if maximum != 255:
+        raise CoverError("unexpected PPM depth")
+    stride = width * 3
+    body = data[offset:]
+    if len(body) < stride * height:
+        raise CoverError("PPM is shorter than its header says")
+    return width, height, [body[y * stride:(y + 1) * stride]
+                           for y in range(height)]
+
+
+def write_ppm(width, height, rows):
+    return b"P6\n%d %d\n255\n" % (width, height) + b"".join(rows)
+
+
+def fit_within(width, height, rows, cap):
+    """Scale to the cap exactly, or leave it alone if it already fits."""
+    longest = max(width, height)
+    if longest <= cap:
+        return width, height, rows
+    target_width = max(1, width * cap // longest)
+    target_height = max(1, height * cap // longest)
+    return (target_width, target_height,
+            box_resize(width, height, rows, target_width, target_height))
+
+
+def shrink_with_libjpeg(data, cap, quality):
+    """Decode at the coarsest eighth that overshoots the cap, then
+    resample the rest of the way.
+
+    Two stages because one is not enough: the DCT scaler is fast and
+    stops at an eighth, and the box filter finishes the job at any ratio.
+    """
+    width, height, _ = jpeg_size(data)
+    numerator = libjpeg_numerator(max(width, height), cap)
     pixels = run(["djpeg", "-scale", "%d/8" % numerator, "-ppm"], data)
-    return encode_jpeg(pixels, quality)
+    width, height, rows = read_ppm(pixels)
+    width, height, rows = fit_within(width, height, rows, cap)
+    return encode_jpeg(write_ppm(width, height, rows), quality)
 
 
 def encode_jpeg(ppm, quality):

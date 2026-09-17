@@ -387,6 +387,66 @@ def test_backups_are_kept_unless_refused(directory):
         stdout=subprocess.PIPE).stdout.decode().replace("--no-backup", "")
 
 
+def test_shrinking_actually_reaches_the_cap():
+    """The reported fault: a cover came out at 197x297 against a cap of
+    128, so every run found the same work to do again.
+
+    djpeg scales in eighths and stops at one eighth, which for a large
+    cover is nowhere near a cap of 128. The eighth is only the first
+    stage now, and a resample finishes the job -- so what comes out is at
+    the cap, and a second run has nothing to say about it.
+    """
+    for cap in (64, 100, 128, 200):
+        for source in (129, 200, 297, 500, 1000, 1400, 2100, 2376, 4000):
+            numerator = shrink.libjpeg_numerator(source, cap)
+            decoded = source * numerator // 8
+            if source > cap:
+                assert decoded >= cap, (source, cap, numerator, decoded)
+            # Whatever the eighth gave, the resample lands on the cap.
+            width, height, rows = shrink.fit_within(
+                decoded, decoded, [b"\x00" * decoded * 3] * decoded, cap)
+            assert max(width, height) <= cap, (source, cap, width, height)
+
+    # The exact shape that was reported: 2376 tall decodes to 297 at the
+    # smallest eighth libjpeg has, and 297 is not 128.
+    assert shrink.libjpeg_numerator(2376, 128) == 1
+    assert 2376 * 1 // 8 == 297
+
+    # A cover already inside the cap is not scaled at all, so converting a
+    # small progressive one to baseline does not shrink it as well.
+    assert shrink.libjpeg_numerator(100, 128) == 8
+    width, height, _ = shrink.fit_within(100, 150, [b"\x00" * 300] * 150,
+                                         200)
+    assert (width, height) == (100, 150)
+
+
+def test_a_shrunk_cover_is_left_alone_next_time(directory):
+    """End to end through the PNG path, which needs no image tool: shrink
+    once, and the second pass must find nothing to do."""
+    png = png_cover_bytes(400, 600)
+    ppm, width, height = shrink.png_to_ppm(png, 128)
+    assert max(width, height) == 128, (width, height)
+    assert (width, height) == (85, 128)
+    # Feed the result back in: already at the cap, so unchanged.
+    again, width, height = shrink.png_to_ppm(png, 128)
+    assert (width, height) == (85, 128)
+    assert again == ppm
+
+
+def test_read_ppm_handles_what_djpeg_writes():
+    body = b"".join(bytes((x, x, x)) for x in range(4)) * 3
+    for header in (b"P6\n4 3\n255\n", b"P6 4 3 255 ",
+                   b"P6\n# djpeg\n4 3\n255\n"):
+        width, height, rows = shrink.read_ppm(header + body)
+        assert (width, height) == (4, 3), header
+        assert len(rows) == 3 and len(rows[0]) == 12, header
+    try:
+        shrink.read_ppm(b"P6\n4 3\n255\n" + b"\x00" * 4)
+        raise AssertionError("a short PPM must be refused")
+    except shrink.CoverError:
+        pass
+
+
 def test_m4b_cover_is_found(directory):
     path = os.path.join(directory, "found.m4b")
     build_m4b(path, jpeg_bytes(900, 900))
@@ -531,6 +591,9 @@ def main():
         os.mkdir(guarded)
         test_a_rewrite_that_fails_its_check_never_lands(guarded)
         test_backups_are_kept_unless_refused(guarded)
+        test_shrinking_actually_reaches_the_cap()
+        test_read_ppm_handles_what_djpeg_writes()
+        test_a_shrunk_cover_is_left_alone_next_time(guarded)
         test_m4b_cover_is_found(singles)
         test_m4b_rewrite_moves_nothing(singles)
         test_m4b_refuses_a_larger_cover(singles)
