@@ -7,16 +7,18 @@ ARM7 reading from a card that is the pause you feel -- eight to ten
 seconds for 500x500 album art, and a Books menu that stopped for seconds
 because its preview draws a stack of three.
 
-Meant to live in the root of the iPod so it travels with the device.
-Mount the iPod, then:
+Meant to live in the root of the iPod so it travels with the device. It
+works on the volume it is sitting in, so from there it takes no
+arguments at all:
 
-  python3 /Volumes/IPOD/shrink-ipod-covers.py /Volumes/IPOD
-  python3 /Volumes/IPOD/shrink-ipod-covers.py /Volumes/IPOD --shrink
+  python3 /Volumes/IPOD/shrink-ipod-covers.py
+  python3 /Volumes/IPOD/shrink-ipod-covers.py --shrink
 
-Point it at the root and it finds Music, Books and Audiobooks by itself,
-and leaves Photos and Videos alone. Point it at one folder or one file to
-do only that. --install /Volumes/IPOD copies this script to the root for
-next time.
+It finds Music, Books and Audiobooks beside itself and leaves Photos and
+Videos alone. Name a folder or a file to do only that instead. To put it
+on the iPod in the first place:
+
+  python3 tools/shrink-ipod-covers.py --install /Volumes/IPOD
 
 Each kind is capped at what the firmware draws it at:
 
@@ -580,9 +582,12 @@ def roots_for(path):
     """
     if os.path.isfile(path):
         return [path]
-    present = dict((name.lower(), name) for name in os.listdir(path))
+    try:
+        present = dict((name.lower(), name) for name in os.listdir(path))
+    except OSError:
+        return [path]
     media = [present[name] for name in MEDIA_FOLDERS if name in present]
-    if media and any(name in present for name in (".rockbox", "ipod_control")):
+    if media:
         return [os.path.join(path, name) for name in media]
     return [path]
 
@@ -619,6 +624,16 @@ def walk(root, options, tool, counts):
                     handle_image(path, options, tool, counts)
 
 
+def own_volume(script):
+    """The folder this script is sitting in.
+
+    Copied to the root of the iPod, that is the iPod -- which is the whole
+    point of putting it there, so it should not also have to be told where
+    it is.
+    """
+    return os.path.dirname(os.path.abspath(script))
+
+
 def install(script, destination):
     if not os.path.isdir(destination):
         print("%s: not a folder" % destination, file=sys.stderr)
@@ -626,8 +641,8 @@ def install(script, destination):
     target = os.path.join(destination, os.path.basename(script))
     shutil.copy2(script, target)
     print("Copied to %s" % target)
-    print("Run it from there next time:\n  python3 %s %s" % (
-        target, destination))
+    print("Run it from there with no arguments at all:\n  python3 %s"
+          % target)
     return 0
 
 
@@ -637,7 +652,8 @@ def main():
         formatter_class=argparse.RawDescriptionHelpFormatter)
     parser.add_argument(
         "paths", nargs="*",
-        help="the iPod's root, a folder inside it, or single files")
+        help="a folder or single files. Left out, it works on the volume "
+             "this script is sitting in")
     parser.add_argument(
         "--install", metavar="IPOD",
         help="copy this script to the iPod's root folder and exit")
@@ -674,7 +690,9 @@ def main():
     if options.install:
         return install(os.path.abspath(__file__), options.install)
     if not options.paths:
-        parser.error("say what to look at, or pass --install")
+        options.paths = [own_volume(__file__)]
+        print("Looking in %s, the folder this script is in."
+              % options.paths[0])
     for kind, fallback in (("music", DEFAULT_CAP_MUSIC),
                            ("books", DEFAULT_CAP_BOOKS),
                            ("audiobooks", DEFAULT_CAP_AUDIOBOOKS)):

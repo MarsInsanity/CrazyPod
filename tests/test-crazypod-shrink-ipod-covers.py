@@ -13,6 +13,7 @@ exactly as long as it went in.
 """
 import importlib.util
 import os
+import shutil
 import struct
 import subprocess
 import sys
@@ -190,6 +191,39 @@ def test_each_kind_has_its_own_cap(directory):
     assert "would rewrite" in book_line, book_line
 
 
+def test_it_works_on_the_volume_it_sits_in(directory):
+    """Copied to the root of the iPod, the script is on the iPod -- so it
+    should not also have to be told where the iPod is."""
+    music = os.path.join(directory, "Music", "Album")
+    os.makedirs(music)
+    os.makedirs(os.path.join(directory, "Photos"))
+    with open(os.path.join(music, "cover.jpg"), "wb") as handle:
+        handle.write(jpeg_bytes(500, 500))
+    # A photo must stay out of it even when nothing was pointed at.
+    with open(os.path.join(directory, "Photos", "holiday.jpg"), "wb") as f:
+        f.write(jpeg_bytes(3000, 2000))
+    onboard = os.path.join(directory, os.path.basename(TOOL))
+    shutil.copy2(TOOL, onboard)
+
+    result = subprocess.run(
+        [sys.executable, onboard], cwd=tempfile.gettempdir(),
+        stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
+    output = result.stdout.decode("utf-8", "replace")
+    assert result.returncode == 0, output
+    assert "the folder this script is in" in output, output
+    assert "Music" in output and "500x500" in output, output
+    assert "holiday" not in output, output
+
+    # --install says the same thing about itself.
+    destination = os.path.join(directory, "elsewhere")
+    os.mkdir(destination)
+    code, output = run_tool("--install", destination)
+    assert code == 0, output
+    assert os.path.exists(
+        os.path.join(destination, os.path.basename(TOOL)))
+    assert "with no arguments at all" in output, output
+
+
 def test_m4b_cover_is_found(directory):
     path = os.path.join(directory, "found.m4b")
     build_m4b(path, jpeg_bytes(900, 900))
@@ -319,6 +353,9 @@ def main():
         caps = os.path.join(directory, "caps")
         os.mkdir(caps)
         test_each_kind_has_its_own_cap(caps)
+        onboard = os.path.join(directory, "ipod")
+        os.mkdir(onboard)
+        test_it_works_on_the_volume_it_sits_in(onboard)
         test_m4b_cover_is_found(singles)
         test_m4b_rewrite_moves_nothing(singles)
         test_m4b_refuses_a_larger_cover(singles)
