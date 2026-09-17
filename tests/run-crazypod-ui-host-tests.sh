@@ -12,6 +12,7 @@ cc -std=c99 -Wall -Wextra -Werror \
     "$repo_root/apps/crazypod/ui/features/organizer/crazypod_calendar_model.c" \
     "$repo_root/apps/crazypod/ui/presentation/crazypod_ui_menu_layout.c" \
     "$repo_root/apps/crazypod/ui/presentation/crazypod_scene_motion.c" \
+    "$repo_root/apps/crazypod/ui/presentation/crazypod_panel_geometry.c" \
     "$repo_root/apps/crazypod/ui/presentation/crazypod_ui_text.c" \
     "$repo_root/apps/crazypod/ui/navigation/crazypod_alpha_jump.c" \
     "$repo_root/apps/crazypod/ui/navigation/crazypod_wheel_accel.c" \

@@ -6,6 +6,7 @@
 #include "features/organizer/crazypod_calendar_model.h"
 #include "presentation/crazypod_ui_menu_layout.h"
 #include "presentation/crazypod_scene_motion.h"
+#include "presentation/crazypod_panel_geometry.h"
 #include "presentation/crazypod_ui_text.h"
 #include "features/crazypod_feature.h"
 #include "navigation/crazypod_feature_dispatcher.h"
@@ -59,6 +60,57 @@ static void test_bar_fill(void)
     /* Degenerate inputs must not divide by zero or return rubbish. */
     assert(crazypod_ui_text_bar_fill(281, 1000, 0) == 0);
     assert(crazypod_ui_text_bar_fill(0, 1000, book) == 0);
+}
+
+/*
+ * The home capsule and the lock screen media widget are split in two so each
+ * half can take its own screen corner. Each half clips a layer the height of
+ * the whole panel; the seam is only invisible while the edge the half does
+ * not own falls outside its clip. At a corner radius of zero the two borders
+ * landed either side of the split and drew a line across the middle of the
+ * widget, which is what a square-cornered iPod showed.
+ */
+static void test_panel_half_geometry(void)
+{
+    struct crazypod_panel_half top;
+    struct crazypod_panel_half bottom;
+    int radius;
+
+    /* Square corners: the reported bug. Both borders must clear the split. */
+    crazypod_panel_half_geometry(94, 0, true, &top);
+    crazypod_panel_half_geometry(94, 0, false, &bottom);
+    assert(top.clip_y == 0 && top.clip_height == 47);
+    assert(bottom.clip_y == 47 && bottom.clip_height == 47);
+    /* The top half's bottom border row, past the last row it can draw. */
+    assert(top.border_y + top.border_height - 1 > top.clip_height - 1);
+    /* The bottom half's top border row, above the first row it can draw. */
+    assert(bottom.border_y < 0);
+
+    /* The default eight-pixel corner, and every radius in between. */
+    for(radius = 0; radius <= 47; ++radius) {
+        crazypod_panel_half_geometry(94, radius, true, &top);
+        crazypod_panel_half_geometry(94, radius, false, &bottom);
+        assert(top.border_y + top.border_height - 1 > top.clip_height - 1);
+        assert(bottom.border_y < 0);
+        /* The far edge of each half still lands on the panel's own edge. */
+        assert(top.border_y == 0);
+        assert(bottom.border_y + bottom.border_height - 1 ==
+               bottom.clip_height - 1);
+        /* The material keeps the radius it was given, either side of it. */
+        assert(top.layer_height == top.clip_height + radius);
+        assert(bottom.layer_y == -radius);
+        assert(bottom.glass_y == radius - 47);
+    }
+
+    /* An odd height gives the bottom half the extra row, and no gap. */
+    crazypod_panel_half_geometry(95, 8, true, &top);
+    crazypod_panel_half_geometry(95, 8, false, &bottom);
+    assert(top.clip_height == 47 && bottom.clip_height == 48);
+    assert(bottom.clip_y == top.clip_y + top.clip_height);
+
+    /* A radius larger than the panel cannot push the border back over it. */
+    crazypod_panel_half_geometry(94, 400, false, &bottom);
+    assert(bottom.border_y < 0 && bottom.layer_y >= -47);
 }
 
 /* Midnight and noon are where hand-rolled twelve-hour clocks go wrong. */
@@ -528,6 +580,7 @@ int main(void)
     test_calendar();
     test_clock_format();
     test_bar_fill();
+    test_panel_half_geometry();
     test_note_layout();
     test_editor();
     test_menu_layout();

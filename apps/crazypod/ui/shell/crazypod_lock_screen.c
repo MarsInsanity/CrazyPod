@@ -30,6 +30,7 @@
 #include "../../crazypod_state.h"
 #include "../../crazypod_wallpaper.h"
 #include "../presentation/crazypod_marquee.h"
+#include "../presentation/crazypod_panel_geometry.h"
 #include "../presentation/crazypod_ui_widgets.h"
 #include "crazypod_lock_screen.h"
 
@@ -216,7 +217,6 @@ static int media_corner_radius(bool top)
 
 static void refresh_media_corners(void)
 {
-    int split = MEDIA_PANEL_HEIGHT / 2;
     int index;
 
     if(lock_state.media_panel == NULL ||
@@ -228,22 +228,20 @@ static void refresh_media_corners(void)
     for(index = 0; index < 2; ++index) {
         bool top = index == 0;
         int radius = media_corner_radius(top);
-        int segment_y = top ? 0 : split;
-        int segment_height = top
-            ? split : MEDIA_PANEL_HEIGHT - split;
-        int layer_y = top ? 0 : -radius;
-        int layer_height = segment_height + radius;
+        struct crazypod_panel_half half;
 
+        crazypod_panel_half_geometry(
+            MEDIA_PANEL_HEIGHT, radius, top, &half);
         lv_obj_set_pos(
-            lock_state.media_material_clip[index], 0, segment_y);
+            lock_state.media_material_clip[index], 0, half.clip_y);
         lv_obj_set_size(
             lock_state.media_material_clip[index],
-            MEDIA_PANEL_WIDTH, segment_height);
+            MEDIA_PANEL_WIDTH, half.clip_height);
         lv_obj_set_pos(
-            lock_state.media_material[index], 0, layer_y);
+            lock_state.media_material[index], 0, half.layer_y);
         lv_obj_set_size(
             lock_state.media_material[index],
-            MEDIA_PANEL_WIDTH, layer_height);
+            MEDIA_PANEL_WIDTH, half.layer_height);
         lv_obj_set_style_radius(
             lock_state.media_material[index], radius, 0);
         /* clip_corner routes the whole half-panel through a masked
@@ -257,13 +255,13 @@ static void refresh_media_corners(void)
                     CRAZYPOD_REDUCE_EFFECTS_HIGH, 0);
         if(lock_state.media_glass[index] != NULL)
             lv_obj_set_pos(
-                lock_state.media_glass[index], 0,
-                top ? 0 : radius - split);
+                lock_state.media_glass[index], 0, half.glass_y);
 
-        lv_obj_set_pos(lock_state.media_border[index], 0, layer_y);
+        lv_obj_set_pos(
+            lock_state.media_border[index], 0, half.border_y);
         lv_obj_set_size(
             lock_state.media_border[index],
-            MEDIA_PANEL_WIDTH, layer_height);
+            MEDIA_PANEL_WIDTH, half.border_height);
         lv_obj_set_style_radius(
             lock_state.media_border[index], radius, 0);
     }

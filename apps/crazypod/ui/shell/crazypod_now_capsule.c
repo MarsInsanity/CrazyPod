@@ -19,6 +19,7 @@
 #include "../../crazypod_wallpaper.h"
 #include "../presentation/crazypod_glass_sampler.h"
 #include "../presentation/crazypod_marquee.h"
+#include "../presentation/crazypod_panel_geometry.h"
 #include "../presentation/crazypod_ui_widgets.h"
 #include "crazypod_now_capsule.h"
 
@@ -180,7 +181,6 @@ static int corner_radius(bool top)
 
 static void refresh_corners(void)
 {
-    int split = CAPSULE_HEIGHT / 2;
     int index;
 
     if(capsule.root == NULL || capsule.material[0] == NULL ||
@@ -189,20 +189,18 @@ static void refresh_corners(void)
     for(index = 0; index < 2; ++index) {
         bool top = index == 0;
         int radius = corner_radius(top);
-        int segment_y = top ? 0 : split;
-        int segment_height = top
-            ? split : CAPSULE_HEIGHT - split;
-        int layer_y = top ? 0 : -radius;
-        int layer_height = segment_height + radius;
+        struct crazypod_panel_half half;
 
+        crazypod_panel_half_geometry(
+            CAPSULE_HEIGHT, radius, top, &half);
         lv_obj_set_pos(
-            capsule.material_clip[index], 0, segment_y);
+            capsule.material_clip[index], 0, half.clip_y);
         lv_obj_set_size(
             capsule.material_clip[index],
-            CAPSULE_WIDTH, segment_height);
-        lv_obj_set_pos(capsule.material[index], 0, layer_y);
+            CAPSULE_WIDTH, half.clip_height);
+        lv_obj_set_pos(capsule.material[index], 0, half.layer_y);
         lv_obj_set_size(
-            capsule.material[index], CAPSULE_WIDTH, layer_height);
+            capsule.material[index], CAPSULE_WIDTH, half.layer_height);
         lv_obj_set_style_radius(capsule.material[index], radius, 0);
         lv_obj_set_style_clip_corner(
             capsule.material[index],
@@ -210,14 +208,13 @@ static void refresh_corners(void)
 
         if(capsule.glass[index] != NULL)
             lv_obj_set_pos(
-                capsule.glass[index], 0,
-                top ? 0 : radius - split);
+                capsule.glass[index], 0, half.glass_y);
         if(capsule.glass_border[index] != NULL) {
             lv_obj_set_pos(
-                capsule.glass_border[index], 0, layer_y);
+                capsule.glass_border[index], 0, half.border_y);
             lv_obj_set_size(
                 capsule.glass_border[index],
-                CAPSULE_WIDTH, layer_height);
+                CAPSULE_WIDTH, half.border_height);
             lv_obj_set_style_radius(
                 capsule.glass_border[index], radius, 0);
         }

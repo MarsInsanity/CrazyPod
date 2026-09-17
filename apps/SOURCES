@@ -129,6 +129,7 @@ crazypod/ui/features/settings/crazypod_settings_model.c
 crazypod/ui/presentation/crazypod_ui_text.c
 crazypod/ui/presentation/crazypod_ui_widgets.c
 crazypod/ui/presentation/crazypod_marquee.c
+crazypod/ui/presentation/crazypod_panel_geometry.c
 crazypod/ui/presentation/crazypod_alpha_jump_hud.c
 crazypod/ui/presentation/crazypod_artwork_widget.c
 crazypod/ui/presentation/crazypod_choice_overlay.c
