@@ -170,7 +170,7 @@ static const char *save_state_text(void)
 static void draw_menu(int selected, bool save_failed)
 {
     static const char *const items[] = {
-        CP_TR("Resume"), "START", "SELECT", CP_TR("Save and exit")
+        CP_TR("Resume"), "START", "SELECT", CP_TR("Exit")
     };
     fb_data *target = crazypod_platform_display_framebuffer();
     int i;

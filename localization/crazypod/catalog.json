@@ -4602,12 +4602,6 @@
         "apps/crazypod/ui/features/miniapps/crazypod_miniapps_feature.c"
       ]
     },
-    "Save and exit": {
-      "locations": [
-        "apps/crazypod/ui/features/miniapps/crazypod_gameboy_screen.c",
-        "apps/crazypod/ui/features/miniapps/crazypod_miniapps_feature.c"
-      ]
-    },
     "Game save failed": {
       "locations": [
         "apps/crazypod/ui/features/miniapps/crazypod_gameboy_screen.c",
