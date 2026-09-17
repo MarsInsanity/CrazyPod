@@ -7,11 +7,13 @@
 
 #include "bmp.h"
 #include "core_alloc.h"
+#include "kernel.h"
 #include "jpeg_load.h"
 #include "src/misc/cache/instance/lv_image_cache.h"
 
 #include "crazypod_book_cover.h"
 #include "crazypod_books.h"
+#include "crazypod_diag_log.h"
 #include "crazypod_image.h"
 
 #define BOOK_COVER_SLOTS 4
@@ -120,18 +122,49 @@ static bool decode_cover(const char *path, struct book_cover_slot *slot,
         bitmap.width, bitmap.height);
 }
 
+/*
+ * Say what one cover cost, in milliseconds, but only when it was slow
+ * enough to be the freeze that was reported: a cover that lands inside a
+ * frame is not worth a line on the card.
+ */
+#define BOOK_COVER_SLOW_TICKS (HZ / 4)
+
+static void report_cost(int book_index, long probe_ticks,
+                        long decode_ticks, bool decoded)
+{
+    if(probe_ticks + decode_ticks < BOOK_COVER_SLOW_TICKS)
+        return;
+    crazypod_diag_log("bookcover",
+        "i=%d probe=%ldms decode=%ldms%s", book_index,
+        probe_ticks * 1000 / HZ, decode_ticks * 1000 / HZ,
+        decoded ? "" : " failed");
+}
+
 const lv_image_dsc_t *crazypod_book_cover_get(
     int book_index, int max_width, int max_height)
 {
     const struct crazypod_book *book;
     uint32_t key;
     struct book_cover_slot *slot;
+    long probe_start;
+    long probe_ticks;
+    long decode_start;
     int i;
 
     if(max_width <= 0 || max_width > BOOK_COVER_WIDTH ||
-       max_height <= 0 || max_height > BOOK_COVER_HEIGHT ||
-       !crazypod_book_probe(book_index))
+       max_height <= 0 || max_height > BOOK_COVER_HEIGHT)
         return NULL;
+    /*
+     * A single build of the Books menu took 13.5 seconds in the perf log,
+     * and this call is the only thing in it that touches the card. It is
+     * two jobs -- opening the epub for its title and cover, then decoding
+     * that cover -- and which of them costs the seconds decides where the
+     * work has to move to. Time them apart rather than guess again.
+     */
+    probe_start = current_tick;
+    if(!crazypod_book_probe(book_index))
+        return NULL;
+    probe_ticks = current_tick - probe_start;
     book = crazypod_book_get(book_index);
     if(book == NULL || book->cover_path[0] == '\0')
         return NULL;
@@ -150,9 +183,15 @@ const lv_image_dsc_t *crazypod_book_cover_get(
     if(slot->valid)
         lv_image_cache_drop(&slot->descriptor);
     slot->valid = false;
+    decode_start = current_tick;
     if(!decode_cover(
-           book->cover_path, slot, max_width, max_height))
+           book->cover_path, slot, max_width, max_height)) {
+        report_cost(book_index, probe_ticks,
+                    current_tick - decode_start, false);
         return NULL;
+    }
+    report_cost(book_index, probe_ticks,
+                current_tick - decode_start, true);
     slot->key = key;
     slot->valid = true;
     return &slot->descriptor;
