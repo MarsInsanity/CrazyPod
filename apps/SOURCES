@@ -143,6 +143,7 @@ crazypod/ui/navigation/crazypod_feature_dispatcher.c
 crazypod/ui/navigation/crazypod_input_event.c
 crazypod/ui/navigation/crazypod_remote_multitap.c
 crazypod/ui/navigation/crazypod_alpha_jump.c
+crazypod/ui/navigation/crazypod_wheel_accel.c
 crazypod/ui/navigation/crazypod_navigation_command.c
 crazypod/ui/navigation/crazypod_route_registry.c
 crazypod/ui/navigation/crazypod_render_scheduler.c

@@ -20,6 +20,7 @@
 #include "../features/notes/crazypod_notes_feature.h"
 #include "../features/now_playing/crazypod_now_playing_feature.h"
 #include "../navigation/crazypod_alpha_jump.h"
+#include "../navigation/crazypod_wheel_accel.h"
 #include "../navigation/crazypod_input_event.h"
 #include "../navigation/crazypod_remote_multitap.h"
 #include "../navigation/crazypod_ui_routes.h"
@@ -53,6 +54,7 @@ static bool capture_chord_pending;
 static bool capture_chord_recording_toggled;
 static struct crazypod_hold_feedback capture_hold_feedback;
 static struct crazypod_alpha_jump_state alpha_jump;
+static struct crazypod_wheel_accel_state wheel_accel;
 static struct crazypod_remote_multitap_state remote_down_multitap;
 static struct crazypod_remote_multitap_state headset_multitap;
 static struct crazypod_remote_multitap_state now_select_multitap;
@@ -102,6 +104,11 @@ static bool remote_home_select_held;
  * The threshold and the burst logic stay, tested, ready for the day this
  * becomes a setting rather than a default.
  */
+/* A gap longer than this ends the spin, so the next one starts from rest. */
+#define WHEEL_ACCEL_IDLE_MS 320
+#define WHEEL_ACCEL_IDLE_TICKS \
+    ((HZ * WHEEL_ACCEL_IDLE_MS / 1000) > 0 \
+        ? (HZ * WHEEL_ACCEL_IDLE_MS / 1000) : 1)
 #define ALPHA_JUMP_ENABLED 0
 #define ALPHA_JUMP_STEP_THRESHOLD 24
 #define ALPHA_JUMP_MIN_EVENTS 4
@@ -157,8 +164,20 @@ static void move_wheel(
             ? 1
             : state->route == MUSIC_ROUTE_ALBUM_FLOW
                 ? 15 : 12;
-    int steps = crazypod_menu_preview_is_skeuomorphic_route(
-        state->route) ? 1 : wheel_step(data, maximum);
+    /*
+     * A skeuomorphic preview redraws far too much to be scrolled quickly,
+     * and Now Playing moves one track at a time whatever the wheel does.
+     */
+    bool single = crazypod_menu_preview_is_skeuomorphic_route(state->route) ||
+        maximum <= 1;
+    int steps = single
+        ? 1
+        : crazypod_wheel_accel_step(
+              &wheel_accel, direction, wheel_step(data, maximum),
+              now, WHEEL_ACCEL_IDLE_TICKS, HZ, maximum);
+
+    if(single)
+        crazypod_wheel_accel_reset(&wheel_accel);
     bool alpha_available = ALPHA_JUMP_ENABLED &&
         crazypod_music_feature_alpha_jump_available(state);
 
@@ -639,6 +658,7 @@ void crazypod_app_input_cancel_pending(void)
     crazypod_desktop_hold_feedback_dismiss(false);
     crazypod_hold_feedback_dismiss(&capture_hold_feedback);
     crazypod_alpha_jump_reset(&alpha_jump);
+    crazypod_wheel_accel_reset(&wheel_accel);
     crazypod_remote_multitap_reset(&remote_down_multitap);
     crazypod_remote_multitap_reset(&headset_multitap);
     crazypod_remote_multitap_reset(&now_select_multitap);
@@ -757,8 +777,10 @@ void crazypod_app_input_tick(long now, bool locked)
     if(feedback != 0)
         wheel_feedback(feedback < 0
             ? BUTTON_SCROLL_BACK : BUTTON_SCROLL_FWD);
-    if(locked || !crazypod_shell_product_active())
+    if(locked || !crazypod_shell_product_active()) {
         crazypod_alpha_jump_reset(&alpha_jump);
+        crazypod_wheel_accel_reset(&wheel_accel);
+    }
     if(home_play_hold_pending) {
         if(!home_play_can_start())
             cancel_home_play_gesture();
@@ -1191,6 +1213,7 @@ void crazypod_app_input_handle(
         move_wheel(state, -1, data, now);
     else if(base == BUTTON_RIGHT) {
         crazypod_alpha_jump_reset(&alpha_jump);
+        crazypod_wheel_accel_reset(&wheel_accel);
         if(state->route == MUSIC_ROUTE_NOW_PLAYING)
             crazypod_playback_next();
         else
@@ -1198,6 +1221,7 @@ void crazypod_app_input_handle(
     }
     else if(base == BUTTON_LEFT) {
         crazypod_alpha_jump_reset(&alpha_jump);
+        crazypod_wheel_accel_reset(&wheel_accel);
         if(state->route == MUSIC_ROUTE_NOW_PLAYING)
             crazypod_playback_previous_or_restart();
         else
@@ -1205,10 +1229,12 @@ void crazypod_app_input_handle(
     }
     else if(base == BUTTON_SELECT && !repeated) {
         crazypod_alpha_jump_reset(&alpha_jump);
+        crazypod_wheel_accel_reset(&wheel_accel);
         crazypod_route_actions_activate(now);
     }
     else if(base == BUTTON_MENU) {
         crazypod_alpha_jump_reset(&alpha_jump);
+        crazypod_wheel_accel_reset(&wheel_accel);
         if(repeated && state->route == MUSIC_ROUTE_MENU)
             host.begin_music_scan();
         else if(!repeated)
@@ -1216,6 +1242,7 @@ void crazypod_app_input_handle(
     }
     else if(base == BUTTON_PLAY) {
         crazypod_alpha_jump_reset(&alpha_jump);
+        crazypod_wheel_accel_reset(&wheel_accel);
         if(state->route == NOTES_ROUTE_COMPOSER &&
            !repeated) {
         crazypod_notes_feature_toggle_editor_field();

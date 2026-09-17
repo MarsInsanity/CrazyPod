@@ -14,6 +14,7 @@ cc -std=c99 -Wall -Wextra -Werror \
     "$repo_root/apps/crazypod/ui/presentation/crazypod_scene_motion.c" \
     "$repo_root/apps/crazypod/ui/presentation/crazypod_ui_text.c" \
     "$repo_root/apps/crazypod/ui/navigation/crazypod_alpha_jump.c" \
+    "$repo_root/apps/crazypod/ui/navigation/crazypod_wheel_accel.c" \
     "$repo_root/apps/crazypod/ui/navigation/crazypod_feature_dispatcher.c" \
     "$repo_root/apps/crazypod/ui/navigation/crazypod_navigation_command.c" \
     "$repo_root/apps/crazypod/ui/navigation/crazypod_route_registry.c" \

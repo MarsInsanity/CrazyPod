@@ -10,6 +10,7 @@
 #include "features/crazypod_feature.h"
 #include "navigation/crazypod_feature_dispatcher.h"
 #include "navigation/crazypod_alpha_jump.h"
+#include "navigation/crazypod_wheel_accel.h"
 #include "navigation/crazypod_navigation_command.h"
 #include "navigation/crazypod_route_registry.h"
 
@@ -251,6 +252,111 @@ static void test_alpha_jump_needs_sustained_spin(void)
         1, 12, 400, 32, 24, 4));
 }
 
+/*
+ * The wheel step grows with how fast the wheel is turning, measured in
+ * clicks per second, and not with how slow the screen happens to be.
+ */
+static void test_wheel_accel_slow_turn_stays_single(void)
+{
+    struct crazypod_wheel_accel_state state;
+    int i;
+
+    crazypod_wheel_accel_reset(&state);
+    /* One click every 20 ticks is five clicks a second: a careful turn. */
+    for(i = 0; i < 12; ++i)
+        assert(crazypod_wheel_accel_step(
+            &state, 1, 1, 100 + i * 20, 32, 100, 12) == 1);
+}
+
+static void test_wheel_accel_fast_spin_multiplies(void)
+{
+    struct crazypod_wheel_accel_state state;
+    int step = 0;
+    int i;
+
+    crazypod_wheel_accel_reset(&state);
+    /* Four clicks every 4 ticks is a hundred a second: a hard spin. */
+    for(i = 0; i < 12; ++i)
+        step = crazypod_wheel_accel_step(
+            &state, 1, 4, 100 + i * 4, 32, 100, 12);
+    assert(step > 4);
+    assert(step <= 12);
+    /* And with headroom it is the multiplier, not the cap, doing it. */
+    crazypod_wheel_accel_reset(&state);
+    for(i = 0; i < 12; ++i)
+        step = crazypod_wheel_accel_step(
+            &state, 1, 4, 100 + i * 4, 32, 100, 96);
+    assert(step >= 4 * 4);
+}
+
+static void test_wheel_accel_a_slow_screen_does_not_accelerate(void)
+{
+    struct crazypod_wheel_accel_state slow;
+    struct crazypod_wheel_accel_state fast;
+    int slow_step = 0;
+    int fast_step = 0;
+    int i;
+
+    /*
+     * The same hand speed -- eight clicks a second -- reported as one click
+     * every 12 ticks, or as eight clicks every 96 ticks because the screen
+     * was busy. Both must move by exactly the clicks they were given and
+     * accelerate not at all: coalescing is not a faster spin. The busy one
+     * moves further per event because it was handed more of the turn, which
+     * is the turn being honoured rather than acceleration.
+     */
+    crazypod_wheel_accel_reset(&slow);
+    crazypod_wheel_accel_reset(&fast);
+    for(i = 0; i < 10; ++i) {
+        fast_step = crazypod_wheel_accel_step(
+            &fast, 1, 1, 100 + i * 12, 32, 100, 96);
+        slow_step = crazypod_wheel_accel_step(
+            &slow, 1, 8, 100 + i * 96, 200, 100, 96);
+    }
+    assert(fast_step == 1);
+    assert(slow_step == 8);
+}
+
+static void test_wheel_accel_pause_starts_from_rest(void)
+{
+    struct crazypod_wheel_accel_state state;
+    int i;
+
+    crazypod_wheel_accel_reset(&state);
+    for(i = 0; i < 12; ++i)
+        (void)crazypod_wheel_accel_step(
+            &state, 1, 4, 100 + i * 4, 32, 100, 12);
+    /* A gap longer than the window, then one careful click. */
+    assert(crazypod_wheel_accel_step(
+        &state, 1, 1, 1000, 32, 100, 12) == 1);
+}
+
+static void test_wheel_accel_turning_back_starts_from_rest(void)
+{
+    struct crazypod_wheel_accel_state state;
+    int i;
+
+    crazypod_wheel_accel_reset(&state);
+    for(i = 0; i < 12; ++i)
+        (void)crazypod_wheel_accel_step(
+            &state, 1, 4, 100 + i * 4, 32, 100, 12);
+    assert(crazypod_wheel_accel_step(
+        &state, -1, 1, 152, 32, 100, 12) == 1);
+}
+
+static void test_wheel_accel_respects_the_maximum(void)
+{
+    struct crazypod_wheel_accel_state state;
+    int i;
+    int step = 0;
+
+    crazypod_wheel_accel_reset(&state);
+    for(i = 0; i < 20; ++i)
+        step = crazypod_wheel_accel_step(
+            &state, 1, 12, 100 + i, 32, 100, 3);
+    assert(step == 3);
+}
+
 static void test_route_registry(void)
 {
     int route;
@@ -428,6 +534,12 @@ int main(void)
     test_collation();
     test_alpha_jump_burst();
     test_alpha_jump_needs_sustained_spin();
+    test_wheel_accel_slow_turn_stays_single();
+    test_wheel_accel_fast_spin_multiplies();
+    test_wheel_accel_a_slow_screen_does_not_accelerate();
+    test_wheel_accel_pause_starts_from_rest();
+    test_wheel_accel_turning_back_starts_from_rest();
+    test_wheel_accel_respects_the_maximum();
     test_route_registry();
     test_navigation_commands();
     test_scene_motion();
