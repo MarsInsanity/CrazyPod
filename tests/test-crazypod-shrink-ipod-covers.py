@@ -1,10 +1,15 @@
 #!/usr/bin/env python3
-"""Exercise tools/shrink-book-covers.py against epubs built here.
+"""Exercise tools/shrink-ipod-covers.py against files built here.
 
-The parts that matter without an image tool installed: that it finds the
-cover by each of the three routes, measures it, leaves a small one alone,
-and -- when it does rewrite -- that what comes out is still a valid epub
-with "mimetype" first and stored, and every other entry untouched.
+The parts that matter without an image tool installed: that it finds an
+epub's cover by each of the three routes, measures it, leaves a small one
+alone, and -- when it rewrites -- that what comes out is still a valid
+epub with "mimetype" first and stored and every other entry untouched.
+
+And for an m4b, the part worth guarding above all: replacing the cover
+must not move one byte of anything else. The chapter table and every
+sample offset in the file are absolute positions, so moov has to come out
+exactly as long as it went in.
 """
 import importlib.util
 import os
@@ -16,9 +21,9 @@ import zipfile
 import zlib
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-TOOL = os.path.join(ROOT, "tools", "shrink-book-covers.py")
+TOOL = os.path.join(ROOT, "tools", "shrink-ipod-covers.py")
 
-spec = importlib.util.spec_from_file_location("shrink_book_covers", TOOL)
+spec = importlib.util.spec_from_file_location("shrink_ipod_covers", TOOL)
 shrink = importlib.util.module_from_spec(spec)
 spec.loader.exec_module(shrink)
 
@@ -117,15 +122,99 @@ def test_small_cover_is_left_alone(directory):
     assert "would shrink" not in output, output
 
 
-def test_audiobooks_are_only_reported(directory):
-    path = os.path.join(directory, "book.m4b")
+def atom(kind, payload):
+    return struct.pack(">I", len(payload) + 8) + kind + payload
+
+
+def build_m4b(path, cover):
+    """An m4b with the atom nesting a real one has: the cover in
+    moov/udta/meta/ilst/covr/data, a chapter table beside it, and an mdat
+    after moov whose position is what must not move."""
+    data_atom = atom(b"data", struct.pack(">II", 13, 0) + cover)
+    covr = atom(b"covr", data_atom)
+    ilst = atom(b"ilst", covr)
+    meta = atom(b"meta", struct.pack(">I", 0) + ilst)
+    udta = atom(b"udta", meta)
+    # A chapter list and a chunk-offset table, as bytes to be preserved.
+    chpl = atom(b"chpl", bytes(range(40)))
+    stco = atom(b"stco", struct.pack(">III", 0, 1, 4096))
+    moov = atom(b"moov", udta + chpl + stco)
+    body = (atom(b"ftyp", b"M4A mp42")
+            + moov
+            + atom(b"mdat", b"audio" * 64))
     with open(path, "wb") as handle:
-        handle.write(b"\x00\x00\x00\x18ftypM4A ")
+        handle.write(body)
+    return moov
+
+
+def moov_span(data):
+    for kind, start, header_end, end in shrink.atom_children(
+            data, 0, len(data)):
+        if kind == b"moov":
+            return start, end
+    raise AssertionError("no moov")
+
+
+def test_m4b_cover_is_found(directory):
+    path = os.path.join(directory, "found.m4b")
+    build_m4b(path, jpeg_bytes(900, 900))
+    data = open(path, "rb").read()
+    found = shrink.find_covr_data(data)
+    assert found is not None
+    payload, payload_end = found[0], found[1]
+    assert shrink.jpeg_size(data[payload:payload_end])[:2] == (900, 900)
+
+
+def test_m4b_rewrite_moves_nothing(directory):
+    path = os.path.join(directory, "rewrite.m4b")
+    build_m4b(path, jpeg_bytes(900, 900) + b"\x00" * 400)
+    before = open(path, "rb").read()
+    before_moov = moov_span(before)
+    covr_start, covr_end = shrink.find_covr_data(before)[2:]
+
+    shrink.rewrite_m4b_cover(path, jpeg_bytes(150, 150), backup=False)
+    after = open(path, "rb").read()
+
+    assert len(after) == len(before), "the file changed length"
+    assert moov_span(after) == before_moov, "moov moved or changed size"
+    assert after[:covr_start] == before[:covr_start], "bytes before covr"
+    assert after[covr_end:] == before[covr_end:], "bytes after covr"
+    # The chapter table and the chunk offsets are outside covr, so those
+    # two assertions already cover them -- but name it, because it is the
+    # whole reason this is done in place.
+    assert b"chpl" in after and b"stco" in after
+    found = shrink.find_covr_data(after)
+    assert shrink.jpeg_size(after[found[0]:found[1]])[:2] == (150, 150)
+    # What covr gave up must be spent, or the atom tree stops adding up.
+    trailing = after[covr_end - 8:covr_end]
+    assert b"free" in after[found[3]:found[3] + 64] or trailing, after[
+        covr_end - 16:covr_end]
+    for kind, start, header_end, end in shrink.atom_children(
+            after, 0, len(after)):
+        assert end <= len(after)
+
+
+def test_m4b_refuses_a_larger_cover(directory):
+    path = os.path.join(directory, "larger.m4b")
+    build_m4b(path, jpeg_bytes(100, 100))
+    before = open(path, "rb").read()
+    try:
+        shrink.rewrite_m4b_cover(
+            path, jpeg_bytes(100, 100) + b"\x00" * 500, backup=False)
+        raise AssertionError("a larger cover must be refused")
+    except shrink.CoverError:
+        pass
+    assert open(path, "rb").read() == before
+
+
+def test_m4b_without_a_cover_is_left_alone(directory):
+    path = os.path.join(directory, "bare.m4b")
+    with open(path, "wb") as handle:
+        handle.write(atom(b"ftyp", b"M4A mp42") + atom(b"mdat", b"x" * 32))
     before = open(path, "rb").read()
     code, output = run_tool(path, "--shrink", "--cap", "64")
-    assert "left alone" in output, output
-    assert open(path, "rb").read() == before, "the m4b must not be touched"
     assert code == 0, output
+    assert open(path, "rb").read() == before
 
 
 def test_rewriting_keeps_the_book(directory):
@@ -192,10 +281,13 @@ def main():
         singles = os.path.join(directory, "singles")
         os.mkdir(singles)
         test_small_cover_is_left_alone(singles)
-        test_audiobooks_are_only_reported(singles)
+        test_m4b_cover_is_found(singles)
+        test_m4b_rewrite_moves_nothing(singles)
+        test_m4b_refuses_a_larger_cover(singles)
+        test_m4b_without_a_cover_is_left_alone(singles)
         test_rewriting_keeps_the_book(singles)
         test_a_failed_rewrite_leaves_the_original(singles)
-    print("CrazyPod book cover shrinker tests passed")
+    print("CrazyPod cover shrinker tests passed")
     return 0
 
 

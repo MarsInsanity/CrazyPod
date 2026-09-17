@@ -1,31 +1,39 @@
 #!/usr/bin/env python3
-"""Cap the resolution of the cover images inside books on the device.
+"""Cap the resolution of every cover on the iPod: music, books, audiobooks.
 
-The firmware draws a book cover at 72x101 and never larger, so a 1600x1600
-cover is decoded at full size and thrown away -- on a 75 MHz ARM7 reading
-from a card, that is the pause you feel when the selection settles on a
-book. Shrinking the cover in the file is the same trick that worked for
-the music library, where 500x500 art took eight to ten seconds and 115x115
-was immediate.
+CrazyPod draws a book cover at 72x101 and album art at 128 or 180, so a
+1600x1600 cover is decoded at full size and then thrown away. On a 75 MHz
+ARM7 reading from a card that is the pause you feel -- eight to ten
+seconds for 500x500 album art, and a Books menu that stopped for seconds
+because its preview draws a stack of three.
 
-What it does:
+Meant to live in the root of the iPod so it travels with the device.
+Mount the iPod, then:
 
-  .epub   rewrites the cover image inside the archive. Everything else in
-          the book is copied across byte for byte, and "mimetype" keeps
-          its required place as the first, uncompressed entry.
-  images  a loose cover.jpg / folder.png beside a book is rewritten in
-          place.
-  .m4b    reported, never touched. An audiobook's cover lives in a "covr"
-          atom beside its chapter table, and every safe way to rewrite
-          that needs a remux this script will not do behind your back --
-          it would be your chapter marks at risk, not a cover.
+  python3 /Volumes/IPOD/shrink-ipod-covers.py /Volumes/IPOD
+  python3 /Volumes/IPOD/shrink-ipod-covers.py /Volumes/IPOD --shrink
+
+Point it at the root and it finds Music, Books and Audiobooks by itself,
+and leaves Photos and Videos alone. Point it at one folder or one file to
+do only that. --install /Volumes/IPOD copies this script to the root for
+next time.
+
+What it touches:
+
+  images  album art and loose covers -- cover.jpg, folder.png and the
+          rest -- rewritten in place.
+  .epub   the cover image inside the archive is rewritten. Everything
+          else in the book is copied across byte for byte, and "mimetype"
+          keeps its required place as the first, uncompressed entry.
+  .m4b    the cover inside the file is replaced without remuxing: the
+          "covr" atom is overwritten and the space it gives up is filled
+          with a "free" atom, so "moov" keeps the same size to the byte
+          and every chapter mark and sample offset in the file still
+          points where it did. If that cannot be done safely the file is
+          reported and left alone.
 
 Output is always baseline JPEG, which is the only kind this firmware's
-decoder reads.
-
-  python3 tools/shrink-book-covers.py /Volumes/IPOD/Books
-  python3 tools/shrink-book-covers.py /Volumes/IPOD/Books --shrink
-  python3 tools/shrink-book-covers.py /Volumes/IPOD/Books --shrink --cap 160
+decoder reads -- so this clears progressive covers at the same time.
 
 It reports by default and changes nothing until you pass --shrink. Needs
 ImageMagick, or djpeg and cjpeg from libjpeg-turbo, only when actually
@@ -366,17 +374,203 @@ def handle_image(path, options, tool, counts):
     report(path, "%dx%d -> %d KB" % (width, height, len(shrunk) // 1024))
 
 
-def handle_audiobook(path, counts):
-    counts["audiobook"] += 1
-    report(path, "audiobook: cover is inside the file, left alone")
+# ---- The cover inside an m4b --------------------------------------------
+#
+# Replacing it without a remux is worth the care: an audiobook's chapter
+# table sits in the same moov atom, and every sample offset in stco is an
+# absolute position in the file. Change moov's size by one byte and all of
+# them are wrong. So the new cover is written over the old one and the
+# space it gives up becomes a "free" atom -- moov's size never changes,
+# nothing after it moves, and the chapter marks still point where they did.
+
+def atom_children(data, start, end):
+    """Yield (type, header_end, atom_end) for each atom in a range."""
+    offset = start
+    while offset + 8 <= end:
+        size = int.from_bytes(data[offset:offset + 4], "big")
+        kind = data[offset + 4:offset + 8]
+        header = 8
+        if size == 1:
+            if offset + 16 > end:
+                return
+            size = int.from_bytes(data[offset + 8:offset + 16], "big")
+            header = 16
+        elif size == 0:
+            size = end - offset
+        if size < header or offset + size > end:
+            return
+        yield kind, offset, offset + header, offset + size
+        offset += size
+
+
+def find_atom(data, start, end, wanted):
+    for kind, atom_start, header_end, atom_end in atom_children(
+            data, start, end):
+        if kind == wanted:
+            return atom_start, header_end, atom_end
+    return None
+
+
+def find_covr_data(data):
+    """(payload_start, payload_end, atom_start, atom_end) for the cover's
+    data atom, or None. atom_* bound the covr atom itself."""
+    moov = find_atom(data, 0, len(data), b"moov")
+    if moov is None:
+        return None
+    udta = find_atom(data, moov[1], moov[2], b"udta")
+    if udta is None:
+        return None
+    meta = find_atom(data, udta[1], udta[2], b"meta")
+    if meta is None:
+        return None
+    # meta carries a version and flags before its children, except where
+    # it does not -- so look for ilst at both offsets.
+    for skip in (4, 0):
+        ilst = find_atom(data, meta[1] + skip, meta[2], b"ilst")
+        if ilst is not None:
+            break
+    if ilst is None:
+        return None
+    covr = find_atom(data, ilst[1], ilst[2], b"covr")
+    if covr is None:
+        return None
+    entry = find_atom(data, covr[1], covr[2], b"data")
+    if entry is None:
+        return None
+    # data: version+flags(4) then reserved(4), then the image.
+    payload = entry[1] + 8
+    if payload >= entry[2]:
+        return None
+    return payload, entry[2], covr[0], covr[2]
+
+
+def rewrite_m4b_cover(path, image, backup):
+    """Overwrite the cover in place, keeping moov exactly as long."""
+    with open(path, "rb") as handle:
+        data = bytearray(handle.read())
+    found = find_covr_data(data)
+    if found is None:
+        raise CoverError("no cover atom to replace")
+    payload, payload_end, covr_start, covr_end = found
+    room = payload_end - payload
+    freed = room - len(image)
+    if freed < 0:
+        raise CoverError("the new cover is larger than the old one")
+    if freed != 0 and freed < 8:
+        raise CoverError("no room for the padding a smaller cover needs")
+    data[payload:payload + len(image)] = image
+    if freed:
+        # Shrink covr and its data atom by what was freed, then spend the
+        # same number of bytes on a free atom directly after it.
+        for atom_start in (covr_start, payload - 16):
+            size = int.from_bytes(
+                data[atom_start:atom_start + 4], "big") - freed
+            data[atom_start:atom_start + 4] = size.to_bytes(4, "big")
+        cut = covr_end - freed
+        data[cut:cut + 4] = freed.to_bytes(4, "big")
+        data[cut + 4:cut + 8] = b"free"
+        for offset in range(cut + 8, covr_end):
+            data[offset] = 0
+    directory = os.path.dirname(os.path.abspath(path))
+    handle, temporary = tempfile.mkstemp(suffix=".m4b", dir=directory)
+    try:
+        with os.fdopen(handle, "wb") as out:
+            out.write(data)
+        if backup:
+            shutil.copy2(path, path + ".bak")
+        os.replace(temporary, path)
+    except BaseException:
+        if os.path.exists(temporary):
+            os.remove(temporary)
+        raise
+
+
+def handle_audiobook(path, options, tool, counts):
+    try:
+        with open(path, "rb") as handle:
+            data = handle.read()
+    except OSError as error:
+        counts["unreadable"] += 1
+        report(path, "cannot read: %s" % error)
+        return
+    found = find_covr_data(data)
+    if found is None:
+        counts["no cover"] += 1
+        if options.verbose:
+            report(path, "no cover inside the file")
+        return
+    cover = data[found[0]:found[1]]
+    size = image_size(cover)
+    if size is None:
+        counts["no cover"] += 1
+        if options.verbose:
+            report(path, "cover is neither JPEG nor PNG")
+        return
+    width, height, baseline = size
+    needs_baseline = cover[:2] == b"\xff\xd8" and not baseline
+    if max(width, height) <= options.cap and not needs_baseline:
+        counts["already small"] += 1
+        if options.verbose:
+            report(path, "%dx%d, nothing to do" % (width, height))
+        return
+    reason = "%dx%d" % (width, height)
+    if needs_baseline:
+        reason += ", progressive"
+    if not options.shrink:
+        counts["would shrink"] += 1
+        report(path, "%s -> would replace the cover in place" % reason)
+        return
+    try:
+        shrunk = shrink_image(bytes(cover), options.cap, options.quality,
+                              tool)
+        rewrite_m4b_cover(path, shrunk, options.backup)
+    except MissingToolError:
+        raise
+    except (CoverError, OSError) as error:
+        counts["failed"] += 1
+        report(path, "%s -> left alone: %s" % (reason, error))
+        return
+    new_size = image_size(shrunk)
+    counts["shrunk"] += 1
+    report(path, "%s -> %dx%d, cover %d KB -> %d KB" % (
+        reason,
+        new_size[0] if new_size else 0,
+        new_size[1] if new_size else 0,
+        len(cover) // 1024, len(shrunk) // 1024))
+
+
+# The folders CrazyPod reads covers from, and the ones whose images are
+# the owner's pictures rather than artwork.
+MEDIA_FOLDERS = ("music", "books", "audiobooks", "podcasts")
+SKIP_FOLDERS = ("photos", "videos", "dcim", ".rockbox", ".crazypod")
+
+
+def roots_for(path):
+    """A whole iPod, or whatever was actually pointed at.
+
+    Given the root of the device, walking all of it would drag in the
+    photo library, where a 3000x2000 image is the point rather than a
+    mistake. Given anything else, take it at its word.
+    """
+    if os.path.isfile(path):
+        return [path]
+    present = dict((name.lower(), name) for name in os.listdir(path))
+    media = [present[name] for name in MEDIA_FOLDERS if name in present]
+    if media and any(name in present for name in (".rockbox", "ipod_control")):
+        return [os.path.join(path, name) for name in media]
+    return [path]
 
 
 def walk(root, options, tool, counts):
     if os.path.isfile(root):
         entries = [(os.path.dirname(root), [os.path.basename(root)])]
     else:
-        entries = [(directory, files)
-                   for directory, _, files in os.walk(root)]
+        entries = []
+        for directory, subdirectories, files in os.walk(root):
+            subdirectories[:] = [
+                name for name in subdirectories
+                if name.lower() not in SKIP_FOLDERS]
+            entries.append((directory, files))
     for directory, files in entries:
         for name in sorted(files):
             if name.startswith("."):
@@ -387,11 +581,28 @@ def walk(root, options, tool, counts):
             if extension == ".epub":
                 handle_epub(path, options, tool, counts)
             elif extension in (".m4b", ".m4a"):
-                handle_audiobook(path, counts)
+                handle_audiobook(path, options, tool, counts)
             elif extension in IMAGE_SUFFIXES:
+                # Album art is usually cover.jpg, but a folder with one
+                # image in it is that album's art whatever it is called.
                 stem = os.path.splitext(lowered)[0]
-                if stem in COVER_NAMES:
+                images = [other for other in files
+                          if os.path.splitext(other.lower())[1]
+                          in IMAGE_SUFFIXES]
+                if stem in COVER_NAMES or len(images) == 1:
                     handle_image(path, options, tool, counts)
+
+
+def install(script, destination):
+    if not os.path.isdir(destination):
+        print("%s: not a folder" % destination, file=sys.stderr)
+        return 2
+    target = os.path.join(destination, os.path.basename(script))
+    shutil.copy2(script, target)
+    print("Copied to %s" % target)
+    print("Run it from there next time:\n  python3 %s %s" % (
+        target, destination))
+    return 0
 
 
 def main():
@@ -399,8 +610,11 @@ def main():
         description=__doc__,
         formatter_class=argparse.RawDescriptionHelpFormatter)
     parser.add_argument(
-        "paths", nargs="+",
-        help="a Books folder, or single books")
+        "paths", nargs="*",
+        help="the iPod's root, a folder inside it, or single files")
+    parser.add_argument(
+        "--install", metavar="IPOD",
+        help="copy this script to the iPod's root folder and exit")
     parser.add_argument(
         "--cap", type=int, default=DEFAULT_CAP,
         help="longest side in pixels (default %d; the firmware draws a "
@@ -419,6 +633,10 @@ def main():
         help="mention the books that were already small enough")
     options = parser.parse_args()
 
+    if options.install:
+        return install(os.path.abspath(__file__), options.install)
+    if not options.paths:
+        parser.error("say what to look at, or pass --install")
     if options.cap < 32:
         parser.error("a cap below 32 pixels would not be a cover")
     tool = which_tool()
@@ -431,7 +649,8 @@ def main():
             if not os.path.exists(path):
                 print("%s: no such path" % path, file=sys.stderr)
                 return 2
-            walk(path, options, tool, counts)
+            for root in roots_for(path):
+                walk(root, options, tool, counts)
     except MissingToolError as error:
         print("\n%s" % error, file=sys.stderr)
         return 2
