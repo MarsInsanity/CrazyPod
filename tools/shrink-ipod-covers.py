@@ -18,6 +18,17 @@ and leaves Photos and Videos alone. Point it at one folder or one file to
 do only that. --install /Volumes/IPOD copies this script to the root for
 next time.
 
+Each kind is capped at what the firmware draws it at:
+
+  album art    100   shown at 128 in Now Playing and Coverflow, 120 in
+                     the menu preview, 42 in the home capsule
+  book cover   128   shown at 72x101, and never larger anywhere
+  audiobook    100   the same screens as album art
+
+--cap sets all three at once; --cap-music, --cap-books and
+--cap-audiobooks set one. 128 is the largest size any cover is drawn at,
+so nothing above it is ever seen -- it is decoded and thrown away.
+
 What it touches:
 
   images  album art and loose covers -- cover.jpg, folder.png and the
@@ -48,7 +59,20 @@ import sys
 import tempfile
 import zipfile
 
-DEFAULT_CAP = 200
+# What CrazyPod actually draws, measured from the firmware:
+#
+#   album art   128 in Now Playing and Coverflow, 120 in the menu
+#               preview, 42 in the home capsule
+#   book cover  72x101, and never larger anywhere
+#   audiobook   the same path as album art, so 128
+#
+# So 128 is the largest size any of it is ever shown at, and anything
+# above that is decoded and then thrown away. The defaults sit at or just
+# above what is drawn; 100 for music is a deliberate step below 128,
+# which trades a little sharpness in Now Playing for a faster decode.
+DEFAULT_CAP_MUSIC = 100
+DEFAULT_CAP_BOOKS = 128
+DEFAULT_CAP_AUDIOBOOKS = 100
 DEFAULT_QUALITY = 88
 IMAGE_SUFFIXES = (".jpg", ".jpeg", ".png")
 COVER_NAMES = ("cover", "folder", "front", "artwork")
@@ -280,6 +304,7 @@ def report(path, note):
 
 
 def handle_epub(path, options, tool, counts):
+    cap = options.cap_books
     try:
         with zipfile.ZipFile(path, "r") as archive:
             entry = cover_entry(archive)
@@ -300,7 +325,7 @@ def handle_epub(path, options, tool, counts):
         report(path, "%s is neither JPEG nor PNG" % entry)
         return
     width, height, baseline = size
-    needs_shrink = max(width, height) > options.cap
+    needs_shrink = max(width, height) > cap
     needs_baseline = data[:2] == b"\xff\xd8" and not baseline
     if not needs_shrink and not needs_baseline:
         counts["already small"] += 1
@@ -316,7 +341,7 @@ def handle_epub(path, options, tool, counts):
         report(path, "%s -> would rewrite (%s)" % (reason, entry))
         return
     try:
-        shrunk = shrink_image(data, options.cap, options.quality, tool)
+        shrunk = shrink_image(data, cap, options.quality, tool)
         rewrite_epub(path, entry, shrunk, options.backup)
     except MissingToolError:
         raise
@@ -334,6 +359,7 @@ def handle_epub(path, options, tool, counts):
 
 
 def handle_image(path, options, tool, counts):
+    cap = options.cap_music
     try:
         with open(path, "rb") as handle:
             data = handle.read()
@@ -346,7 +372,7 @@ def handle_image(path, options, tool, counts):
         return
     width, height, baseline = size
     needs_baseline = data[:2] == b"\xff\xd8" and not baseline
-    if max(width, height) <= options.cap and not needs_baseline:
+    if max(width, height) <= cap and not needs_baseline:
         counts["already small"] += 1
         if options.verbose:
             report(path, "%dx%d, nothing to do" % (width, height))
@@ -356,7 +382,7 @@ def handle_image(path, options, tool, counts):
         report(path, "%dx%d -> would rewrite" % (width, height))
         return
     try:
-        shrunk = shrink_image(data, options.cap, options.quality, tool)
+        shrunk = shrink_image(data, cap, options.quality, tool)
     except MissingToolError:
         raise
     except CoverError as error:
@@ -486,6 +512,7 @@ def rewrite_m4b_cover(path, image, backup):
 
 
 def handle_audiobook(path, options, tool, counts):
+    cap = options.cap_audiobooks
     try:
         with open(path, "rb") as handle:
             data = handle.read()
@@ -508,7 +535,7 @@ def handle_audiobook(path, options, tool, counts):
         return
     width, height, baseline = size
     needs_baseline = cover[:2] == b"\xff\xd8" and not baseline
-    if max(width, height) <= options.cap and not needs_baseline:
+    if max(width, height) <= cap and not needs_baseline:
         counts["already small"] += 1
         if options.verbose:
             report(path, "%dx%d, nothing to do" % (width, height))
@@ -521,8 +548,7 @@ def handle_audiobook(path, options, tool, counts):
         report(path, "%s -> would replace the cover in place" % reason)
         return
     try:
-        shrunk = shrink_image(bytes(cover), options.cap, options.quality,
-                              tool)
+        shrunk = shrink_image(bytes(cover), cap, options.quality, tool)
         rewrite_m4b_cover(path, shrunk, options.backup)
     except MissingToolError:
         raise
@@ -616,9 +642,21 @@ def main():
         "--install", metavar="IPOD",
         help="copy this script to the iPod's root folder and exit")
     parser.add_argument(
-        "--cap", type=int, default=DEFAULT_CAP,
-        help="longest side in pixels (default %d; the firmware draws a "
-             "cover at 72x101)" % DEFAULT_CAP)
+        "--cap", type=int, default=None,
+        help="longest side in pixels for everything at once, overriding "
+             "the per-kind defaults below")
+    parser.add_argument(
+        "--cap-music", type=int, default=None,
+        help="album art (default %d; it is drawn at 128 and below)"
+             % DEFAULT_CAP_MUSIC)
+    parser.add_argument(
+        "--cap-books", type=int, default=None,
+        help="epub covers (default %d; they are drawn at 72x101)"
+             % DEFAULT_CAP_BOOKS)
+    parser.add_argument(
+        "--cap-audiobooks", type=int, default=None,
+        help="m4b covers (default %d; same screens as album art)"
+             % DEFAULT_CAP_AUDIOBOOKS)
     parser.add_argument(
         "--quality", type=int, default=DEFAULT_QUALITY,
         help="JPEG quality (default %d)" % DEFAULT_QUALITY)
@@ -637,8 +675,17 @@ def main():
         return install(os.path.abspath(__file__), options.install)
     if not options.paths:
         parser.error("say what to look at, or pass --install")
-    if options.cap < 32:
-        parser.error("a cap below 32 pixels would not be a cover")
+    for kind, fallback in (("music", DEFAULT_CAP_MUSIC),
+                           ("books", DEFAULT_CAP_BOOKS),
+                           ("audiobooks", DEFAULT_CAP_AUDIOBOOKS)):
+        name = "cap_" + kind
+        if getattr(options, name) is None:
+            setattr(options, name,
+                    options.cap if options.cap is not None else fallback)
+        if getattr(options, name) < 32:
+            parser.error("a cap below 32 pixels would not be a cover")
+    print("caps: music %d, books %d, audiobooks %d" % (
+        options.cap_music, options.cap_books, options.cap_audiobooks))
     tool = which_tool()
 
     counts = dict((key, 0) for key in (

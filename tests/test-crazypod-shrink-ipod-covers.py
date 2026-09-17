@@ -115,7 +115,7 @@ def test_reporting(directory):
 
 def test_small_cover_is_left_alone(directory):
     path = os.path.join(directory, "small.epub")
-    build_epub(path, "cover.jpg", jpeg_bytes(120, 160), "property")
+    build_epub(path, "cover.jpg", jpeg_bytes(90, 120), "property")
     code, output = run_tool(path, "--verbose")
     assert code == 0, output
     assert "nothing to do" in output, output
@@ -153,6 +153,41 @@ def moov_span(data):
         if kind == b"moov":
             return start, end
     raise AssertionError("no moov")
+
+
+def test_each_kind_has_its_own_cap(directory):
+    """Album art is drawn at 128 and below, a book cover at 72x101. The
+    caps follow the screens, so a music cover of 110 is over its cap while
+    a book cover of the same size is under its own."""
+    music = os.path.join(directory, "Music", "Album")
+    books = os.path.join(directory, "Books")
+    os.makedirs(music)
+    os.makedirs(books)
+    with open(os.path.join(music, "cover.jpg"), "wb") as handle:
+        handle.write(jpeg_bytes(110, 110))
+    build_epub(os.path.join(books, "novel.epub"),
+               "cover.jpg", jpeg_bytes(110, 110), "property")
+
+    code, output = run_tool(directory, "--verbose")
+    assert code == 0, output
+    assert "caps: music 100, books 128, audiobooks 100" in output, output
+    lines = output.splitlines()
+    music_line = [line for line in lines if "Album" in line][0]
+    book_line = [line for line in lines if "novel.epub" in line][0]
+    assert "would rewrite" in music_line, music_line
+    assert "nothing to do" in book_line, book_line
+
+    # One --cap sets all three at once.
+    code, output = run_tool(directory, "--cap", "512")
+    assert "caps: music 512, books 512, audiobooks 512" in output, output
+    assert "would rewrite" not in output, output
+
+    # And a single kind can be overridden on its own.
+    code, output = run_tool(directory, "--cap-books", "64", "--verbose")
+    assert "caps: music 100, books 64, audiobooks 100" in output, output
+    book_line = [line for line in output.splitlines()
+                 if "novel.epub" in line][0]
+    assert "would rewrite" in book_line, book_line
 
 
 def test_m4b_cover_is_found(directory):
@@ -281,6 +316,9 @@ def main():
         singles = os.path.join(directory, "singles")
         os.mkdir(singles)
         test_small_cover_is_left_alone(singles)
+        caps = os.path.join(directory, "caps")
+        os.mkdir(caps)
+        test_each_kind_has_its_own_cap(caps)
         test_m4b_cover_is_found(singles)
         test_m4b_rewrite_moves_nothing(singles)
         test_m4b_refuses_a_larger_cover(singles)
