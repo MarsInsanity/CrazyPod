@@ -31,6 +31,18 @@
 #define AUDIOBOOKS_SCAN_DEPTH 4
 #define TICK_INTERVAL (HZ / 2)
 #define PERIODIC_SAVE_INTERVAL (30 * HZ)
+/*
+ * How long the position may go unwritten while a book plays.
+ *
+ * The periodic save waits for the disk to be busy with something else,
+ * which on a hard disk is right: spinning it up to write a few bytes of
+ * position costs more than the bytes are worth. On a flash card the disk
+ * is hardly ever "active", so that wait meant the position was only
+ * written when the owner happened to pause -- and a reboot lost
+ * everything since. Saving is preferred when the disk is already awake
+ * and forced when it has been too long either way.
+ */
+#define FORCED_SAVE_INTERVAL (60 * HZ)
 /* A book within this much of its end restarts from the beginning. */
 #define FINISHED_MARGIN_MS 5000u
 
@@ -1151,6 +1163,41 @@ bool crazypod_audiobook_skip_chapter(int index, int direction)
     return true;
 }
 
+static bool save_due(long now)
+{
+    if(TIME_AFTER(now, live.last_save + FORCED_SAVE_INTERVAL))
+        return true;
+    return TIME_AFTER(now, live.last_save + PERIODIC_SAVE_INTERVAL) &&
+        storage_disk_is_active();
+}
+
+/*
+ * Write the listening position now, for a power-off or a reboot. The
+ * settings file is flushed on the way out already; this one was not, so
+ * a clean shutdown could still lose the position of a book that had not
+ * been paused.
+ */
+void crazypod_audiobooks_flush(void)
+{
+    const struct mp3entry *entry = current_entry();
+    uint32_t position;
+
+    if(live.index >= 0 && live.index < book_count) {
+        position = entry != NULL &&
+            index_of_path(entry->path) == live.index
+                ? (uint32_t)entry->elapsed : live.last_saved_ms;
+        details_dirty = false;
+        remember_position(live.index, position, true);
+        live.last_saved_ms = position;
+        live.last_save = current_tick;
+        return;
+    }
+    if(details_dirty) {
+        details_dirty = false;
+        (void)state_save();
+    }
+}
+
 void crazypod_audiobooks_tick(long now)
 {
     const struct mp3entry *entry;
@@ -1231,8 +1278,7 @@ void crazypod_audiobooks_tick(long now)
         live.last_saved_ms = position;
         live.last_save = now;
     }
-    else if(playing && TIME_AFTER(now, live.last_save + PERIODIC_SAVE_INTERVAL) &&
-            storage_disk_is_active()) {
+    else if(playing && save_due(now)) {
         remember_position(index, position, true);
         live.last_saved_ms = position;
         live.last_save = now;

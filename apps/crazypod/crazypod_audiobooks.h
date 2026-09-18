@@ -85,6 +85,8 @@ bool crazypod_audiobook_skip_chapter(int index, int direction);
 /* Call regularly from the UI loop; saves the position when playback pauses,
  * stops or moves to another file, and periodically while the disk is awake. */
 void crazypod_audiobooks_tick(long now);
+/* Write the listening position out now, for a power-off or reboot. */
+void crazypod_audiobooks_flush(void);
 /* Favorites, shared with the Books app's Favorites list. */
 bool crazypod_audiobook_is_favorite(int index);
 bool crazypod_audiobook_toggle_favorite(int index);

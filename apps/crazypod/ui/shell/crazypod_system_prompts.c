@@ -13,6 +13,7 @@
 
 #include "../../accessory/crazypod_iap_simple.h"
 #include "../../crazypod_artwork.h"
+#include "../../crazypod_audiobooks.h"
 #include "../../crazypod_books.h"
 #include "../../crazypod_coverflow.h"
 #include "../../crazypod_music.h"
@@ -121,6 +122,9 @@ static void execute(enum shutdown_type type)
         crazypod_miniapps_feature_close();
     }
     crazypod_state_save(true);
+    /* A different file from the settings, and nothing was writing it on
+     * the way out: a book that had not been paused lost its place. */
+    crazypod_audiobooks_flush();
     shutdown_hw(type);
 }
 
