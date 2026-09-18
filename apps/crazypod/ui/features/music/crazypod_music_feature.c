@@ -207,22 +207,19 @@ bool crazypod_music_feature_item_title(
     case MUSIC_ROUTE_ALBUM_FLOW: {
         static char album_label[148];
         struct crazypod_album album;
-        bool duplicate_title = false;
-        int i;
+        bool duplicate_title;
 
         if(!crazypod_music_copy_album(index, &album)) {
             *title = "";
             return true;
         }
-        for(i = 0; i < crazypod_music_album_count(); ++i) {
-            struct crazypod_album other;
-
-            if(i != index && crazypod_music_copy_album(i, &other) &&
-               strcmp(other.title, album.title) == 0) {
-                duplicate_title = true;
-                break;
-            }
-        }
+        /*
+         * The catalog answers this from the two albums either side of
+         * this one. It used to be asked here, by copying every album in
+         * the library and comparing the titles -- for every visible row,
+         * on every frame.
+         */
+        duplicate_title = crazypod_music_album_title_is_ambiguous(index);
         snprintf(album_label, sizeof(album_label),
                  duplicate_title ? CP_FMT("%s · %s") : "%s",
                  duplicate_title ? album.artist : album.title,

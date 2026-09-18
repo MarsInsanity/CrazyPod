@@ -1,5 +1,6 @@
 #include <assert.h>
 #include <stddef.h>
+#include <stdlib.h>
 #include <string.h>
 
 #include "crazypod_collation.h"
@@ -111,6 +112,92 @@ static void test_panel_half_geometry(void)
     /* A radius larger than the panel cannot push the border back over it. */
     crazypod_panel_half_geometry(94, 400, false, &bottom);
     assert(bottom.border_y < 0 && bottom.layer_y >= -47);
+}
+
+/*
+ * The Albums list labels an album with its artist when another album
+ * shares its title. Asking that by walking the whole catalog for every
+ * visible row is what made Albums scroll so much worse than Artists, so
+ * the catalog answers it from the neighbours instead -- which is only
+ * correct because the albums are sorted by title.
+ *
+ * The subtlety worth a test: the sort uses the collation, and two titles
+ * can collate equal while differing byte for byte, so the neighbours have
+ * to be walked while the collation still calls them equal rather than
+ * stopping at the one next door. This checks that walking that run finds
+ * exactly what a scan of everything would find.
+ */
+static int compare_titles(const void *left, const void *right)
+{
+    return crazypod_collation_compare(
+        *(const char *const *)left, *(const char *const *)right);
+}
+
+static bool ambiguous_by_scan(const char *const *titles, int count,
+                              int index)
+{
+    int i;
+
+    for(i = 0; i < count; ++i)
+        if(i != index && strcmp(titles[i], titles[index]) == 0)
+            return true;
+    return false;
+}
+
+static bool ambiguous_by_neighbours(const char *const *titles, int count,
+                                    int index)
+{
+    int i;
+
+    for(i = index - 1; i >= 0; --i) {
+        if(crazypod_collation_compare(titles[i], titles[index]) != 0)
+            break;
+        if(strcmp(titles[i], titles[index]) == 0)
+            return true;
+    }
+    for(i = index + 1; i < count; ++i) {
+        if(crazypod_collation_compare(titles[i], titles[index]) != 0)
+            break;
+        if(strcmp(titles[i], titles[index]) == 0)
+            return true;
+    }
+    return false;
+}
+
+static void test_album_title_ambiguity(void)
+{
+    /* Exact duplicates, titles that only collate equal, a case-different
+     * pair with a third between them, and plenty that match nothing. */
+    static const char *titles[] = {
+        "Greatest Hits", "greatest hits", "Greatest Hits",
+        "1989", "1989 (Taylor's Version)", "1989",
+        "Blue", "Blue", "BLUE", "Bluer",
+        "folklore", "Folklore", "FOLKLORE",
+        "Red", "Rumours", "Thriller", "thriller",
+        "", "", "A",
+    };
+    int count = (int)(sizeof(titles) / sizeof(titles[0]));
+    const char *sorted[sizeof(titles) / sizeof(titles[0])];
+    int index;
+
+    memcpy(sorted, titles, sizeof(titles));
+    qsort(sorted, (size_t)count, sizeof(sorted[0]), compare_titles);
+
+    /* Sorted, as the catalog is. */
+    for(index = 1; index < count; ++index)
+        assert(crazypod_collation_compare(
+                   sorted[index - 1], sorted[index]) <= 0);
+
+    for(index = 0; index < count; ++index)
+        assert(ambiguous_by_neighbours(sorted, count, index) ==
+               ambiguous_by_scan(sorted, count, index));
+
+    /* And the answers are not all the same, or this proves nothing. */
+    assert(ambiguous_by_scan(sorted, count, 0) ||
+           ambiguous_by_scan(sorted, count, count - 1));
+    for(index = 0; index < count; ++index)
+        if(strcmp(sorted[index], "Rumours") == 0)
+            assert(!ambiguous_by_neighbours(sorted, count, index));
 }
 
 /* Midnight and noon are where hand-rolled twelve-hour clocks go wrong. */
@@ -611,6 +698,7 @@ int main(void)
     test_calendar();
     test_clock_format();
     test_bar_fill();
+    test_album_title_ambiguity();
     test_panel_half_geometry();
     test_note_layout();
     test_editor();

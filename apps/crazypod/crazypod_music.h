@@ -126,6 +126,12 @@ void crazypod_music_set_scan_suspended(bool suspended);
 
 int crazypod_music_track_count(void);
 bool crazypod_music_copy_track(int index, struct crazypod_track *track);
+/*
+ * True when another album carries the same title, so a list can show the
+ * artist alongside it. O(1) in practice: the catalog is ordered by title,
+ * so only the neighbours can match.
+ */
+bool crazypod_music_album_title_is_ambiguous(int index);
 int crazypod_music_find_track(const char *path);
 
 /*

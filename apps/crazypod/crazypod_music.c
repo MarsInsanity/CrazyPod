@@ -2270,6 +2270,56 @@ bool crazypod_music_copy_album_track(int album_index, int track_index,
     return copied;
 }
 
+/*
+ * Whether another album shares this one's title, so the list can put the
+ * artist in front of it.
+ *
+ * The albums are sorted by title before album artist -- see
+ * compare_album_track_indices() -- so anything sharing a title is a
+ * neighbour, and the answer is two or three comparisons rather than a
+ * walk of the catalog. The list asked this question for every visible
+ * row of every frame by copying every album in the library and comparing
+ * it, which is why Albums scrolled so much worse than Artists: eight rows
+ * times the whole catalog, each copy taking the lock and formatting two
+ * strings.
+ *
+ * The run is walked while the collation still calls the titles equal
+ * rather than stopping at the immediate neighbour, because two titles can
+ * collate the same and still differ byte for byte -- a third such title
+ * can sort between two that match exactly.
+ */
+bool crazypod_music_album_title_is_ambiguous(int index)
+{
+    const char *title;
+    bool ambiguous = false;
+    int i;
+
+    mutex_lock(&catalog_mutex);
+    if(catalog_ready && index >= 0 && index < album_count) {
+        title = pool_text(albums[index].title_offset);
+        for(i = index - 1; i >= 0; --i) {
+            const char *other = pool_text(albums[i].title_offset);
+
+            if(crazypod_collation_compare(other, title) != 0)
+                break;
+            if(strcmp(other, title) == 0) {
+                ambiguous = true;
+                break;
+            }
+        }
+        for(i = index + 1; !ambiguous && i < album_count; ++i) {
+            const char *other = pool_text(albums[i].title_offset);
+
+            if(crazypod_collation_compare(other, title) != 0)
+                break;
+            if(strcmp(other, title) == 0)
+                ambiguous = true;
+        }
+    }
+    mutex_unlock(&catalog_mutex);
+    return ambiguous;
+}
+
 int crazypod_music_playlist_count(void)
 {
     int count;
