@@ -95,34 +95,6 @@ def test_measuring():
     assert shrink.image_size(b"not an image at all") is None
 
 
-def test_finding_the_cover(directory):
-    for style, name in (("property", "big.jpg"),
-                        ("meta", "big.jpg"),
-                        ("name", "cover.jpg")):
-        path = os.path.join(directory, "%s.epub" % style)
-        build_epub(path, name, jpeg_bytes(1600, 1600), style)
-        with zipfile.ZipFile(path) as archive:
-            found = shrink.cover_entry(archive)
-        assert found == "OEBPS/" + name, (style, found)
-
-
-def test_reporting(directory):
-    code, output = run_tool(directory)
-    assert code == 0, output
-    assert "1600x1600 -> would rewrite" in output, output
-    assert "would shrink   3" in output, output
-    assert "Nothing was changed" in output, output
-
-
-def test_small_cover_is_left_alone(directory):
-    path = os.path.join(directory, "small.epub")
-    build_epub(path, "cover.jpg", jpeg_bytes(90, 120), "property")
-    code, output = run_tool(path, "--verbose")
-    assert code == 0, output
-    assert "nothing to do" in output, output
-    assert "would shrink" not in output, output
-
-
 def atom(kind, payload):
     return struct.pack(">I", len(payload) + 8) + kind + payload
 
@@ -174,38 +146,34 @@ def moov_span(data):
 
 
 def test_each_kind_has_its_own_cap(directory):
-    """Album art is drawn at 128 and below, a book cover at 72x101. The
-    caps follow the screens, so a music cover of 110 is over its cap while
-    a book cover of the same size is under its own."""
+    """Album art and audiobook covers are drawn on the same screens, so
+    they share a default -- but each can be set on its own."""
     music = os.path.join(directory, "Music", "Album")
-    books = os.path.join(directory, "Books")
+    audio = os.path.join(directory, "Audiobooks")
     os.makedirs(music)
-    os.makedirs(books)
+    os.makedirs(audio)
     with open(os.path.join(music, "cover.jpg"), "wb") as handle:
         handle.write(jpeg_bytes(110, 110))
-    build_epub(os.path.join(books, "novel.epub"),
-               "cover.jpg", jpeg_bytes(110, 110), "property")
+    build_m4b(os.path.join(audio, "book.m4b"), jpeg_bytes(110, 110))
 
     code, output = run_tool(directory, "--verbose")
     assert code == 0, output
-    assert "caps: music 100, books 128, audiobooks 100" in output, output
-    lines = output.splitlines()
-    music_line = [line for line in lines if "Album" in line][0]
-    book_line = [line for line in lines if "novel.epub" in line][0]
-    assert "would rewrite" in music_line, music_line
-    assert "nothing to do" in book_line, book_line
+    assert "caps: music 100, audiobooks 100" in output, output
+    for line in output.splitlines():
+        if "cover.jpg" in line or "book.m4b" in line:
+            assert "would" in line, line
 
-    # One --cap sets all three at once.
     code, output = run_tool(directory, "--cap", "512")
-    assert "caps: music 512, books 512, audiobooks 512" in output, output
-    assert "would rewrite" not in output, output
+    assert "caps: music 512, audiobooks 512" in output, output
+    assert "would" not in output, output
 
-    # And a single kind can be overridden on its own.
-    code, output = run_tool(directory, "--cap-books", "64", "--verbose")
-    assert "caps: music 100, books 64, audiobooks 100" in output, output
-    book_line = [line for line in output.splitlines()
-                 if "novel.epub" in line][0]
-    assert "would rewrite" in book_line, book_line
+    code, output = run_tool(directory, "--cap-music", "64",
+                            "--cap-audiobooks", "128", "--verbose")
+    assert "caps: music 64, audiobooks 128" in output, output
+    song = [line for line in output.splitlines() if "cover.jpg" in line][0]
+    book = [line for line in output.splitlines() if "book.m4b" in line][0]
+    assert "would rewrite" in song, song
+    assert "nothing to do" in book, book
 
 
 def test_it_works_on_the_volume_it_sits_in(directory):
@@ -242,8 +210,9 @@ def test_it_works_on_the_volume_it_sits_in(directory):
 
 
 def test_a_file_that_is_not_an_epub_is_named(directory):
-    """A .epub that will not open as a zip is nearly always something else
-    wearing the extension, and which one decides what to do about it."""
+    """Covers are no longer taken out of books, but a file that is not a
+    book still reaches the shelf and can never be opened, and nothing
+    else would say which kind of not-a-book it is."""
     cases = {
         "kindle.epub": (b"\x00" * 60 + b"BOOKMOBI" + b"\x00" * 64,
                         "Kindle book (MOBI/AZW)"),
@@ -259,14 +228,21 @@ def test_a_file_that_is_not_an_epub_is_named(directory):
         path = os.path.join(directory, name)
         with open(path, "wb") as handle:
             handle.write(data)
-        described = shrink.describe_file(path)
-        assert expected in described, (name, described)
+        assert expected in shrink.describe_file(path), name
 
-    code, output = run_tool(directory)
+    # A real book, with a cover, that must be reported as nothing to do
+    # and never rewritten.
+    book = os.path.join(directory, "real.epub")
+    build_epub(book, "cover.jpg", jpeg_bytes(1400, 2100), "property")
+    before = open(book, "rb").read()
+
+    code, output = run_tool(directory, "--shrink", "--verbose")
     assert code == 0, output
     assert "not an epub" in output, output
     assert "CrazyPod cannot read them either" in output, output
-    # Naming the problem is not the same as touching the file.
+    real = [line for line in output.splitlines() if "real.epub" in line][0]
+    assert "covers are not drawn" in real, real
+    assert open(book, "rb").read() == before, "the book must be untouched"
     for name in cases:
         with open(os.path.join(directory, name), "rb") as handle:
             assert handle.read() == cases[name][0], name
@@ -305,20 +281,6 @@ def test_png_cover_becomes_a_jpeg_the_firmware_can_read(directory):
     assert len(after) == len(before), "moov must not change length"
 
 
-def test_an_epub_png_cover_is_reported_not_mangled(directory):
-    """Writing a JPEG into the archive under the old .png name would be
-    refused by the firmware's own extension check and broken in every
-    other reader. It must be left alone and explained."""
-    path = os.path.join(directory, "png-cover.epub")
-    build_epub(path, "cover.png", png_cover_bytes(600, 900), "property")
-    before = open(path, "rb").read()
-    code, output = run_tool(path, "--shrink")
-    assert code == 0, output
-    assert "600x900 PNG cover" in output, output
-    assert "Convert the cover to JPEG" in output, output
-    assert open(path, "rb").read() == before, "the book must be untouched"
-
-
 def test_the_cap_follows_the_folder(directory):
     """An .m4a in Music is a song; an .m4a in Audiobooks is a book. The
     firmware reads them that way, so the caps have to as well."""
@@ -337,54 +299,6 @@ def test_the_cap_follows_the_folder(directory):
     book = [line for line in output.splitlines() if "book.m4a" in line][0]
     assert "nothing to do" in song, song
     assert "would replace" in book, book
-
-
-def test_a_rewrite_that_fails_its_check_never_lands(directory):
-    """The safety net: if anything about the new archive is wrong, the
-    book on disk must be the one that was there before."""
-    path = os.path.join(directory, "guarded.epub")
-    build_epub(path, "cover.jpg", jpeg_bytes(1400, 2100), "property",
-               extra={"OEBPS/notes.txt": "keep me"})
-    before = open(path, "rb").read()
-
-    # Drop an entry on the way through, which is exactly the shape of
-    # damage the check exists to catch.
-    original_writestr = zipfile.ZipFile.writestr
-
-    def skip_notes(self, info, data, *args, **kwargs):
-        name = info.filename if hasattr(info, "filename") else info
-        if name.endswith("notes.txt"):
-            return None
-        return original_writestr(self, info, data, *args, **kwargs)
-
-    zipfile.ZipFile.writestr = skip_notes
-    try:
-        shrink.rewrite_epub(path, "OEBPS/cover.jpg",
-                            jpeg_bytes(85, 128), backup=False)
-        raise AssertionError("a damaged rewrite must be refused")
-    except shrink.CoverError as error:
-        assert "different entries" in str(error), error
-    finally:
-        zipfile.ZipFile.writestr = original_writestr
-
-    assert open(path, "rb").read() == before, "the book was modified"
-    leftovers = [name for name in os.listdir(directory)
-                 if name.startswith("tmp")]
-    assert not leftovers, leftovers
-
-
-def test_backups_are_kept_unless_refused(directory):
-    path = os.path.join(directory, "backed-up.epub")
-    build_epub(path, "cover.jpg", jpeg_bytes(1400, 2100), "property")
-    code, output = run_tool(path, "--shrink", "--cap", "64")
-    # No image tool here, so the run stops at the scaler -- what matters
-    # is that the option exists and the default is to keep a backup.
-    assert "--no-backup" in subprocess.run(
-        [sys.executable, TOOL, "--help"],
-        stdout=subprocess.PIPE).stdout.decode()
-    assert "--backup" not in subprocess.run(
-        [sys.executable, TOOL, "--help"],
-        stdout=subprocess.PIPE).stdout.decode().replace("--no-backup", "")
 
 
 def test_shrinking_actually_reaches_the_cap():
@@ -509,48 +423,6 @@ def test_m4b_without_a_cover_is_left_alone(directory):
     assert open(path, "rb").read() == before
 
 
-def test_rewriting_keeps_the_book(directory):
-    """The rewrite path, with the image step stubbed out: what is being
-    checked is the archive that comes back, not the scaler."""
-    path = os.path.join(directory, "rewrite.epub")
-    build_epub(path, "cover.jpg", jpeg_bytes(1600, 1600), "property",
-               extra={"OEBPS/notes.txt": "keep me"})
-    with zipfile.ZipFile(path) as archive:
-        original = dict((name, archive.read(name))
-                        for name in archive.namelist())
-    shrink.rewrite_epub(path, "OEBPS/cover.jpg",
-                        jpeg_bytes(200, 200), backup=True)
-    with zipfile.ZipFile(path) as archive:
-        infos = archive.infolist()
-        assert infos[0].filename == "mimetype", [i.filename for i in infos]
-        assert infos[0].compress_type == zipfile.ZIP_STORED
-        assert archive.read("mimetype") == b"application/epub+zip"
-        assert sorted(i.filename for i in infos) == sorted(original)
-        for name, data in original.items():
-            if name != "OEBPS/cover.jpg":
-                assert archive.read(name) == data, name
-        assert shrink.jpeg_size(archive.read("OEBPS/cover.jpg"))[:2] == \
-            (200, 200)
-    assert os.path.exists(path + ".bak"), "--backup must keep the original"
-    with zipfile.ZipFile(path + ".bak") as archive:
-        assert shrink.jpeg_size(archive.read("OEBPS/cover.jpg"))[:2] == \
-            (1600, 1600)
-
-
-def test_a_failed_rewrite_leaves_the_original(directory):
-    path = os.path.join(directory, "intact.epub")
-    build_epub(path, "cover.jpg", jpeg_bytes(1600, 1600), "property")
-    before = open(path, "rb").read()
-    try:
-        shrink.rewrite_epub(path, "OEBPS/missing.jpg", b"", backup=False)
-    except KeyError:
-        pass
-    assert open(path, "rb").read() == before
-    leftovers = [name for name in os.listdir(directory)
-                 if name.endswith(".epub") and name.startswith("tmp")]
-    assert not leftovers, leftovers
-
-
 def test_scale_choice():
     """libjpeg scales by eighths: the result must land under the cap, and
     never above it."""
@@ -568,11 +440,8 @@ def main():
         test_scale_choice()
         covers = os.path.join(directory, "covers")
         os.mkdir(covers)
-        test_finding_the_cover(covers)
-        test_reporting(covers)
         singles = os.path.join(directory, "singles")
         os.mkdir(singles)
-        test_small_cover_is_left_alone(singles)
         caps = os.path.join(directory, "caps")
         os.mkdir(caps)
         test_each_kind_has_its_own_cap(caps)
@@ -583,14 +452,11 @@ def main():
         os.mkdir(broken)
         test_a_file_that_is_not_an_epub_is_named(broken)
         test_png_cover_becomes_a_jpeg_the_firmware_can_read(singles)
-        test_an_epub_png_cover_is_reported_not_mangled(singles)
         folders = os.path.join(directory, "folders")
         os.mkdir(folders)
         test_the_cap_follows_the_folder(folders)
         guarded = os.path.join(directory, "guarded")
         os.mkdir(guarded)
-        test_a_rewrite_that_fails_its_check_never_lands(guarded)
-        test_backups_are_kept_unless_refused(guarded)
         test_shrinking_actually_reaches_the_cap()
         test_read_ppm_handles_what_djpeg_writes()
         test_a_shrunk_cover_is_left_alone_next_time(guarded)
@@ -598,8 +464,6 @@ def main():
         test_m4b_rewrite_moves_nothing(singles)
         test_m4b_refuses_a_larger_cover(singles)
         test_m4b_without_a_cover_is_left_alone(singles)
-        test_rewriting_keeps_the_book(singles)
-        test_a_failed_rewrite_leaves_the_original(singles)
     print("CrazyPod cover shrinker tests passed")
     return 0
 

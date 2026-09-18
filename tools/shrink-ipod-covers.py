@@ -1,11 +1,10 @@
 #!/usr/bin/env python3
-"""Cap the resolution of every cover on the iPod: music, books, audiobooks.
+"""Cap the resolution of every cover the iPod actually draws.
 
-CrazyPod draws a book cover at 72x101 and album art at 128 or 180, so a
-1600x1600 cover is decoded at full size and then thrown away. On a 75 MHz
-ARM7 reading from a card that is the pause you feel -- eight to ten
-seconds for 500x500 album art, and a Books menu that stopped for seconds
-because its preview draws a stack of three.
+CrazyPod draws album art at 128 and below, so a 1600x1600 cover is
+decoded at full size and then thrown away. On a 75 MHz ARM7 reading from
+a card that is the pause you feel -- eight to ten seconds for 500x500
+album art.
 
 Meant to live in the root of the iPod so it travels with the device. It
 works on the volume it is sitting in, so from there it takes no
@@ -15,7 +14,7 @@ arguments at all:
   python3 /Volumes/IPOD/shrink-ipod-covers.py --shrink
 
 It finds Music, Books and Audiobooks beside itself and leaves Photos and
-Videos alone. Name a folder or a file to do only that instead. To put it
+Videos alone -- Books because audiobooks are allowed to live there. Name a folder or a file to do only that instead. To put it
 on the iPod in the first place:
 
   python3 tools/shrink-ipod-covers.py --install /Volumes/IPOD
@@ -24,21 +23,21 @@ Each kind is capped at what the firmware draws it at:
 
   album art    100   shown at 128 in Now Playing and Coverflow, 120 in
                      the menu preview, 42 in the home capsule
-  book cover   128   shown at 72x101, and never larger anywhere
   audiobook    100   the same screens as album art
 
---cap sets all three at once; --cap-music, --cap-books and
---cap-audiobooks set one. 128 is the largest size any cover is drawn at,
-so nothing above it is ever seen -- it is decoded and thrown away.
+--cap sets both at once; --cap-music and --cap-audiobooks set one. 128 is
+the largest size any cover is drawn at, so nothing above it is ever seen
+-- it is decoded and thrown away.
 
 What it touches:
 
   images  album art and loose covers -- cover.jpg, folder.png and the
           rest -- rewritten in place. A PNG is converted to JPEG, since
           the firmware reads no other kind.
-  .epub   the cover image inside the archive is rewritten. Everything
-          else in the book is copied across byte for byte, and "mimetype"
-          keeps its required place as the first, uncompressed entry.
+  .epub   left alone. CrazyPod draws nothing beside its Books list, so a
+          book's cover is never decoded and there is nothing to cap. A
+          file that is not a book at all is still named, because one that
+          reaches the shelf can never be opened.
   .m4b    the cover inside the file is replaced without remuxing: the
           "covr" atom is overwritten and the space it gives up is filled
           with a "free" atom, so "moov" keeps the same size to the byte
@@ -50,11 +49,6 @@ Output is always baseline JPEG, which is the only kind this firmware's
 decoder reads -- so this clears progressive covers at the same time, and
 converts PNG ones. Needs no image library for that: a PNG is decoded
 here and cjpeg encodes the result.
-
-An epub whose cover is a PNG is reported rather than rewritten. The
-firmware refuses a book cover by its file name, so that cover is not
-being drawn today, and fixing it properly means a second manifest entry
-rather than a JPEG smuggled in under the old name.
 
 It reports by default and changes nothing until you pass --shrink, keeps
 the original beside each file it rewrites as <name>.bak unless told not
@@ -77,15 +71,17 @@ import zlib
 #
 #   album art   128 in Now Playing and Coverflow, 120 in the menu
 #               preview, 42 in the home capsule
-#   book cover  72x101, and never larger anywhere
 #   audiobook   the same path as album art, so 128
 #
+# A book cover is not in that list: CrazyPod draws nothing beside the
+# Books list, so an epub's cover is never decoded and capping it would
+# rewrite a book for no one's benefit.
+#
 # So 128 is the largest size any of it is ever shown at, and anything
-# above that is decoded and then thrown away. The defaults sit at or just
-# above what is drawn; 100 for music is a deliberate step below 128,
-# which trades a little sharpness in Now Playing for a faster decode.
+# above that is decoded and then thrown away. 100 is a deliberate step
+# below 128, trading a little sharpness in Now Playing for a faster
+# decode.
 DEFAULT_CAP_MUSIC = 100
-DEFAULT_CAP_BOOKS = 128
 DEFAULT_CAP_AUDIOBOOKS = 100
 DEFAULT_QUALITY = 88
 IMAGE_SUFFIXES = (".jpg", ".jpeg", ".png")
@@ -486,90 +482,6 @@ def shrink_image(data, cap, quality, tool):
         "this again.")
 
 
-# ---- Finding the cover inside an epub ------------------------------------
-
-def opf_name(archive):
-    try:
-        container = archive.read("META-INF/container.xml").decode(
-            "utf-8", "replace")
-    except KeyError:
-        return None
-    match = re.search(r'full-path="([^"]+)"', container)
-    return match.group(1) if match else None
-
-
-def cover_entry(archive):
-    """The archive name of the cover image, by the same three routes the
-    firmware's own probe takes: the package's cover-image property, the
-    older <meta name="cover"> pointer, then the obvious file names."""
-    package = opf_name(archive)
-    names = archive.namelist()
-    if package is not None:
-        try:
-            opf = archive.read(package).decode("utf-8", "replace")
-        except KeyError:
-            opf = ""
-        directory = os.path.dirname(package)
-        items = dict(
-            (match.group(1), match.group(2)) for match in re.finditer(
-                r'<item\b[^>]*id="([^"]+)"[^>]*href="([^"]+)"', opf))
-        hrefs = []
-        for match in re.finditer(r'<item\b[^>]*>', opf):
-            tag = match.group(0)
-            if "cover-image" in tag:
-                href = re.search(r'href="([^"]+)"', tag)
-                if href:
-                    hrefs.append(href.group(1))
-        meta = re.search(r'<meta\b[^>]*name="cover"[^>]*content="([^"]+)"',
-                         opf)
-        if meta and meta.group(1) in items:
-            hrefs.append(items[meta.group(1)])
-        for href in hrefs:
-            candidate = os.path.normpath(
-                os.path.join(directory, href)).replace(os.sep, "/")
-            if candidate in names:
-                return candidate
-    for name in names:
-        stem, extension = os.path.splitext(os.path.basename(name).lower())
-        if extension in IMAGE_SUFFIXES and stem in COVER_NAMES:
-            return name
-    return None
-
-
-def verify_epub(original, rewritten, entry, image):
-    """Read the new archive back and prove it before it replaces a book.
-
-    A book is not something to be optimistic about. Every entry the
-    original had must be present, every one of them except the cover must
-    come back byte for byte, the archive must pass its own CRC check, and
-    "mimetype" must still be the first entry and uncompressed -- which is
-    what an epub reader looks at before anything else.
-    """
-    with zipfile.ZipFile(original, "r") as before:
-        names = before.namelist()
-        expected = dict((name, before.read(name)) for name in names)
-    with zipfile.ZipFile(rewritten, "r") as after:
-        damaged = after.testzip()
-        if damaged is not None:
-            raise CoverError("the rewritten archive fails its own "
-                             "checksum at %s" % damaged)
-        infos = after.infolist()
-        if [info.filename for info in infos] != names:
-            raise CoverError("the rewritten archive has different entries")
-        if "mimetype" in names:
-            if infos[0].filename != "mimetype":
-                raise CoverError("mimetype is no longer the first entry")
-            if infos[0].compress_type != zipfile.ZIP_STORED:
-                raise CoverError("mimetype is no longer uncompressed")
-        for name in names:
-            data = after.read(name)
-            if name == entry:
-                if data != image:
-                    raise CoverError("the new cover did not survive")
-            elif data != expected[name]:
-                raise CoverError("%s changed, and should not have" % name)
-
-
 def write_out(temporary, path, backup):
     """Put the rewritten file in place, durably.
 
@@ -595,43 +507,6 @@ def write_out(temporary, path, backup):
         # Directory fsync is not available everywhere; the file's own
         # fsync has already done the part that matters.
         pass
-
-
-def rewrite_epub(path, entry, image, backup):
-    """Copy the archive across with one entry replaced.
-
-    Written beside the original, read back and checked, and only then
-    renamed over it -- so a rewrite that went wrong in any way at all
-    leaves the book exactly as it was.
-    """
-    directory = os.path.dirname(os.path.abspath(path))
-    handle, temporary = tempfile.mkstemp(suffix=".epub", dir=directory)
-    os.close(handle)
-    try:
-        with zipfile.ZipFile(path, "r") as source:
-            infos = source.infolist()
-            with zipfile.ZipFile(temporary, "w") as target:
-                # "mimetype" must be first and stored, or readers that
-                # sniff the archive stop recognising it as an epub.
-                for info in sorted(
-                        infos, key=lambda i: i.filename != "mimetype"):
-                    data = (image if info.filename == entry
-                            else source.read(info.filename))
-                    copy = zipfile.ZipInfo(info.filename, info.date_time)
-                    copy.compress_type = (
-                        zipfile.ZIP_STORED
-                        if info.filename == "mimetype"
-                        else info.compress_type)
-                    copy.external_attr = info.external_attr
-                    copy.internal_attr = info.internal_attr
-                    copy.create_system = info.create_system
-                    target.writestr(copy, data)
-        verify_epub(path, temporary, entry, image)
-        write_out(temporary, path, backup)
-    except BaseException:
-        if os.path.exists(temporary):
-            os.remove(temporary)
-        raise
 
 
 # ---- Walking the library -------------------------------------------------
@@ -664,7 +539,7 @@ def describe_file(path):
     """A .epub that will not open as a zip is nearly always something
     else wearing the extension. Say which, because what to do about it
     differs -- and CrazyPod cannot read any of them either, so a book like
-    this shows on the device with no title and no cover."""
+    this shows on the device under its file name and will not open."""
     try:
         with open(path, "rb") as handle:
             head = handle.read(132)
@@ -694,71 +569,19 @@ def describe_file(path):
             " ".join("%02x" % byte for byte in head[:8]))
 
 
-def handle_epub(path, options, tool, counts):
-    cap = options.cap_books
-    try:
-        with zipfile.ZipFile(path, "r") as archive:
-            entry = cover_entry(archive)
-            if entry is None:
-                counts["no cover"] += 1
-                if options.verbose:
-                    report(path, "no cover image in the archive")
-                return
-            data = archive.read(entry)
-    except (zipfile.BadZipFile, OSError):
-        counts["unreadable"] += 1
-        report(path, "not an epub: %s" % describe_file(path))
-        return
-
-    size = image_size(data)
-    if size is None:
-        counts["unreadable"] += 1
-        report(path, "%s is neither JPEG nor PNG" % entry)
-        return
-    width, height, baseline = size
-    if data[:8] == b"\x89PNG\r\n\x1a\n":
-        # The firmware decodes a book cover as JPEG or BMP and refuses
-        # anything else by its file name, so this cover is not being
-        # drawn at all today. Writing a JPEG into the archive under the
-        # old .png name would leave it refused here and broken in every
-        # other reader, and doing it properly means a second manifest
-        # entry and surgery on the package file. Say so, leave it alone.
-        counts["png cover"] += 1
-        report(path, "%dx%d PNG cover: CrazyPod draws JPEG and BMP book "
-                     "covers only, so this one never appears. Convert "
-                     "the cover to JPEG in Calibre" % (width, height))
-        return
-    needs_shrink = max(width, height) > cap
-    needs_baseline = data[:2] == b"\xff\xd8" and not baseline
-    if not needs_shrink and not needs_baseline:
-        counts["already small"] += 1
+def check_epub(path, options, counts):
+    """Books have no covers on the device any more -- CrazyPod draws
+    nothing beside its list -- so there is no cover here to cap. What is
+    still worth a line is a book that is not a book: an empty file or a
+    Kindle download wearing the extension reaches the shelf and can never
+    be opened, and nothing else would tell you which it was.
+    """
+    if zipfile.is_zipfile(path):
         if options.verbose:
-            report(path, "%dx%d, nothing to do" % (width, height))
+            report(path, "a book; covers are not drawn, nothing to do")
         return
-
-    reason = "%dx%d" % (width, height)
-    if needs_baseline:
-        reason += ", progressive"
-    if not options.shrink:
-        counts["would shrink"] += 1
-        report(path, "%s -> would rewrite (%s)" % (reason, entry))
-        return
-    try:
-        shrunk = shrink_image(data, cap, options.quality, tool)
-        rewrite_epub(path, entry, shrunk, options.backup)
-    except MissingToolError:
-        raise
-    except (CoverError, OSError) as error:
-        counts["failed"] += 1
-        report(path, "%s -> failed: %s" % (reason, error))
-        return
-    new_size = image_size(shrunk)
-    counts["shrunk"] += 1
-    report(path, "%s -> %dx%d, %d KB -> %d KB" % (
-        reason,
-        new_size[0] if new_size else 0,
-        new_size[1] if new_size else 0,
-        len(data) // 1024, len(shrunk) // 1024))
+    counts["unreadable"] += 1
+    report(path, "not an epub: %s" % describe_file(path))
 
 
 def handle_image(path, options, tool, counts):
@@ -1032,7 +855,7 @@ def walk(root, options, tool, counts):
             lowered = name.lower()
             extension = os.path.splitext(lowered)[1]
             if extension == ".epub":
-                handle_epub(path, options, tool, counts)
+                check_epub(path, options, counts)
             elif extension in (".m4b", ".m4a"):
                 handle_audiobook(path, options, tool, counts)
             elif extension in IMAGE_SUFFIXES:
@@ -1081,16 +904,12 @@ def main():
         help="copy this script to the iPod's root folder and exit")
     parser.add_argument(
         "--cap", type=int, default=None,
-        help="longest side in pixels for everything at once, overriding "
-             "the per-kind defaults below")
+        help="longest side in pixels for both at once, overriding the "
+             "per-kind defaults below")
     parser.add_argument(
         "--cap-music", type=int, default=None,
         help="album art (default %d; it is drawn at 128 and below)"
              % DEFAULT_CAP_MUSIC)
-    parser.add_argument(
-        "--cap-books", type=int, default=None,
-        help="epub covers (default %d; they are drawn at 72x101)"
-             % DEFAULT_CAP_BOOKS)
     parser.add_argument(
         "--cap-audiobooks", type=int, default=None,
         help="m4b covers (default %d; same screens as album art)"
@@ -1117,7 +936,6 @@ def main():
         print("Looking in %s, the folder this script is in."
               % options.paths[0])
     for kind, fallback in (("music", DEFAULT_CAP_MUSIC),
-                           ("books", DEFAULT_CAP_BOOKS),
                            ("audiobooks", DEFAULT_CAP_AUDIOBOOKS)):
         name = "cap_" + kind
         if getattr(options, name) is None:
@@ -1125,13 +943,13 @@ def main():
                     options.cap if options.cap is not None else fallback)
         if getattr(options, name) < 32:
             parser.error("a cap below 32 pixels would not be a cover")
-    print("caps: music %d, books %d, audiobooks %d" % (
-        options.cap_music, options.cap_books, options.cap_audiobooks))
+    print("caps: music %d, audiobooks %d" % (
+        options.cap_music, options.cap_audiobooks))
     tool = which_tool()
 
     counts = dict((key, 0) for key in (
         "shrunk", "would shrink", "already small", "no cover",
-        "unreadable", "failed", "png cover"))
+        "unreadable", "failed"))
     try:
         for path in options.paths:
             if not os.path.exists(path):
@@ -1145,7 +963,7 @@ def main():
 
     print("")
     for key in ("shrunk", "would shrink", "already small", "no cover",
-                "png cover", "unreadable", "failed"):
+                "unreadable", "failed"):
         if counts[key]:
             print("%-14s %d" % (key, counts[key]))
     if counts["unreadable"]:
