@@ -2136,6 +2136,7 @@ static const lv_image_dsc_t *artwork_load_priority(
 {
     struct artwork_slot *slot;
     const lv_image_dsc_t *result = NULL;
+    bool same_request;
     bool wake = false;
 
     if(slot_index < 0 || slot_index >= CRAZYPOD_ARTWORK_SLOTS ||
@@ -2150,7 +2151,29 @@ static const lv_image_dsc_t *artwork_load_priority(
         priority = 0;
 
     mutex_lock(&artwork_mutex);
-    if(slot->decoded_serial == slot->request_serial &&
+    /*
+     * A request is the same request only if it points at the same
+     * picture. The path was not enough: a book's cover lives inside the
+     * file, and the record describing it is empty until the tags have
+     * been read. The home capsule asked for the cover of a book that had
+     * not been probed yet, was told there was none, and -- because the
+     * path and the size still matched -- never asked again once the
+     * probe filled the offset in. Now Playing asked later and got the
+     * picture, which is why the lock screen, which reuses its slot,
+     * showed a cover the capsule never did.
+     */
+    same_request =
+        slot->requested_size == target_size &&
+        strcmp(slot->requested_path, track->path) == 0 &&
+        slot->requested_cache_only == cache_only &&
+        slot->requested_direct_source == direct_source &&
+        slot->requested_artwork_embedded == track->artwork_embedded &&
+        slot->requested_artwork_offset == track->artwork_offset &&
+        slot->requested_artwork_size == track->artwork_size &&
+        (!cache_only ||
+         slot->requested_cache_generation == artwork_cache_generation);
+    if(same_request &&
+       slot->decoded_serial == slot->request_serial &&
        slot->decoded_size == target_size &&
        strcmp(slot->decoded_path, track->path) == 0 &&
        slot->decoded_direct_source == direct_source &&
@@ -2161,13 +2184,7 @@ static const lv_image_dsc_t *artwork_load_priority(
         if(slot->valid)
             result = &slot->descriptor[slot->active_bank];
     }
-    else if(slot->requested_size != target_size ||
-            strcmp(slot->requested_path, track->path) != 0 ||
-            slot->requested_cache_only != cache_only ||
-            slot->requested_direct_source != direct_source ||
-            (cache_only &&
-             slot->requested_cache_generation !=
-                 artwork_cache_generation)) {
+    else if(!same_request) {
         snprintf(slot->requested_path, sizeof(slot->requested_path),
                  "%s", track->path);
         snprintf(slot->requested_album, sizeof(slot->requested_album),
