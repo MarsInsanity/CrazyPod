@@ -228,6 +228,8 @@ crazypod/ui/presentation/crazypod_empty_state.c
 crazypod/ui/features/photos/crazypod_photos_preview.c
 crazypod/ui/shell/crazypod_extras_preview.c
 crazypod/ui/features/notes/crazypod_notes_preview.c
+crazypod/ui/features/books/crazypod_book_preview_cover.c
+crazypod/ui/features/books/crazypod_books_preview.c
 crazypod/ui/features/organizer/crazypod_utility_preview.c
 crazypod/ui/features/music/crazypod_music_preview_cover.c
 crazypod/ui/features/music/crazypod_music_item_preview.c

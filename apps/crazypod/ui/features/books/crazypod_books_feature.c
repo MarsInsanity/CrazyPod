@@ -14,6 +14,7 @@
 #include "crazypod_book_reader_input.h"
 #include "crazypod_books_actions.h"
 #include "crazypod_books_confirmation.h"
+#include "crazypod_books_preview.h"
 #include "crazypod_books_screen.h"
 #include "crazypod_books_workflow.h"
 #include "button.h"
@@ -1010,24 +1011,8 @@ void crazypod_books_feature_render_preview(
     lv_obj_t *parent, const struct route_state *state,
     const lv_font_t *metadata_font)
 {
-    /*
-     * Books draws nothing beside its list, by choice.
-     *
-     * The preview was a stack of covers and a caption, and every cover in
-     * it meant opening an epub and decoding a JPEG on the thread that
-     * draws the screen. Five rounds went into making that cheap enough --
-     * holding it until the wheel stopped, one decode per draw, a cache on
-     * the card -- and hovering a menu entry still cost seconds, because
-     * the work is simply too much for this processor to do while anyone
-     * is watching. A list that answers immediately is worth more than a
-     * cover nobody asked to wait for.
-     *
-     * The list itself still shows real titles: those come from the
-     * catalog, which is read once per book and then remembered.
-     */
-    (void)parent;
-    (void)state;
-    (void)metadata_font;
+    crazypod_books_preview_render(
+        parent, state, metadata_font);
 }
 
 void crazypod_books_feature_configure_runtime(
