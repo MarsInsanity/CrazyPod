@@ -361,10 +361,20 @@ bool crazypod_lyrics_load(const char *track_path)
     int fd;
 
     if(track_path != NULL &&
-       strcmp(loaded_track_path, track_path) == 0 &&
-       (lyric_status == CRAZYPOD_LYRICS_SYNCED ||
-        lyric_status == CRAZYPOD_LYRICS_PLAIN))
-        return true;
+       strcmp(loaded_track_path, track_path) == 0) {
+        if(lyric_status == CRAZYPOD_LYRICS_SYNCED ||
+           lyric_status == CRAZYPOD_LYRICS_PLAIN)
+            return true;
+        /*
+         * "There is no lyrics file" is an answer worth keeping too. It
+         * was not kept, so every ask re-ran two open() calls that both
+         * fail -- and a failed open in a directory holding a few
+         * thousand songs is a linear walk of that directory before it
+         * can say no. The Now Playing Actions menu asks on the way up.
+         */
+        if(lyric_status == CRAZYPOD_LYRICS_NOT_FOUND)
+            return false;
+    }
     clear_document();
     loaded_track_path[0] = '\0';
     if(track_path != NULL)
