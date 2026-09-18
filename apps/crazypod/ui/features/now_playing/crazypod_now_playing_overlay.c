@@ -9,9 +9,11 @@
 
 #include "audio.h"
 #include "iap-usb.h"
+#include "kernel.h"
 #include "settings.h"
 #include "sound.h"
 
+#include "../../../crazypod_diag_log.h"
 #include "../../../crazypod_lyrics.h"
 #include "../../../crazypod_audiobooks.h"
 #include "../../../crazypod_music.h"
@@ -713,8 +715,19 @@ static void show_now_actions_popup(void)
     int detail_y;
     int i;
 
+    /*
+     * Opening this took two to three seconds on the device and the three
+     * things it does are indistinguishable from outside: bringing the
+     * screen up to date so the panel can sample it, sampling it, and
+     * building thirty-odd widgets. Time them apart rather than guess.
+     */
+    long opened = current_tick;
+    long glass_ready;
+    long panel_ready;
+
     if(now_overlay == CRAZYPOD_NOW_OVERLAY_NONE)
         prepare_now_overlay_glass(true);
+    glass_ready = current_tick;
     begin_now_overlay(CRAZYPOD_NOW_OVERLAY_ACTIONS);
     if(now_action_selected < 0 ||
        now_action_selected >= NOW_ACTION_COUNT)
@@ -742,6 +755,7 @@ static void show_now_actions_popup(void)
     now_overlay_panel = make_now_glass_panel(
         geometry.x, geometry.y,
         geometry.width, geometry.height);
+    panel_ready = current_tick;
     title = crazypod_ui_widget_label(
         now_overlay_panel, CP_TR("ACTIONS"),
         &lv_font_montserrat_10,
@@ -828,6 +842,13 @@ static void show_now_actions_popup(void)
     lv_obj_set_pos(now_actions_view.detail, 14, detail_y);
     refresh_now_actions_popup();
     animate_now_popup(now_overlay_panel, geometry.y);
+    /* Only when it was slow enough to be the wait that was reported. */
+    if(current_tick - opened >= HZ / 4)
+        crazypod_diag_log(
+            "nowactions", "screen=%ldms glass=%ldms build=%ldms",
+            (glass_ready - opened) * 1000 / HZ,
+            (panel_ready - glass_ready) * 1000 / HZ,
+            (current_tick - panel_ready) * 1000 / HZ);
 }
 
 static int now_playback_popup_width(void)

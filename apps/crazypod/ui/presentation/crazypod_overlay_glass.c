@@ -10,6 +10,7 @@
 #include "src/misc/cache/instance/lv_image_cache.h"
 
 #include "../../crazypod_image.h"
+#include "../../crazypod_state.h"
 #include "../../platform/crazypod_platform_display.h"
 #include "crazypod_glass_panel.h"
 #include "crazypod_overlay_glass.h"
@@ -47,7 +48,14 @@ void crazypod_overlay_glass_prepare(bool refresh)
 {
     if(boost_cpu != NULL)
         boost_cpu(HZ / 2);
-    if(refresh)
+    /*
+     * The refresh exists to bring the framebuffer up to date so the panel
+     * below can sample it. Under Reduce Effects nothing samples it, and
+     * this was still paying for a synchronous redraw of the screen before
+     * the popup could be built -- which is why opening Actions took just
+     * as long with the effects turned off.
+     */
+    if(refresh && !crazypod_state_reduce_effects())
         lv_refr_now(NULL);
 }
 
@@ -57,6 +65,16 @@ static void prepare_panel_descriptor(
     const fb_data *framebuffer =
         (const fb_data *)crazypod_platform_display_framebuffer();
 
+    /*
+     * A panel under Reduce Effects is a flat rounded box: the sampled
+     * backdrop is thrown away by crazypod_glass_panel_create(). It was
+     * still being computed first -- every pixel of the popup's area read,
+     * averaged, blurred, tinted and packed into an image nobody drew.
+     */
+    if(crazypod_state_reduce_effects()) {
+        valid = false;
+        return;
+    }
     if(framebuffer == NULL || width <= 0 || height <= 0 ||
        width > POPUP_MAX_WIDTH || height > POPUP_MAX_HEIGHT ||
        x < 0 || y < 0 || x + width > LCD_WIDTH ||
