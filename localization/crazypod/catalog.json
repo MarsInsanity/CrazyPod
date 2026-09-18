@@ -1,11 +1,6 @@
 {
   "sourceLanguage": "en",
   "strings": {
-    " · Favorite": {
-      "locations": [
-        "apps/crazypod/ui/features/books/crazypod_books_preview.c:442"
-      ]
-    },
     "%+d dB": {
       "locations": [
         "apps/crazypod/ui/features/settings/crazypod_settings_model.c:539"
@@ -86,11 +81,6 @@
     "%d artists": {
       "locations": [
         "apps/crazypod/ui"
-      ]
-    },
-    "%d book%s": {
-      "locations": [
-        "apps/crazypod/ui/features/books/crazypod_books_preview.c:447"
       ]
     },
     "%d books\n%d recently opened\n%d favorites\n\nProgress is stored on this iPod.": {
@@ -215,21 +205,6 @@
     "%dkHz": {
       "locations": [
         "apps/crazypod/ui/features/settings/crazypod_eq_studio_controller.c:187"
-      ]
-    },
-    "%lu%% listened": {
-      "locations": [
-        "apps/crazypod/ui/features/books/crazypod_books_preview.c:554"
-      ]
-    },
-    "%lu%% listened · %d chapters": {
-      "locations": [
-        "apps/crazypod/ui/features/books/crazypod_books_preview.c:500"
-      ]
-    },
-    "%lu%% read%s": {
-      "locations": [
-        "apps/crazypod/ui/features/books/crazypod_books_preview.c:439"
       ]
     },
     "%s\n\n%04d-%02d-%02d\n%s\n\n%s": {
@@ -469,12 +444,6 @@
         "apps/crazypod/ui/shell/crazypod_lock_screen.c:87"
       ]
     },
-    "Aa": {
-      "locations": [
-        "apps/crazypod/ui/features/books/crazypod_books_preview.c:311",
-        "apps/crazypod/ui/features/books/crazypod_books_preview.c:373"
-      ]
-    },
     "Acrylic": {
       "locations": [
         "apps/crazypod/crazypod_appearance.c:79"
@@ -502,11 +471,6 @@
       "locations": [
         "apps/crazypod/ui/features/photos/crazypod_photo_screen.c:159",
         "apps/crazypod/ui/presentation/crazypod_menu_screen.c:121"
-      ]
-    },
-    "Add M4B or MP3 files to /Audiobooks.": {
-      "locations": [
-        "apps/crazypod/ui/features/books/crazypod_books_preview.c:251"
       ]
     },
     "Add VCF files to /Contacts.": {
@@ -840,16 +804,6 @@
         "apps/crazypod/ui/features/settings/crazypod_settings_model.c:46"
       ]
     },
-    "Browse EPUB chapters": {
-      "locations": [
-        "apps/crazypod/ui/features/books/crazypod_books_preview.c:476"
-      ]
-    },
-    "Browse the local library": {
-      "locations": [
-        "apps/crazypod/ui/features/books/crazypod_books_preview.c:155"
-      ]
-    },
     "Browse the month grid": {
       "locations": [
         "apps/crazypod/ui/features/organizer/crazypod_utility_preview.c:181"
@@ -1045,11 +999,6 @@
         "apps/crazypod/ui/features/organizer/crazypod_calendar_screen.c:270"
       ]
     },
-    "Change favorite status": {
-      "locations": [
-        "apps/crazypod/ui/features/books/crazypod_books_preview.c:478"
-      ]
-    },
     "Change this local event": {
       "locations": [
         "apps/crazypod/ui/features/organizer/crazypod_utility_preview.c:286"
@@ -1073,11 +1022,6 @@
     "Chapter %d": {
       "locations": [
         "apps/crazypod/ui/features/now_playing/crazypod_now_playing_overlay.c:1040"
-      ]
-    },
-    "Chapter %d of %d": {
-      "locations": [
-        "apps/crazypod/ui/features/books/crazypod_books_preview.c:485"
       ]
     },
     "Chapters": {
@@ -1147,19 +1091,9 @@
         "apps/crazypod/ui/features/music/crazypod_search_screen.c:164"
       ]
     },
-    "Choose a page theme in a popup": {
-      "locations": [
-        "apps/crazypod/ui/features/books/crazypod_books_preview.c:400"
-      ]
-    },
     "Choose a time-only workout": {
       "locations": [
         "apps/crazypod/ui/features/organizer/crazypod_utility_preview.c:112"
-      ]
-    },
-    "Choose size in a focused popup": {
-      "locations": [
-        "apps/crazypod/ui/features/books/crazypod_books_preview.c:399"
       ]
     },
     "Classic": {
@@ -1479,11 +1413,6 @@
     "Delete Failed": {
       "locations": [
         "apps/crazypod/ui/features/photos/crazypod_photos_feature.c:354"
-      ]
-    },
-    "Delete this local file": {
-      "locations": [
-        "apps/crazypod/ui/features/books/crazypod_books_preview.c:481"
       ]
     },
     "Deleted": {
@@ -1816,11 +1745,6 @@
     "Flexibility": {
       "locations": [
         "apps/crazypod/crazypod_workouts.c:37"
-      ]
-    },
-    "Font, size and page theme": {
-      "locations": [
-        "apps/crazypod/ui/features/books/crazypod_books_preview.c:300"
       ]
     },
     "Force": {
@@ -2160,11 +2084,6 @@
         "apps/crazypod/ui/features/organizer/crazypod_clock_screen.c:78"
       ]
     },
-    "Jump to the saved page": {
-      "locations": [
-        "apps/crazypod/ui/features/books/crazypod_books_preview.c:491"
-      ]
-    },
     "Jumped to %s": {
       "locations": [
         "apps/crazypod/ui/features/now_playing/crazypod_now_playing_overlay.c:1700"
@@ -2247,11 +2166,6 @@
         "apps/crazypod/ui/app/crazypod_choice_coordinator.c:131"
       ]
     },
-    "Latest reading activity": {
-      "locations": [
-        "apps/crazypod/ui/features/books/crazypod_books_preview.c:131"
-      ]
-    },
     "Layout": {
       "locations": [
         "apps/crazypod/ui/features/customize/crazypod_customize_catalog.c:13"
@@ -2270,11 +2184,6 @@
     "Library Summary": {
       "locations": [
         "apps/crazypod/ui/features/books/crazypod_books_feature.c:195"
-      ]
-    },
-    "Library and progress totals": {
-      "locations": [
-        "apps/crazypod/ui/features/books/crazypod_books_preview.c:240"
       ]
     },
     "Library ready": {
@@ -2752,11 +2661,6 @@
         "apps/crazypod/ui/features/organizer/crazypod_contacts_screen.c:101"
       ]
     },
-    "No favorites yet": {
-      "locations": [
-        "apps/crazypod/ui/features/books/crazypod_books_preview.c:183"
-      ]
-    },
     "No hidden applications": {
       "locations": [
         "apps/crazypod/ui/shell/crazypod_extras_preview.c:91"
@@ -2770,11 +2674,6 @@
     "No phone number": {
       "locations": [
         "apps/crazypod/ui/features/organizer/crazypod_contacts_screen.c:80"
-      ]
-    },
-    "No recent reading": {
-      "locations": [
-        "apps/crazypod/ui/features/books/crazypod_books_preview.c:131"
       ]
     },
     "No saved workouts": {
@@ -2841,19 +2740,9 @@
         "apps/crazypod/ui/features/now_playing/crazypod_now_playing_feature.c:66"
       ]
     },
-    "Resume listening": {
-      "locations": [
-        "apps/crazypod/ui/features/books/crazypod_books_preview.c:508"
-      ]
-    },
     "Saved position  ·  %u%%": {
       "locations": [
         "apps/crazypod/ui/features/books/crazypod_books_feature.c"
-      ]
-    },
-    "Spoken books with chapters": {
-      "locations": [
-        "apps/crazypod/ui/features/books/crazypod_books_preview.c:250"
       ]
     },
     "Themes": {
@@ -2930,19 +2819,9 @@
         "apps/crazypod/ui/presentation/crazypod_menu_screen.c:156"
       ]
     },
-    "Open at saved position": {
-      "locations": [
-        "apps/crazypod/ui/features/books/crazypod_books_preview.c:472"
-      ]
-    },
     "Open delete confirmation": {
       "locations": [
         "apps/crazypod/ui/features/organizer/crazypod_utility_preview.c:287"
-      ]
-    },
-    "Open the saved bookmark": {
-      "locations": [
-        "apps/crazypod/ui/features/books/crazypod_books_preview.c:474"
       ]
     },
     "Opening EPUB package": {
@@ -3442,11 +3321,6 @@
     "Resume %lu:%02lu  ·  %s": {
       "locations": [
         "apps/crazypod/ui/features/photos/crazypod_photos_preview.c:154"
-      ]
-    },
-    "Resume saved position": {
-      "locations": [
-        "apps/crazypod/ui/features/books/crazypod_books_preview.c:82"
       ]
     },
     "Resume unsaved changes": {
@@ -4314,11 +4188,6 @@
         "apps/crazypod/ui/features/notes/crazypod_notes_feature.c:165"
       ]
     },
-    "View file information": {
-      "locations": [
-        "apps/crazypod/ui/features/books/crazypod_books_preview.c:480"
-      ]
-    },
     "Vinyl Groove": {
       "locations": [
         "apps/crazypod/crazypod_soundwave.c:27"
@@ -4490,11 +4359,6 @@
     "Yoga": {
       "locations": [
         "apps/crazypod/crazypod_workouts.c:37"
-      ]
-    },
-    "Your favorite books": {
-      "locations": [
-        "apps/crazypod/ui/features/books/crazypod_books_preview.c:183"
       ]
     },
     "Z": {

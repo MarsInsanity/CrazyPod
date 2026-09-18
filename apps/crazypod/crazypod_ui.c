@@ -37,7 +37,6 @@
 #include "crazypod_apps.h"
 #include "crazypod_artwork.h"
 #include "crazypod_appearance.h"
-#include "crazypod_book_cover.h"
 #include "crazypod_books.h"
 #include "crazypod_coverflow.h"
 #include "crazypod_frameclock.h"
