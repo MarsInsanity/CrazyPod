@@ -24,6 +24,7 @@
 #include "crazypod_checksum.h"
 #include "crazypod_l10n.h"
 #include "crazypod_playlist.h"
+#include "crazypod_diag_log.h"
 #include "crazypod_state.h"
 
 #define STATE_DIRECTORY "/.crazypod"
@@ -1483,6 +1484,31 @@ void crazypod_state_load(void)
     }
     else {
         crazypod_queue_restore_finish(0, false);
+    }
+    /*
+     * What the queue came back as, and what pressing Play will therefore
+     * start. Reported: after a reboot Play resumes the same audiobook at
+     * the same position whatever was played last, which means either this
+     * queue is not what was playing or something later replaces it. The
+     * two cases look identical from the outside and completely different
+     * from here.
+     */
+    {
+        char first[MAX_PATH];
+
+        if(!crazypod_queue_copy_path(
+               queue_count == state.queue_count ? state.queue_index : 0,
+               first, sizeof(first)))
+            first[0] = '\0';
+        crazypod_diag_log(
+            "resume", "queue=%lu/%lu index=%lu elapsed=%lu match=%d [%s]",
+            (unsigned long)queue_count,
+            (unsigned long)state.queue_count,
+            (unsigned long)state.queue_index,
+            (unsigned long)state.elapsed,
+            queue_count == state.queue_count &&
+                queue_hash == state.queue_hash,
+            first);
     }
     saved_queue_generation = crazypod_queue_generation();
     saved_queue_hash = queue_hash;

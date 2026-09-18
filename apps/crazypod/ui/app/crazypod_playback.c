@@ -15,6 +15,7 @@
 #include "settings.h"
 
 #include "../../crazypod_artwork.h"
+#include "../../crazypod_diag_log.h"
 #include "../../crazypod_audiobooks.h"
 #include "../../crazypod_coverflow.h"
 #include "../../crazypod_music.h"
@@ -499,10 +500,20 @@ void crazypod_playback_toggle(void)
         audio_resume();
     else if(status & AUDIO_STATUS_PLAY)
         audio_pause();
-    else
-        playlist_start(
-            crazypod_queue_index(),
-            crazypod_state_take_resume_elapsed(), 0);
+    else {
+        int index = crazypod_queue_index();
+        unsigned long elapsed = crazypod_state_take_resume_elapsed();
+        char path[MAX_PATH];
+
+        /* The first Play after a boot: say what it is about to start,
+         * because what it starts is the thing under report. */
+        if(!crazypod_queue_copy_path(index, path, sizeof(path)))
+            path[0] = '\0';
+        crazypod_diag_log(
+            "coldplay", "index=%d of %d elapsed=%lu [%s]",
+            index, crazypod_queue_count(), elapsed, path);
+        playlist_start(index, (long)elapsed, 0);
+    }
     crazypod_now_playing_overlay_refresh_after_playback();
 }
 
