@@ -11,7 +11,7 @@
 
 #include "crazypod_state.h"
 #include "crazypod_soundwave.h"
-#include "ui/presentation/crazypod_ui_color.h"
+#include "crazypod_color.h"
 
 #define SOUND_WAVE_POINT_SLOTS 6
 #define SOUND_WAVE_MAX_POINTS 148

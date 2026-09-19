@@ -8,7 +8,7 @@
 #include "../../crazypod_state.h"
 #include "crazypod_artwork_widget.h"
 #include "crazypod_ui_widgets.h"
-#include "crazypod_ui_color.h"
+#include "../../crazypod_color.h"
 
 static uint32_t text_hash(const char *text)
 {

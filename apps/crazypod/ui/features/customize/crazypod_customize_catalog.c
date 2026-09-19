@@ -13,15 +13,43 @@
 
 const char *const crazypod_customize_menu_titles[] = {
     CP_TR("Presets"), CP_TR("Icons"), CP_TR("Details"),
-    CP_TR("Backgrounds"), CP_TR("Themes"),
+#ifdef HAVE_CRAZYPOD_WALLPAPER
+    CP_TR("Backgrounds"),
+#endif
+#ifdef HAVE_CRAZYPOD_MINIAPPS
+    CP_TR("Themes"),
+#endif
     CP_TR("Headphones"), CP_TR("Layout")
 };
 
 const char *const crazypod_customize_menu_symbols[] = {
     LV_SYMBOL_SAVE, LV_SYMBOL_IMAGE, LV_SYMBOL_SETTINGS,
-    LV_SYMBOL_DIRECTORY, LV_SYMBOL_AUDIO, LV_SYMBOL_AUDIO,
-    LV_SYMBOL_SHUFFLE
+#ifdef HAVE_CRAZYPOD_WALLPAPER
+    LV_SYMBOL_DIRECTORY,
+#endif
+#ifdef HAVE_CRAZYPOD_MINIAPPS
+    LV_SYMBOL_AUDIO,
+#endif
+    LV_SYMBOL_AUDIO, LV_SYMBOL_SHUFFLE
 };
+
+static const enum crazypod_route menu_routes[
+    CRAZYPOD_CUSTOMIZE_MENU_COUNT] = {
+    DIY_ROUTE_PRESETS, DIY_ROUTE_ICONS, DIY_ROUTE_DETAILS,
+#ifdef HAVE_CRAZYPOD_WALLPAPER
+    DIY_ROUTE_BACKGROUNDS,
+#endif
+#ifdef HAVE_CRAZYPOD_MINIAPPS
+    DIY_ROUTE_NOW_PLAYING_THEMES,
+#endif
+    DIY_ROUTE_HEADPHONE_POPUP, DIY_ROUTE_LAYOUT
+};
+
+enum crazypod_route crazypod_customize_menu_route(int index)
+{
+    return index >= 0 && index < CRAZYPOD_CUSTOMIZE_MENU_COUNT
+        ? menu_routes[index] : DIY_ROUTE_MENU;
+}
 
 const char *const crazypod_customize_preset_actions[] = {
     CP_TR("Apply"), CP_TR("Export"), CP_TR("Edit")

@@ -11,7 +11,7 @@
 #include "../../presentation/crazypod_ui_widgets.h"
 #include "crazypod_book_session.h"
 #include "crazypod_books_workflow.h"
-#include "../../presentation/crazypod_ui_color.h"
+#include "../../../crazypod_color.h"
 
 static struct crazypod_books_workflow_host workflow_host;
 static bool metadata_ready;

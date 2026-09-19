@@ -31,7 +31,7 @@
 #include "../presentation/crazypod_ui_widgets.h"
 #include "../shell/crazypod_extras_preview.h"
 #include "crazypod_menu_preview.h"
-#include "../presentation/crazypod_ui_color.h"
+#include "../../crazypod_color.h"
 
 #define ARTWORK_CACHE_SIZE 72
 #define NOW_ARTWORK_SIZE 68

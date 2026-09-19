@@ -3,7 +3,106 @@
 
 #include "crazypod_l10n.h"
 
-#ifdef HAVE_CRAZYPOD_UI
+#if defined(HAVE_CRAZYPOD_UI) && !defined(HAVE_CRAZYPOD_MEDIA_LIBRARY)
+
+/*
+ * No video on this panel. The decoder stack is not built either -- see
+ * HAVE_CRAZYPOD_VIDEO -- so there would be nothing to hand a file to even
+ * if four shades could carry a picture. The catalog reports empty and the
+ * poster cache is not built, for the same reasons as the photo library.
+ */
+
+#include <stddef.h>
+
+#include "crazypod_videos.h"
+
+void crazypod_videos_init(void) {}
+void crazypod_videos_refresh(void) {}
+void crazypod_videos_ensure_catalog(void) {}
+void crazypod_videos_suspend(void) {}
+void crazypod_videos_resume(void) {}
+void crazypod_videos_invalidate_catalog(void) {}
+
+void crazypod_videos_set_lock_suspended(bool suspended)
+{
+    (void)suspended;
+}
+
+void crazypod_videos_set_route_suspended(bool suspended)
+{
+    (void)suspended;
+}
+
+int crazypod_video_count(void)
+{
+    return 0;
+}
+
+const char *crazypod_video_path(int index)
+{
+    (void)index;
+    return NULL;
+}
+
+const char *crazypod_video_name(int index)
+{
+    (void)index;
+    return NULL;
+}
+
+uint32_t crazypod_video_resume_seconds(int index)
+{
+    (void)index;
+    return 0;
+}
+
+uint32_t crazypod_video_duration_seconds(int index)
+{
+    (void)index;
+    return 0;
+}
+
+const lv_image_dsc_t *crazypod_video_poster(int index)
+{
+    (void)index;
+    return NULL;
+}
+
+unsigned crazypod_video_generation(void)
+{
+    return 0;
+}
+
+bool crazypod_videos_busy(void)
+{
+    return false;
+}
+
+bool crazypod_video_delete(int index)
+{
+    (void)index;
+    return false;
+}
+
+enum crazypod_video_result crazypod_video_play(int index)
+{
+    (void)index;
+    return CRAZYPOD_VIDEO_UNSUPPORTED;
+}
+
+enum crazypod_video_result crazypod_video_last_result(void)
+{
+    return CRAZYPOD_VIDEO_UNSUPPORTED;
+}
+
+const char *crazypod_video_result_message(
+    enum crazypod_video_result result)
+{
+    (void)result;
+    return CP_TR("Video playback failed");
+}
+
+#elif defined(HAVE_CRAZYPOD_UI)
 
 #define CRAZYPOD_VIDEO_CORE 1
 

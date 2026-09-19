@@ -194,6 +194,12 @@ case "$CRAZYPOD_TARGET" in
     ipodmini2g)
         CRAZYPOD_TARGET_LABEL="iPod Mini 2G"
         CRAZYPOD_PACKAGE_NAME="CrazyPod-Mini2G"
+        # No wallpaper and no media library on a 138x110 four-shade panel:
+        # a photograph put behind type takes the type with it, and the
+        # Media app is not built. Neither the default wallpaper nor the
+        # folders that would hold pictures and videos are packaged.
+        WALLPAPER=0
+        MEDIA_LIBRARY=0
         # The product UI's type is resolved a size down on this panel, so
         # the package carries the small end of the font pack, not the large.
         CRAZYPOD_FONT_CANVAS=compact
@@ -209,6 +215,8 @@ case "$CRAZYPOD_TARGET" in
         ;;
 esac
 MINIAPPS="${MINIAPPS:-1}"
+WALLPAPER="${WALLPAPER:-1}"
+MEDIA_LIBRARY="${MEDIA_LIBRARY:-1}"
 CRAZYPOD_BUILD_DEFINES=""
 CRAZYPOD_BUILD_VARIANT="production"
 case "${CRAZYPOD_FIRMWARE_ONLY:-}" in
@@ -374,7 +382,7 @@ if [ ! -d ../assets/crazypod-icons ]; then
     echo "Error: missing generated CrazyPod icon assets." >&2
     exit 1
 fi
-if [ ! -f ../assets/crazypod/default-home.bmp ]; then
+if [ "$WALLPAPER" -eq 1 ] && [ ! -f ../assets/crazypod/default-home.bmp ]; then
     echo "Error: missing generated CrazyPod default wallpaper." >&2
     exit 1
 fi
@@ -382,8 +390,12 @@ mkdir -p "$PACKAGE_DIR/.rockbox/codecs"
 mkdir -p "$PACKAGE_DIR/.rockbox/codepages"
 mkdir -p "$PACKAGE_DIR/.rockbox/fonts"
 mkdir -p "$PACKAGE_DIR/.rockbox/crazypod/icons"
-CONTENT_DIRECTORIES="Music Podcasts Books Pictures Videos Contacts Calendars"
-PACKAGE_TREES=".rockbox Music Podcasts Books Pictures Videos Contacts Calendars"
+CONTENT_DIRECTORIES="Music Podcasts Books Contacts Calendars"
+PACKAGE_TREES=".rockbox Music Podcasts Books Contacts Calendars"
+if [ "$MEDIA_LIBRARY" -eq 1 ]; then
+    CONTENT_DIRECTORIES="$CONTENT_DIRECTORIES Pictures Videos"
+    PACKAGE_TREES="$PACKAGE_TREES Pictures Videos"
+fi
 if [ "$MINIAPPS" -eq 1 ]; then
     mkdir -p "$PACKAGE_DIR/.rockbox/crazypod/miniapps/packages"
     CONTENT_DIRECTORIES="$CONTENT_DIRECTORIES MiniApps \
@@ -427,8 +439,10 @@ cp rockbox.ipod "$PACKAGE_DIR/.rockbox/rockbox.ipod"
 [ ! -f rockbox-info.txt ] || cp rockbox-info.txt "$PACKAGE_DIR/.rockbox/rockbox-info.txt"
 cp -R ../assets/crazypod-icons/. \
     "$PACKAGE_DIR/.rockbox/crazypod/icons/"
-cp ../assets/crazypod/default-home.bmp \
-    "$PACKAGE_DIR/.rockbox/crazypod/default-home.bmp"
+if [ "$WALLPAPER" -eq 1 ]; then
+    cp ../assets/crazypod/default-home.bmp \
+        "$PACKAGE_DIR/.rockbox/crazypod/default-home.bmp"
+fi
 if [ "$MINIAPPS" -eq 1 ]; then
     for package in "$GAME2048_PACKAGE" "$CAPABILITY_LAB_PACKAGE" \
         "$NATIVE_REFERENCE_PACKAGE" "$NOW_PLAYING_THEME_PACKAGE" \

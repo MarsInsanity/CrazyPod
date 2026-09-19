@@ -562,7 +562,7 @@ struct crazypod_state_disk_v17 {
     struct crazypod_state_eq_band_disk eq_bands[EQ_NUM_BANDS];
     uint32_t menu_count;
     uint32_t menu_enabled_mask;
-    uint8_t menu_order[CRAZYPOD_APP_COUNT];
+    uint8_t menu_order[CRAZYPOD_APP_SLOT_COUNT];
     int32_t reduce_motion;
     int32_t storage_mode;
     int32_t language;
@@ -604,7 +604,7 @@ struct crazypod_state_disk {
     struct crazypod_state_eq_band_disk eq_bands[EQ_NUM_BANDS];
     uint32_t menu_count;
     uint32_t menu_enabled_mask;
-    uint8_t menu_order[CRAZYPOD_APP_COUNT];
+    uint8_t menu_order[CRAZYPOD_APP_SLOT_COUNT];
     int32_t reduce_motion;
     int32_t storage_mode;
     int32_t language;
@@ -803,6 +803,10 @@ static void expand_legacy_menu_order(
             (unsigned char *)state + old_suffix_offset, suffix_size);
     memset((unsigned char *)state + old_suffix_offset, 0,
            new_suffix_offset - old_suffix_offset);
+    /* The version this migrates to added the Game Boy at the end. The
+     * slot exists in every build's on-disk layout even where the
+     * application is not built; restore drops what this target does not
+     * have. */
     state->menu_order[CRAZYPOD_APP_LEGACY_COUNT] = CRAZYPOD_APP_GAMEBOY;
 }
 
@@ -1469,7 +1473,7 @@ void crazypod_state_load(void)
         : CRAZYPOD_LANGUAGE_ENGLISH);
     clamp_and_apply_settings(&state);
     if(state.menu_count > 0 &&
-       state.menu_count <= CRAZYPOD_APP_COUNT)
+       state.menu_count <= CRAZYPOD_APP_SLOT_COUNT)
         crazypod_apps_restore(state.menu_order, state.menu_count,
                               state.menu_enabled_mask);
     crazypod_queue_restore_begin();

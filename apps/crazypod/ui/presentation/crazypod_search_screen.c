@@ -12,7 +12,7 @@
 #include "crazypod_ui_widgets.h"
 #include "crazypod_menu_list.h"
 #include "crazypod_search_screen.h"
-#include "crazypod_ui_color.h"
+#include "../../crazypod_color.h"
 
 #define COLOR_WHITE 0xFFFFFF
 #define CRAZYPOD_VISIBLE_ROWS 6

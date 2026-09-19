@@ -441,7 +441,14 @@ int font_load_ex( const char *path, size_t buf_size, int glyphs )
 
     uint32_t nwidth, noffset;
     if ( !font_load_header( fd, &header, &f, &nwidth, &noffset )
-#if LCD_DEPTH < 16
+#if LCD_DEPTH < 16 && !defined(HAVE_CRAZYPOD_UI)
+        /* Rockbox's own 1bpp and 2bpp text drawing cannot use an
+           antialiased face, so those targets refuse to load one. The
+           CrazyPod UI does not draw text through them: it hands the glyph
+           to LVGL, which composes it in RGB565 and is quantised to the
+           panel on the way out. An antialiased face is worth more there
+           than anywhere, because four shades is exactly what a softened
+           edge needs to read at nine pixels. */
         || f.depth
 #endif
     )

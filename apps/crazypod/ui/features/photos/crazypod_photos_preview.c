@@ -15,7 +15,7 @@
 #include "../../presentation/crazypod_preview_motion.h"
 #include "../../presentation/crazypod_preview_primitives.h"
 #include "crazypod_photos_preview.h"
-#include "../../presentation/crazypod_ui_color.h"
+#include "../../../crazypod_color.h"
 
 #define COLOR_WHITE 0xFFFFFF
 

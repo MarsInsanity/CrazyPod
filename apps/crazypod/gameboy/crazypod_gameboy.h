@@ -1,7 +1,15 @@
 #ifndef CRAZYPOD_GAMEBOY_H
 #define CRAZYPOD_GAMEBOY_H
 
+#include "config.h"
+
+#ifdef HAVE_CRAZYPOD_GAMEBOY
 #include "crazypod_gameboy_core.h"
+#else
+#include <stdbool.h>
+#include <stddef.h>
+#include <stdint.h>
+#endif
 
 enum crazypod_gameboy_result {
     CRAZYPOD_GAMEBOY_OK,
@@ -12,6 +20,26 @@ enum crazypod_gameboy_result {
     CRAZYPOD_GAMEBOY_CORE_ERROR
 };
 
+#ifndef HAVE_CRAZYPOD_GAMEBOY
+/*
+ * The emulator is not built for this panel: a Game Boy frame is 160x144,
+ * wider and taller than the Mini's whole screen. The library is reported
+ * empty so the shelf and the menu that reads it need no second answer for
+ * a device that has no games.
+ */
+static inline void crazypod_gameboy_scan(void) {}
+
+static inline int crazypod_gameboy_count(void)
+{
+    return 0;
+}
+
+static inline const char *crazypod_gameboy_title(int index)
+{
+    (void)index;
+    return NULL;
+}
+#else
 /* Scan /MiniApps/Games and its GB/GBC subdirectories; at most 128 entries. */
 void crazypod_gameboy_scan(void);
 int crazypod_gameboy_count(void);
@@ -47,5 +75,6 @@ enum crazypod_gameboy_save_state crazypod_gameboy_save_state(void);
  * cartridge we think cannot save from a file we refuse to read.
  */
 const char *crazypod_gameboy_save_detail(void);
+#endif /* HAVE_CRAZYPOD_GAMEBOY */
 
 #endif

@@ -18,7 +18,7 @@
 #include "../presentation/crazypod_scene_motion.h"
 #include "../presentation/crazypod_ui_widgets.h"
 #include "crazypod_scene_transition.h"
-#include "../presentation/crazypod_ui_color.h"
+#include "../../crazypod_color.h"
 
 #define FRAME_PIXELS (LCD_WIDTH * LCD_HEIGHT)
 #define EDGE_SHADOW_WIDTH 28

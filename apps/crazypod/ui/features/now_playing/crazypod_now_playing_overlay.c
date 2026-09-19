@@ -25,7 +25,7 @@
 #include "../../presentation/crazypod_popup_motion.h"
 #include "../../presentation/crazypod_ui_widgets.h"
 #include "crazypod_now_playing_feature.h"
-#include "../../presentation/crazypod_ui_color.h"
+#include "../../../crazypod_color.h"
 
 #define COLOR_DETAIL 0x08080D
 #define COLOR_WHITE 0xFFFFFF

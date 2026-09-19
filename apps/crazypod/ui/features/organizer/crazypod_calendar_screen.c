@@ -12,7 +12,7 @@
 #include "crazypod_calendar_model.h"
 #include "../../presentation/crazypod_ui_widgets.h"
 #include "crazypod_calendar_screen.h"
-#include "../../presentation/crazypod_ui_color.h"
+#include "../../../crazypod_color.h"
 
 #define CALENDAR_FONT (&lv_font_source_han_sans_sc_14_cjk)
 #define CALENDAR_WHITE 0xFFFFFF

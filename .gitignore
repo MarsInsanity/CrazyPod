@@ -2,6 +2,7 @@
 /build-hw-*/
 /build-hw/
 /build-sim/
+/build-sim-*/
 /sim*
 /output
 *.elf

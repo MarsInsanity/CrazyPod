@@ -10,6 +10,7 @@
 static const struct crazypod_video_engine_host *engine_host;
 static const struct crazypod_video_engine_ops *engine_ops;
 
+#ifdef HAVE_CRAZYPOD_VIDEO
 static const char *path_extension(const char *path)
 {
     return path != NULL ? strrchr(path, '.') : NULL;
@@ -19,6 +20,7 @@ static bool extension_is(const char *extension, const char *expected)
 {
     return extension != NULL && strcasecmp(extension, expected) == 0;
 }
+#endif
 
 bool crazypod_video_engine_path_supported(const char *path)
 {

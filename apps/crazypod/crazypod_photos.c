@@ -1,7 +1,149 @@
 #include "config.h"
 #include "crazypod_pixel.h"
 
-#ifdef HAVE_CRAZYPOD_UI
+#if defined(HAVE_CRAZYPOD_UI) && !defined(HAVE_CRAZYPOD_MEDIA_LIBRARY)
+
+/*
+ * No media library on this panel.
+ *
+ * The catalog reports empty and nothing decodes, so the thumbnail, viewer
+ * and decode buffers below -- about 1.7 MB of them, sized for a screen
+ * that can show a photograph -- are not built at all. That matters on a
+ * 32 MiB device: what is not spent here stays in the audio buffer.
+ *
+ * The interface is kept rather than removed so the surfaces that merely
+ * ask whether there is anything to show -- the runtime services, the USB
+ * prompt, the screen that would list pictures -- need no second answer
+ * for this target. They get the one they already handle: nothing.
+ */
+
+#include <stddef.h>
+
+#include "crazypod_photos.h"
+
+void crazypod_photos_init(void) {}
+void crazypod_photos_refresh(void) {}
+void crazypod_photos_ensure_catalog(void) {}
+void crazypod_photos_suspend(void) {}
+void crazypod_photos_resume(void) {}
+void crazypod_photos_invalidate_catalog(void) {}
+void crazypod_photos_note_file_added(void) {}
+
+void crazypod_photos_set_lock_suspended(bool suspended)
+{
+    (void)suspended;
+}
+
+void crazypod_photos_set_route_suspended(bool suspended)
+{
+    (void)suspended;
+}
+
+int crazypod_photo_count(void)
+{
+    return 0;
+}
+
+int crazypod_photo_favorite_count(void)
+{
+    return 0;
+}
+
+int crazypod_photo_favorite_index(int favorite_index)
+{
+    (void)favorite_index;
+    return -1;
+}
+
+const char *crazypod_photo_path(int index)
+{
+    (void)index;
+    return NULL;
+}
+
+const char *crazypod_photo_name(int index)
+{
+    (void)index;
+    return NULL;
+}
+
+bool crazypod_photo_is_favorite(int index)
+{
+    (void)index;
+    return false;
+}
+
+bool crazypod_photo_toggle_favorite(int index)
+{
+    (void)index;
+    return false;
+}
+
+bool crazypod_photo_delete(int index)
+{
+    (void)index;
+    return false;
+}
+
+const lv_image_dsc_t *crazypod_photo_thumbnail(int slot, int index)
+{
+    (void)slot;
+    (void)index;
+    return NULL;
+}
+
+const lv_image_dsc_t *crazypod_photo_view(int index)
+{
+    (void)index;
+    return NULL;
+}
+
+const lv_image_dsc_t *crazypod_photo_render_viewport(
+    int index, int zoom_percent, int *pan_x, int *pan_y)
+{
+    (void)index;
+    (void)zoom_percent;
+    (void)pan_x;
+    (void)pan_y;
+    return NULL;
+}
+
+const lv_image_dsc_t *crazypod_photo_render_crop_preview(
+    int index, int center_x, int center_y)
+{
+    (void)index;
+    (void)center_x;
+    (void)center_y;
+    return NULL;
+}
+
+int crazypod_photo_view_progress(int index)
+{
+    (void)index;
+    return 0;
+}
+
+unsigned crazypod_photo_generation(void)
+{
+    return 0;
+}
+
+unsigned crazypod_photo_thumbnail_generation(void)
+{
+    return 0;
+}
+
+unsigned crazypod_photo_view_generation(void)
+{
+    return 0;
+}
+
+bool crazypod_photos_busy(void)
+{
+    return false;
+}
+
+#elif defined(HAVE_CRAZYPOD_UI)
 
 #include <stdbool.h>
 #include <stdint.h>

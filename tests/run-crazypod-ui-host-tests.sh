@@ -25,6 +25,20 @@ cc -std=c99 -Wall -Wextra -Werror \
 
 "$test_root/crazypod_ui_pure_host_test"
 
+# The application catalog depends on the panel, so it is checked against
+# both: a colour 320x240 one, and the Mini's.
+for apps_stub in crazypod-frameclock-stubs crazypod-apps-mono-stubs; do
+    cc -std=c99 -Wall -Wextra -Werror \
+        -I"$repo_root/tests/$apps_stub" \
+        -I"$repo_root/apps/crazypod" \
+        -I"$repo_root/firmware/export" \
+        "$repo_root/apps/crazypod/crazypod_apps.c" \
+        "$repo_root/tests/crazypod_apps_catalog_host_test.c" \
+        -o "$test_root/crazypod_apps_catalog_host_test"
+
+    "$test_root/crazypod_apps_catalog_host_test"
+done
+
 cc -std=c99 -Wall -Wextra -Werror \
     -I"$repo_root/tests/crazypod-mono-stubs" \
     -I"$repo_root/apps/crazypod" \

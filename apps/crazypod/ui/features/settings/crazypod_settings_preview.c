@@ -16,7 +16,7 @@
 #include "crazypod_settings_feature.h"
 #include "crazypod_settings_model.h"
 #include "crazypod_settings_catalog.h"
-#include "../../presentation/crazypod_ui_color.h"
+#include "../../../crazypod_color.h"
 
 #define COLOR_WHITE 0xFFFFFF
 

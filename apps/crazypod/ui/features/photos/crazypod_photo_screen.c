@@ -16,7 +16,7 @@
 #include "../../presentation/crazypod_ui_widgets.h"
 #include "crazypod_photo_controller.h"
 #include "crazypod_photo_screen.h"
-#include "../../presentation/crazypod_ui_color.h"
+#include "../../../crazypod_color.h"
 
 #define WHITE 0xFFFFFF
 #define FAVORITE_PROGRESS_WIDTH 126

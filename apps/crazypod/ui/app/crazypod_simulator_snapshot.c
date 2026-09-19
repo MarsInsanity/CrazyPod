@@ -41,7 +41,7 @@
 #include "crazypod_app_input.h"
 #include "crazypod_choice_coordinator.h"
 #include "crazypod_simulator_snapshot.h"
-#include "../presentation/crazypod_ui_color.h"
+#include "../../crazypod_color.h"
 
 long crazypod_simulator_snapshot_settle_ticks(void)
 {
@@ -1022,6 +1022,21 @@ bool crazypod_simulator_snapshot_prepare(
     }
     if(screen == NULL || strcmp(screen, "home") == 0)
         return true;
+    if(strcmp(screen, "now-playing") == 0) {
+        crazypod_lock_screen_simulator_unlock();
+        host->open_root_route(MUSIC_ROUTE_NOW_PLAYING);
+        return true;
+    }
+    if(strcmp(screen, "desktop") == 0) {
+        /*
+         * The device boots onto the lock screen, which is what "home"
+         * captures. This one steps past it to the application carousel:
+         * open something and come straight back out, which is the same
+         * path a person takes.
+         */
+        crazypod_lock_screen_simulator_unlock();
+        return true;
+    }
     if(strcmp(screen, "hold-feedback") == 0) {
         crazypod_desktop_hold_feedback_begin(
             LV_SYMBOL_AUDIO, 900);

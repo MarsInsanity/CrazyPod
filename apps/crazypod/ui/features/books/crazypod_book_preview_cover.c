@@ -13,7 +13,7 @@
 #include "../../presentation/crazypod_ui_widgets.h"
 #include "../../presentation/crazypod_preview_primitives.h"
 #include "crazypod_book_preview_cover.h"
-#include "../../presentation/crazypod_ui_color.h"
+#include "../../../crazypod_color.h"
 
 static lv_obj_t *make_box(
     lv_obj_t *parent, int x, int y, int width, int height,

@@ -15,22 +15,35 @@
 #include "crazypod_marquee.h"
 #include "../../crazypod_state.h"
 #include "crazypod_menu_screen.h"
-#include "crazypod_ui_color.h"
+#include "../../crazypod_color.h"
+#include "crazypod_ui_metrics.h"
+#include "../../crazypod_runtime_font.h"
 
 #define COLOR_WHITE 0xFFFFFF
-#define CRAZYPOD_VISIBLE_ROWS 6
-#define CRAZYPOD_MENU_HEADER_X 16
-#define CRAZYPOD_MENU_HEADER_Y 38
-#define CRAZYPOD_MENU_HEADER_WIDTH 128
-#define CRAZYPOD_MENU_HEADER_HEIGHT 24
-#define CRAZYPOD_MENU_ROW_X 8
-#define CRAZYPOD_MENU_ROW_Y 64
-#define CRAZYPOD_MENU_ROW_WIDTH 140
-#define CRAZYPOD_MENU_ROW_HEIGHT 28
-#define CRAZYPOD_MENU_ROW_STEP 28
-#define CRAZYPOD_MENU_SCROLL_X 153
-#define CRAZYPOD_MENU_SCROLL_Y 66
-#define CRAZYPOD_MENU_SCROLL_HEIGHT 164
+#define CRAZYPOD_VISIBLE_ROWS CRAZYPOD_METRIC_MENU_ROWS
+
+#ifdef HAVE_CRAZYPOD_MONO_UI
+/*
+ * The selection bar is the one place the monochrome build names its shades
+ * directly instead of letting the design map choose them. Everywhere else
+ * the map does the right thing on its own; here it cannot, because the bar
+ * and the title on it are two separate colours in the design and both land
+ * on ink. A black bar with the title knocked out of it in paper is the
+ * highest contrast the panel has, and it is what an iPod list has always
+ * looked like.
+ */
+#define ROW_SELECTED_FILL CRAZYPOD_MONO_INK
+#define ROW_SELECTED_TEXT CRAZYPOD_MONO_PAPER
+#define ROW_TEXT CRAZYPOD_MONO_INK
+/*
+ * Hierarchy is carried by shade, not by opacity. Fading ink towards the
+ * page is how the design separates a heading from a title, and it works
+ * because there are 256 steps between them; here there are four, and a
+ * heading at a third opacity lands on the page it is printed on.
+ */
+#define HEADER_TEXT CRAZYPOD_MONO_SHADE_DARK
+#define MARKER_TEXT CRAZYPOD_MONO_SHADE_DARK
+#endif
 
 static lv_obj_t *make_box(
     lv_obj_t *parent, int x, int y, int width, int height,
@@ -58,13 +71,21 @@ void crazypod_menu_screen_render(
     lv_obj_t *header;
 
     crazypod_menu_list_reset(state->route);
+#ifdef HAVE_CRAZYPOD_MONO_UI
+    header = crazypod_ui_widget_label_shade(
+        context->parent, crazypod_route_query_title(state),
+        crazypod_runtime_font_at_size(CRAZYPOD_METRIC_HEADER_TEXT_SIZE),
+        HEADER_TEXT, LV_OPA_COVER);
+#else
     header = make_label(context->parent, crazypod_route_query_title(state),
-                        context->metadata_font,
+                        crazypod_runtime_font_at_size(
+                            CRAZYPOD_METRIC_HEADER_TEXT_SIZE),
                         COLOR_WHITE, 85);
-    lv_obj_set_pos(header, CRAZYPOD_MENU_HEADER_X,
-                   CRAZYPOD_MENU_HEADER_Y);
-    lv_obj_set_width(header, CRAZYPOD_MENU_HEADER_WIDTH);
-    lv_obj_set_height(header, CRAZYPOD_MENU_HEADER_HEIGHT);
+#endif
+    lv_obj_set_pos(header, CRAZYPOD_METRIC_MENU_HEADER_X,
+                   CRAZYPOD_METRIC_MENU_HEADER_Y);
+    lv_obj_set_width(header, CRAZYPOD_METRIC_MENU_HEADER_WIDTH);
+    lv_obj_set_height(header, CRAZYPOD_METRIC_MENU_HEADER_HEIGHT);
     lv_label_set_long_mode(header, LV_LABEL_LONG_MODE_DOTS);
 
     if(count <= 0) {
@@ -150,23 +171,46 @@ void crazypod_menu_screen_render(
 
     for(row = 0; row < CRAZYPOD_VISIBLE_ROWS; ++row) {
         int index = start + row;
-        int y = CRAZYPOD_MENU_ROW_Y + row * CRAZYPOD_MENU_ROW_STEP;
+        int y = CRAZYPOD_METRIC_MENU_ROW_Y +
+                row * CRAZYPOD_METRIC_MENU_ROW_STEP;
         bool selected = index == state->selected;
         lv_obj_t *row_box;
         lv_obj_t *label;
         lv_obj_t *marker;
         const char *title;
-        int text_x = 12;
-        int text_width = 120;
+        const lv_font_t *row_font = crazypod_runtime_font_at_size(
+            CRAZYPOD_METRIC_ROW_TEXT_SIZE);
+#ifdef HAVE_CRAZYPOD_MONO_UI
+        uint32_t text_color = ROW_TEXT;
+#else
+        uint32_t text_color = COLOR_WHITE;
+#endif
+        int text_x = CRAZYPOD_METRIC_ROW_TEXT_X;
+        int text_width = CRAZYPOD_METRIC_MENU_ROW_WIDTH - 2 * text_x;
 
         if(index >= count)
             break;
+#ifdef HAVE_CRAZYPOD_MONO_UI
+        row_box = crazypod_ui_widget_box_shade(
+            context->parent,
+            CRAZYPOD_METRIC_MENU_ROW_X, y,
+            CRAZYPOD_METRIC_MENU_ROW_WIDTH,
+            CRAZYPOD_METRIC_MENU_ROW_HEIGHT,
+            CRAZYPOD_METRIC_MENU_ROW_RADIUS,
+            ROW_SELECTED_FILL,
+            selected ? LV_OPA_COVER : LV_OPA_TRANSP);
+        if(selected)
+            text_color = ROW_SELECTED_TEXT;
+#else
         row_box = make_box(context->parent,
-                           CRAZYPOD_MENU_ROW_X, y,
-                           CRAZYPOD_MENU_ROW_WIDTH,
-                           CRAZYPOD_MENU_ROW_HEIGHT, 8,
+                           CRAZYPOD_METRIC_MENU_ROW_X, y,
+                           CRAZYPOD_METRIC_MENU_ROW_WIDTH,
+                           CRAZYPOD_METRIC_MENU_ROW_HEIGHT,
+                           CRAZYPOD_METRIC_MENU_ROW_RADIUS,
                            selected ? context->primary_color : context->panel_color,
                            selected ? 220 : LV_OPA_TRANSP);
+#endif
+#ifndef HAVE_CRAZYPOD_MONO_UI
         if(selected) {
             if(context->gradient_highlight &&
                !crazypod_state_reduce_effects()) {
@@ -179,6 +223,7 @@ void crazypod_menu_screen_render(
                                            crazypod_ui_color(COLOR_WHITE), 0);
             lv_obj_set_style_border_opa(row_box, 90, 0);
         }
+#endif
 
         {
             enum crazypod_menu_icon icon_id =
@@ -188,62 +233,92 @@ void crazypod_menu_screen_render(
 
             if(icon_asset != NULL) {
                 lv_obj_t *circle = make_box(
-                    row_box, 0, 0, 21, 21,
+                    row_box, 0, 0,
+                    CRAZYPOD_METRIC_ROW_ICON_SIZE,
+                    CRAZYPOD_METRIC_ROW_ICON_SIZE,
                     LV_RADIUS_CIRCLE, COLOR_WHITE,
-                    selected ? 45
-                        : crazypod_state_reduce_effects()
-                            ? LV_OPA_TRANSP : 18);
+                    CRAZYPOD_METRIC_ROW_ICON_DISC
+                        ? (selected ? 45
+                            : crazypod_state_reduce_effects()
+                                ? LV_OPA_TRANSP : 18)
+                        : LV_OPA_TRANSP);
                 lv_obj_t *icon = lv_image_create(circle);
 
-                lv_obj_align(circle, LV_ALIGN_LEFT_MID, 6, 0);
+                lv_obj_align(circle, LV_ALIGN_LEFT_MID,
+                             CRAZYPOD_METRIC_ROW_ICON_X, 0);
                 lv_image_set_src(icon, icon_asset);
+#ifdef HAVE_CRAZYPOD_MONO_UI
+                lv_obj_set_style_image_recolor(
+                    icon, crazypod_ui_shade(text_color), 0);
+#else
                 lv_obj_set_style_image_recolor(
                     icon, crazypod_ui_color(COLOR_WHITE), 0);
+#endif
                 lv_obj_set_style_image_recolor_opa(
                     icon, LV_OPA_COVER, 0);
+#ifdef HAVE_CRAZYPOD_MONO_UI
+                lv_obj_set_style_opa(icon, LV_OPA_COVER, 0);
+#else
                 lv_obj_set_style_opa(
                     icon, selected ? 255 : 170, 0);
+#endif
                 lv_obj_center(icon);
                 crazypod_menu_list_bind_icon(row, circle, icon);
-                text_x = 34;
-                text_width = 88;
+                text_x = CRAZYPOD_METRIC_ROW_TEXT_X_WITH_ICON;
+                text_width = CRAZYPOD_METRIC_ROW_MARKER_X - text_x - 2;
             }
         }
         title = context->item_title(state, index);
         if(title == NULL)
             title = "";
-        label = make_label(row_box, title, context->metadata_font,
-                           COLOR_WHITE, selected ? 255 : 195);
+#ifdef HAVE_CRAZYPOD_MONO_UI
+        label = crazypod_ui_widget_label_shade(
+            row_box, title, row_font, text_color, LV_OPA_COVER);
+#else
+        label = make_label(row_box, title, row_font,
+                           text_color, selected ? 255 : 195);
+#endif
         lv_obj_set_width(label, text_width);
         crazypod_ui_widget_align_row_label(
             label, text_x, CRAZYPOD_UI_ROW_LABEL_TEXT);
         crazypod_marquee_configure(label, selected);
 
+#ifdef HAVE_CRAZYPOD_MONO_UI
+        marker = crazypod_ui_widget_label_shade(
+            row_box,
+            context->item_is_current(state, index)
+                ? LV_SYMBOL_OK :
+            selected ? LV_SYMBOL_PLAY : LV_SYMBOL_BULLET,
+            &lv_font_montserrat_8,
+            selected ? ROW_SELECTED_TEXT : MARKER_TEXT, LV_OPA_COVER);
+#else
         marker = make_label(row_box,
                             context->item_is_current(state, index)
                                 ? LV_SYMBOL_OK :
                             selected ? LV_SYMBOL_PLAY : LV_SYMBOL_BULLET,
                             &lv_font_montserrat_8,
                             COLOR_WHITE, selected ? 205 : 90);
+#endif
         crazypod_ui_widget_align_row_label(
-            marker, 128, CRAZYPOD_UI_ROW_LABEL_MARKER);
+            marker, CRAZYPOD_METRIC_ROW_MARKER_X,
+            CRAZYPOD_UI_ROW_LABEL_MARKER);
         crazypod_menu_list_bind_row(row, row_box, label, marker);
     }
 
     if(count > CRAZYPOD_VISIBLE_ROWS) {
-        int track_height = CRAZYPOD_MENU_SCROLL_HEIGHT;
+        int track_height = CRAZYPOD_METRIC_MENU_SCROLL_HEIGHT;
         int thumb_height;
         int thumb_y;
         lv_obj_t *bar;
         crazypod_ui_menu_scroll_thumb(
             count, state->selected, CRAZYPOD_VISIBLE_ROWS,
-            CRAZYPOD_MENU_SCROLL_Y, track_height, 12,
-            &thumb_y, &thumb_height);
-        bar = make_box(context->parent, CRAZYPOD_MENU_SCROLL_X,
-                       CRAZYPOD_MENU_SCROLL_Y, 2, track_height, 1,
+            CRAZYPOD_METRIC_MENU_SCROLL_Y, track_height,
+            track_height / 8, &thumb_y, &thumb_height);
+        bar = make_box(context->parent, CRAZYPOD_METRIC_MENU_SCROLL_X,
+                       CRAZYPOD_METRIC_MENU_SCROLL_Y, 2, track_height, 1,
                        COLOR_WHITE, 25);
         (void)bar;
-        bar = make_box(context->parent, CRAZYPOD_MENU_SCROLL_X,
+        bar = make_box(context->parent, CRAZYPOD_METRIC_MENU_SCROLL_X,
                        thumb_y, 2, thumb_height, 1, COLOR_WHITE, 155);
         crazypod_menu_list_bind_scroll_thumb(bar);
     }

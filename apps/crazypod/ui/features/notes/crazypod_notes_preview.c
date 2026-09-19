@@ -15,7 +15,7 @@
 #include "../../presentation/crazypod_preview_primitives.h"
 #include "crazypod_notes_feature.h"
 #include "crazypod_notes_preview.h"
-#include "../../presentation/crazypod_ui_color.h"
+#include "../../../crazypod_color.h"
 
 #define COLOR_CYAN 0x55D6E7
 #define COLOR_WHITE 0xFFFFFF

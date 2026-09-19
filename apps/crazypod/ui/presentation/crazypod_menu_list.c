@@ -10,7 +10,7 @@
 #include "crazypod_menu_icon_assets.h"
 #include "../../crazypod_state.h"
 #include "crazypod_menu_list.h"
-#include "crazypod_ui_color.h"
+#include "../../crazypod_color.h"
 
 #define CRAZYPOD_MENU_LIST_ROWS 6
 

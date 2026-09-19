@@ -12,7 +12,7 @@
 #include "../../presentation/crazypod_ui_widgets.h"
 #include "crazypod_wallpaper_crop_controller.h"
 #include "crazypod_wallpaper_crop_screen.h"
-#include "../../presentation/crazypod_ui_color.h"
+#include "../../../crazypod_color.h"
 
 static struct crazypod_wallpaper_crop_view crop_view;
 

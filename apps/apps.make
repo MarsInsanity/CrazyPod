@@ -11,7 +11,9 @@ INCLUDES += -I$(APPSDIR) $(patsubst %,-I$(APPSDIR)/%,$(subst :, ,$(APPEXTRA)))
 SRC += $(call preprocess, $(APPSDIR)/SOURCES)
 
 ifneq (,$(IS_CRAZYPOD))
-  include $(APPSDIR)/crazypod/gameboy/crazypod_gameboy.make
+  ifneq (,$(IS_CRAZYPOD_GAMEBOY))
+    include $(APPSDIR)/crazypod/gameboy/crazypod_gameboy.make
+  endif
   include $(ROOTDIR)/lib/lvgl/lvgl-rockbox.make
   ifneq (,$(IS_CRAZYPOD_MINIAPPS))
     include $(ROOTDIR)/miniapps/miniapps.make

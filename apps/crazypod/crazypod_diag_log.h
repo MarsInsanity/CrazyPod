@@ -47,6 +47,11 @@ static inline void crazypod_diag_log(const char *tag, const char *format, ...)
 }
 static inline void crazypod_diag_log_flush(void) {}
 static inline void crazypod_diag_log_service(void) {}
+static inline bool crazypod_diag_audit_arena(const char *where)
+{
+    (void)where;
+    return true;
+}
 #endif
 
 #endif

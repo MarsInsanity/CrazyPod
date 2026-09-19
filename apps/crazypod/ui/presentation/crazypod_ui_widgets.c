@@ -4,7 +4,7 @@
 
 #include "../../crazypod_l10n.h"
 #include "../../crazypod_runtime_font.h"
-#include "crazypod_ui_color.h"
+#include "../../crazypod_color.h"
 
 static bool text_is_symbol(const char *text)
 {
@@ -107,6 +107,17 @@ lv_obj_t *crazypod_ui_widget_label(lv_obj_t *parent, const char *text,
     return label;
 }
 
+lv_obj_t *crazypod_ui_widget_label_shade(
+    lv_obj_t *parent, const char *text, const lv_font_t *font,
+    uint32_t shade, lv_opa_t opacity)
+{
+    lv_obj_t *label = crazypod_ui_widget_label(
+        parent, text, font, shade, opacity);
+
+    lv_obj_set_style_text_color(label, crazypod_ui_shade(shade), 0);
+    return label;
+}
+
 void crazypod_ui_widget_set_label_text(lv_obj_t *label, const char *text)
 {
     const char *resolved = crazypod_l10n_text(text);
@@ -153,6 +164,17 @@ lv_obj_t *crazypod_ui_widget_box(lv_obj_t *parent, int x, int y,
     lv_obj_set_style_radius(box, radius, 0);
     lv_obj_set_style_bg_color(box, crazypod_ui_color(color), 0);
     lv_obj_set_style_bg_opa(box, opacity, 0);
+    return box;
+}
+
+lv_obj_t *crazypod_ui_widget_box_shade(
+    lv_obj_t *parent, int x, int y, int width, int height, int radius,
+    uint32_t shade, lv_opa_t opacity)
+{
+    lv_obj_t *box = crazypod_ui_widget_box(
+        parent, x, y, width, height, radius, shade, opacity);
+
+    lv_obj_set_style_bg_color(box, crazypod_ui_shade(shade), 0);
     return box;
 }
 

@@ -10,7 +10,7 @@
 #include "crazypod_choice_overlay.h"
 #include "crazypod_popup_layout.h"
 #include "crazypod_ui_widgets.h"
-#include "crazypod_ui_color.h"
+#include "../../crazypod_color.h"
 
 #define CHOICE_ROWS 4
 #define COLOR_PANEL 0x1B1B22

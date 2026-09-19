@@ -12,7 +12,7 @@
 #include "crazypod_miniapp_scene.h"
 #include "crazypod_miniapp_screen.h"
 #include "../../../miniapps/runtime/crazypod_miniapp_text_prompt_service.h"
-#include "../../presentation/crazypod_ui_color.h"
+#include "../../../crazypod_color.h"
 
 #define COLOR_DETAIL 0x08080D
 #define COLOR_WHITE 0xFFFFFF

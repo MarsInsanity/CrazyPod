@@ -11,7 +11,7 @@
 #include "../presentation/crazypod_ui_widgets.h"
 #include "crazypod_shell.h"
 #include "crazypod_status_bar.h"
-#include "../presentation/crazypod_ui_color.h"
+#include "../../crazypod_color.h"
 
 #define COLOR_DETAIL 0x08080D
 

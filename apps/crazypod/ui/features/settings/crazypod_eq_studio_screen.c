@@ -8,7 +8,7 @@
 
 #include "../../presentation/crazypod_ui_widgets.h"
 #include "crazypod_eq_studio_screen.h"
-#include "../../presentation/crazypod_ui_color.h"
+#include "../../../crazypod_color.h"
 
 #define WHITE 0xFFFFFF
 #define MUTED 0x8E8E93

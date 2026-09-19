@@ -18,7 +18,7 @@
 #include "crazypod_customize_catalog.h"
 #include "crazypod_customize_feature.h"
 #include "../now_playing/crazypod_now_playing_feature.h"
-#include "../../presentation/crazypod_ui_color.h"
+#include "../../../crazypod_color.h"
 
 #define COLOR_WHITE 0xFFFFFF
 

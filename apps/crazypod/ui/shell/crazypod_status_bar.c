@@ -14,14 +14,65 @@
 #include "powermgmt.h"
 #include "timefuncs.h"
 
+#include "../../crazypod_runtime_font.h"
 #include "../../crazypod_screen_recording.h"
 #include "../presentation/crazypod_ui_widgets.h"
 #include "crazypod_status_bar.h"
-#include "../presentation/crazypod_ui_color.h"
+#include "../../crazypod_color.h"
 
 #define STATUS_WHITE 0xFFFFFF
 #define STATUS_DARK 0x08080D
 #define STATUS_RECORDING 0xFF3B30
+
+/*
+ * The bar holds a clock at one end and a battery at the other, and on the
+ * compact panel that is all there is room for: twelve pixels tall, and the
+ * battery is drawn at about half size so the clock keeps a readable face.
+ */
+#ifdef HAVE_CRAZYPOD_COMPACT_UI
+#define STATUS_TIME_FONT (crazypod_runtime_font_at_size(11))
+#define STATUS_TIME_X 3
+#define STATUS_TIME_Y 1
+#define STATUS_PLAYING_FONT (&lv_font_montserrat_8)
+#define STATUS_PLAYING_X (LCD_WIDTH - 36)
+#define STATUS_PLAYING_Y 2
+#define STATUS_RECORDING_X (LCD_WIDTH - 46)
+#define STATUS_RECORDING_Y 4
+#define STATUS_RECORDING_SIZE 4
+#define STATUS_BATTERY_X (LCD_WIDTH - 23)
+#define STATUS_BATTERY_Y 2
+#define STATUS_BATTERY_WIDTH 17
+#define STATUS_BATTERY_HEIGHT 8
+#define STATUS_BATTERY_RADIUS 2
+#define STATUS_CHARGE_FONT (&lv_font_montserrat_8)
+#define STATUS_BATTERY_CAP_X (LCD_WIDTH - 5)
+#define STATUS_BATTERY_CAP_Y 4
+#define STATUS_BATTERY_CAP_WIDTH 2
+#define STATUS_BATTERY_CAP_HEIGHT 4
+#else
+#define STATUS_TIME_FONT (&lv_font_montserrat_12)
+#define STATUS_TIME_X 34
+#define STATUS_TIME_Y 7
+#define STATUS_PLAYING_FONT (&lv_font_montserrat_10)
+#define STATUS_PLAYING_X 241
+#define STATUS_PLAYING_Y 11
+#define STATUS_RECORDING_X 228
+#define STATUS_RECORDING_Y 14
+#define STATUS_RECORDING_SIZE 7
+#define STATUS_BATTERY_X 258
+#define STATUS_BATTERY_Y 11
+#define STATUS_BATTERY_WIDTH 27
+#define STATUS_BATTERY_HEIGHT 12
+#define STATUS_BATTERY_RADIUS 3
+#define STATUS_CHARGE_FONT (&lv_font_montserrat_8)
+#define STATUS_BATTERY_CAP_X 287
+#define STATUS_BATTERY_CAP_Y 15
+#define STATUS_BATTERY_CAP_WIDTH 2
+#define STATUS_BATTERY_CAP_HEIGHT 5
+#endif
+
+/* The fill sits one pixel inside the shell on every side. */
+#define STATUS_BATTERY_FILL_MAX (STATUS_BATTERY_WIDTH - 2)
 
 struct status_bar {
     lv_obj_t *time;
@@ -55,35 +106,41 @@ void crazypod_status_bar_create(int index, lv_obj_t *screen)
     if(bar == NULL || screen == NULL)
         return;
     bar->time = crazypod_ui_widget_label(
-        screen, "00:00", &lv_font_montserrat_12,
+        screen, "00:00", STATUS_TIME_FONT,
         STATUS_WHITE, LV_OPA_COVER);
-    lv_obj_set_pos(bar->time, 34, 7);
+    lv_obj_set_pos(bar->time, STATUS_TIME_X, STATUS_TIME_Y);
 
     bar->playing = crazypod_ui_widget_label(
-        screen, LV_SYMBOL_PLAY, &lv_font_montserrat_10,
+        screen, LV_SYMBOL_PLAY, STATUS_PLAYING_FONT,
         STATUS_WHITE, LV_OPA_COVER);
-    lv_obj_set_pos(bar->playing, 241, 11);
+    lv_obj_set_pos(bar->playing, STATUS_PLAYING_X, STATUS_PLAYING_Y);
     lv_obj_add_flag(bar->playing, LV_OBJ_FLAG_HIDDEN);
 
     if(recording_indicator == NULL) {
         recording_indicator = crazypod_ui_widget_box(
-            lv_layer_top(), 228, 14, 7, 7,
+            lv_layer_top(), STATUS_RECORDING_X, STATUS_RECORDING_Y,
+            STATUS_RECORDING_SIZE, STATUS_RECORDING_SIZE,
             LV_RADIUS_CIRCLE, STATUS_RECORDING, LV_OPA_COVER);
         lv_obj_add_flag(
             recording_indicator, LV_OBJ_FLAG_HIDDEN);
     }
 
     bar->battery = crazypod_ui_widget_box(
-        screen, 258, 11, 27, 12, 3, STATUS_WHITE, 64);
+        screen, STATUS_BATTERY_X, STATUS_BATTERY_Y,
+        STATUS_BATTERY_WIDTH, STATUS_BATTERY_HEIGHT,
+        STATUS_BATTERY_RADIUS, STATUS_WHITE, 64);
     bar->battery_fill = crazypod_ui_widget_box(
-        bar->battery, 1, 1, 24, 10, 2,
+        bar->battery, 1, 1, STATUS_BATTERY_FILL_MAX,
+        STATUS_BATTERY_HEIGHT - 2, STATUS_BATTERY_RADIUS - 1,
         STATUS_WHITE, LV_OPA_COVER);
     bar->charge = crazypod_ui_widget_label(
-        bar->battery, LV_SYMBOL_CHARGE, &lv_font_montserrat_8,
+        bar->battery, LV_SYMBOL_CHARGE, STATUS_CHARGE_FONT,
         STATUS_DARK, LV_OPA_COVER);
     lv_obj_center(bar->charge);
     bar->battery_cap = crazypod_ui_widget_box(
-        screen, 287, 15, 2, 5, 1, STATUS_WHITE, 128);
+        screen, STATUS_BATTERY_CAP_X, STATUS_BATTERY_CAP_Y,
+        STATUS_BATTERY_CAP_WIDTH, STATUS_BATTERY_CAP_HEIGHT,
+        1, STATUS_WHITE, 128);
     bar->rendered_minute = -1;
     bar->rendered_battery_width = -1;
     bar->rendered_charging = -1;
@@ -122,7 +179,12 @@ void crazypod_status_bars_update(void)
         level = 0;
     if(level > 100)
         level = 100;
-    battery_width = level > 0 ? 3 + (21 * level / 100) : 0;
+    /* A near-flat battery still shows a sliver, so "almost empty" and
+     * "reporting nothing" do not look the same. */
+    battery_width = level > 0
+        ? (STATUS_BATTERY_FILL_MAX - 21 * STATUS_BATTERY_FILL_MAX / 24) +
+          (21 * STATUS_BATTERY_FILL_MAX / 24) * level / 100
+        : 0;
 #if CONFIG_CHARGING >= CHARGING_MONITOR
     charging = charge_state > DISCHARGING;
 #endif

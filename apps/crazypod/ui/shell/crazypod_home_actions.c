@@ -23,7 +23,7 @@
 #include "../presentation/crazypod_ui_widgets.h"
 #include "crazypod_desktop_native.h"
 #include "crazypod_home_actions.h"
-#include "../presentation/crazypod_ui_color.h"
+#include "../../crazypod_color.h"
 
 #define COLOR_WHITE 0xFFFFFF
 #define COLOR_ACCENT 0xDBD1BD

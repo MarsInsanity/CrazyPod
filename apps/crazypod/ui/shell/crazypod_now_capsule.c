@@ -22,7 +22,7 @@
 #include "../presentation/crazypod_panel_geometry.h"
 #include "../presentation/crazypod_ui_widgets.h"
 #include "crazypod_now_capsule.h"
-#include "../presentation/crazypod_ui_color.h"
+#include "../../crazypod_color.h"
 
 #define COLOR_WHITE 0xFFFFFF
 #define COLOR_CYAN 0x26CFF5

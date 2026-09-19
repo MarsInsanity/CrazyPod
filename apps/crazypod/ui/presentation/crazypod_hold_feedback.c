@@ -6,7 +6,7 @@
 
 #include "crazypod_hold_feedback.h"
 #include "crazypod_ui_widgets.h"
-#include "crazypod_ui_color.h"
+#include "../../crazypod_color.h"
 
 #define COLOR_WHITE 0xFFFFFF
 #define COLOR_PROGRESS 0x47E69A

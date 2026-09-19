@@ -1,7 +1,9 @@
 crazypod/crazypod_main.c
+#ifdef HAVE_CRAZYPOD_GAMEBOY
 crazypod/gameboy/crazypod_gameboy_cartridge.c
 crazypod/gameboy/crazypod_gameboy_core.c
 crazypod/gameboy/crazypod_gameboy.c
+#endif
 #ifdef HAVE_CRAZYPOD_IAP
 crazypod/accessory/crazypod_iap_simple.c
 crazypod/accessory/crazypod_usb_iap.c
@@ -17,6 +19,7 @@ crazypod/crazypod_image.c
 crazypod/crazypod_photos.c
 crazypod/crazypod_screenshot.c
 crazypod/crazypod_screen_recording.c
+#ifdef HAVE_CRAZYPOD_MEDIA_LIBRARY
 crazypod/video/crazypod_video_catalog.c
 crazypod/video/crazypod_video_poster.c
 crazypod/video/crazypod_video_engine.c
@@ -26,9 +29,12 @@ crazypod/video/crazypod_video_engine_mpeg.c
 crazypod/video/crazypod_video_engine_ffmpeg.c
 #endif
 #endif
+#endif
+#ifdef HAVE_CRAZYPOD_MEDIA_LIBRARY
 crazypod/photos/crazypod_photo_catalog.c
 crazypod/photos/crazypod_photo_cache.c
 crazypod/photos/crazypod_photo_viewport.c
+#endif
 crazypod/wallpaper/crazypod_wallpaper_crop_engine.c
 crazypod/wallpaper/crazypod_wallpaper_store.c
 crazypod/ui/app/crazypod_simulator_snapshot.c
@@ -58,7 +64,9 @@ crazypod/ui/features/settings/crazypod_settings_catalog.c
 crazypod/ui/features/settings/crazypod_settings_controller.c
 crazypod/ui/features/settings/crazypod_settings_preview.c
 crazypod/ui/features/miniapps/crazypod_miniapp_screen.c
+#ifdef HAVE_CRAZYPOD_GAMEBOY
 crazypod/ui/features/miniapps/crazypod_gameboy_screen.c
+#endif
 crazypod/ui/features/miniapps/crazypod_miniapp_scene.c
 crazypod/ui/features/miniapps/crazypod_miniapp_scene_renderer.c
 crazypod/ui/features/miniapps/crazypod_miniapp_runtime_controller.c
@@ -122,7 +130,9 @@ crazypod/crazypod_state.c
 crazypod/crazypod_l10n.c
 crazypod/crazypod_appearance.c
 crazypod/crazypod_presets.c
+#ifdef HAVE_CRAZYPOD_ICON_THEMES
 crazypod/crazypod_icons.c
+#endif
 crazypod/crazypod_lyrics.c
 crazypod/crazypod_wallpaper.c
 crazypod/platform/crazypod_platform_display.c
@@ -187,7 +197,9 @@ crazypod/ui/features/customize/crazypod_wallpaper_crop_controller.c
 crazypod/ui/features/customize/crazypod_wallpaper_crop_runtime.c
 crazypod/ui/features/customize/crazypod_wallpaper_crop_input.c
 crazypod/ui/shell/crazypod_app_catalog.c
+#ifdef HAVE_CRAZYPOD_ICON_THEMES
 crazypod/ui/shell/crazypod_desktop_native.c
+#endif
 crazypod/ui/shell/crazypod_home_actions.c
 crazypod/ui/shell/crazypod_home_input.c
 crazypod/ui/features/music/crazypod_music_activation.c

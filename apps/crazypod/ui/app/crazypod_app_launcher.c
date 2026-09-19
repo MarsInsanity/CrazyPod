@@ -127,6 +127,7 @@ void crazypod_app_launcher_open(enum crazypod_app_id id)
     case CRAZYPOD_APP_LOCK:
         host.show_lock(true);
         break;
+#ifdef HAVE_CRAZYPOD_MEDIA_LIBRARY
     case CRAZYPOD_APP_PHOTOS:
         host.boost(true);
         crazypod_photos_set_route_suspended(false);
@@ -137,6 +138,7 @@ void crazypod_app_launcher_open(enum crazypod_app_id id)
         crazypod_photos_feature_reset_view();
         open_route(PHOTOS_ROUTE_MENU);
         break;
+#endif
     case CRAZYPOD_APP_CUSTOMIZE:
         open_route(DIY_ROUTE_MENU);
         break;
@@ -164,11 +166,13 @@ void crazypod_app_launcher_open(enum crazypod_app_id id)
         (void)crazypod_miniapps_feature_prepare();
         open_route(UTILITIES_ROUTE_MENU);
         break;
+#ifdef HAVE_CRAZYPOD_GAMEBOY
     case CRAZYPOD_APP_GAMEBOY:
         host.boost(true);
         crazypod_miniapps_feature_open_gameboy();
         open_route(GAMEBOY_ROUTE_LIBRARY);
         break;
+#endif
     case CRAZYPOD_APP_CLOCK:
         open_route(CLOCK_ROUTE_MENU);
         break;

@@ -18,7 +18,7 @@
 #include "../../presentation/crazypod_preview_primitives.h"
 #include "crazypod_books_feature.h"
 #include "crazypod_books_preview.h"
-#include "../../presentation/crazypod_ui_color.h"
+#include "../../../crazypod_color.h"
 
 #define COLOR_WHITE 0xFFFFFF
 

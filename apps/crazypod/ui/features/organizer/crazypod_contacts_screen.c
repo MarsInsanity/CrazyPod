@@ -11,7 +11,7 @@
 #include "../../presentation/crazypod_ui_widgets.h"
 #include "../../../crazypod_state.h"
 #include "crazypod_contacts_screen.h"
-#include "../../presentation/crazypod_ui_color.h"
+#include "../../../crazypod_color.h"
 
 #define CRAZYPOD_CONTACT_FONT (&lv_font_source_han_sans_sc_14_cjk)
 #define CRAZYPOD_CONTACT_WHITE 0xFFFFFF

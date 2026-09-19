@@ -9,10 +9,14 @@
 static const uint8_t default_order[CRAZYPOD_APP_COUNT] = {
     CRAZYPOD_APP_MUSIC,
     CRAZYPOD_APP_PODCASTS,
+#ifdef HAVE_CRAZYPOD_MINIAPPS
     CRAZYPOD_APP_MINI_APPS,
+#endif
     CRAZYPOD_APP_SHUFFLE,
     CRAZYPOD_APP_LOCK,
+#ifdef HAVE_CRAZYPOD_MEDIA_LIBRARY
     CRAZYPOD_APP_PHOTOS,
+#endif
     CRAZYPOD_APP_CUSTOMIZE,
     CRAZYPOD_APP_WORKOUTS,
     CRAZYPOD_APP_BOOKS,
@@ -23,7 +27,9 @@ static const uint8_t default_order[CRAZYPOD_APP_COUNT] = {
     CRAZYPOD_APP_STOPWATCH,
     CRAZYPOD_APP_EXTRAS,
     CRAZYPOD_APP_SETTINGS,
+#ifdef HAVE_CRAZYPOD_GAMEBOY
     CRAZYPOD_APP_GAMEBOY,
+#endif
 };
 
 static uint8_t menu_order[CRAZYPOD_APP_COUNT];
@@ -52,7 +58,10 @@ bool crazypod_apps_is_fixed(enum crazypod_app_id id)
            id == CRAZYPOD_APP_CUSTOMIZE ||
            id == CRAZYPOD_APP_EXTRAS ||
            id == CRAZYPOD_APP_SETTINGS ||
-           id == CRAZYPOD_APP_GAMEBOY;
+#ifdef HAVE_CRAZYPOD_GAMEBOY
+           id == CRAZYPOD_APP_GAMEBOY ||
+#endif
+           false;
 }
 
 void crazypod_apps_reset(void)

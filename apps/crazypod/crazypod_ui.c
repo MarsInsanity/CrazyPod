@@ -119,7 +119,7 @@
 #include "crazypod_videos.h"
 #include "crazypod_wallpaper.h"
 #include "crazypod_workouts.h"
-#include "ui/presentation/crazypod_ui_color.h"
+#include "crazypod_color.h"
 
 #define CRAZYPOD_STATUS_BAR_HEIGHT 32
 #define CRAZYPOD_MENU_PANEL_Y CRAZYPOD_STATUS_BAR_HEIGHT
@@ -224,7 +224,12 @@ static void update_status_bars(lv_timer_t *timer)
 
 static int appearance_tile_size(void)
 {
+    /* Five steps, the largest being as big as the carousel band allows. */
+#ifdef HAVE_CRAZYPOD_COMPACT_UI
+    static const int sizes[] = { 26, 28, 30, 32, 34 };
+#else
     static const int sizes[] = { 88, 96, 104, 112, 120 };
+#endif
     return sizes[crazypod_appearance_get()->icon_scale];
 }
 

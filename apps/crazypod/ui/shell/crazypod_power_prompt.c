@@ -18,11 +18,40 @@
 #include "../presentation/crazypod_ui_widgets.h"
 #include "crazypod_desktop_native.h"
 #include "crazypod_power_prompt.h"
-#include "../presentation/crazypod_ui_color.h"
+#include "../../crazypod_color.h"
 
 #define COLOR_WHITE 0xFFFFFF
 #define COLOR_PANEL 0x1B1B22
 #define POWER_HOLD_FEEDBACK_DELAY_MS 200
+
+/*
+ * Restart and Shutdown sit side by side on the design's canvas. Half of a
+ * 138-pixel screen, less the insets, is about forty pixels: enough for the
+ * glyph or the word, not both. On the compact panel they stack instead,
+ * one full-width row each, which is also how every other list on this
+ * device is read.
+ */
+#ifdef HAVE_CRAZYPOD_COMPACT_UI
+#define POWER_OPTIONS_STACK 1
+#define POWER_OPTION_HEIGHT 20
+#define POWER_OPTION_GAP 3
+#define POWER_OPTION_INSET 5
+#define POWER_OPTION_INNER_PADDING 4
+#define POWER_MARKER_WIDTH 10
+#define POWER_TEXT_GAP 4
+#define POWER_TITLE_Y 4
+#define POWER_MINIMUM_WIDTH 100
+#else
+#define POWER_OPTIONS_STACK 0
+#define POWER_OPTION_HEIGHT 38
+#define POWER_OPTION_GAP 8
+#define POWER_OPTION_INSET 12
+#define POWER_OPTION_INNER_PADDING 8
+#define POWER_MARKER_WIDTH 16
+#define POWER_TEXT_GAP 6
+#define POWER_TITLE_Y 7
+#define POWER_MINIMUM_WIDTH 236
+#endif
 
 struct power_prompt_state {
     lv_obj_t *parent;
@@ -190,15 +219,15 @@ void crazypod_power_prompt_show(void)
     int content_width;
     int symbol_column_width = 0;
     int label_column_width = 0;
-    int title_y = 7;
+    int title_y = POWER_TITLE_Y;
     int detail_y;
     int options_y;
-    int option_height = 38;
-    int option_gap = 8;
-    int option_inset = 12;
-    int option_inner_padding = 8;
-    int marker_width = 16;
-    int text_gap = 6;
+    int option_height = POWER_OPTION_HEIGHT;
+    int option_gap = POWER_OPTION_GAP;
+    int option_inset = POWER_OPTION_INSET;
+    int option_inner_padding = POWER_OPTION_INNER_PADDING;
+    int marker_width = POWER_MARKER_WIDTH;
+    int text_gap = POWER_TEXT_GAP;
     int option_width;
     int maximum_label_width;
     int index;
@@ -237,30 +266,40 @@ void crazypod_power_prompt_show(void)
         if(label_width > label_column_width)
             label_column_width = label_width;
     }
-    if(2 * (2 * option_inner_padding + symbol_column_width +
-            2 * text_gap + label_column_width + marker_width) +
-       option_gap + 2 * option_inset > content_width)
-        content_width =
-            2 * (2 * option_inner_padding + symbol_column_width +
-                 2 * text_gap + label_column_width + marker_width) +
-            option_gap + 2 * option_inset;
+    {
+        /* One option's worth of content, and however many share a row. */
+        const int columns = POWER_OPTIONS_STACK ? 1 : 2;
+        int options_width =
+            columns * (2 * option_inner_padding + symbol_column_width +
+                       2 * text_gap + label_column_width +
+                       marker_width) +
+            (columns - 1) * option_gap + 2 * option_inset;
+
+        if(options_width > content_width)
+            content_width = options_width;
+    }
     detail_y = title_y +
         crazypod_popup_wrapped_text_height(
             CP_TR("POWER"), &lv_font_montserrat_10,
-            LCD_WIDTH, 0) + 10;
+            LCD_WIDTH, 0) + (POWER_OPTIONS_STACK ? 4 : 10);
     options_y = detail_y +
         crazypod_popup_wrapped_text_height(
             CP_TR("Choose Action"), &lv_font_montserrat_12,
-            LCD_WIDTH, 0) + 13;
+            LCD_WIDTH, 0) + (POWER_OPTIONS_STACK ? 5 : 13);
     geometry = crazypod_popup_centered_geometry(
         crazypod_popup_clamp_width(
-            content_width, 0, 236, LCD_WIDTH - 32),
-        options_y + option_height + 11);
+            content_width, 0, POWER_MINIMUM_WIDTH, LCD_WIDTH - 32),
+        options_y +
+            (POWER_OPTIONS_STACK
+                ? 2 * option_height + option_gap
+                : option_height) +
+            (POWER_OPTIONS_STACK ? 5 : 11));
     prompt.panel = prompt.callbacks.create_panel(
         prompt.root, geometry.x, geometry.y,
         geometry.width, geometry.height);
-    option_width =
-        (geometry.width - 2 * option_inset - option_gap) / 2;
+    option_width = POWER_OPTIONS_STACK
+        ? geometry.width - 2 * option_inset
+        : (geometry.width - 2 * option_inset - option_gap) / 2;
     maximum_label_width = option_width -
         2 * option_inner_padding - symbol_column_width -
         2 * text_gap - marker_width;
@@ -282,7 +321,12 @@ void crazypod_power_prompt_show(void)
     for(index = 0; index < 2; ++index) {
         lv_obj_t *symbol;
         lv_obj_t *label;
-        int x = option_inset + index * (option_width + option_gap);
+        int x = POWER_OPTIONS_STACK
+            ? option_inset
+            : option_inset + index * (option_width + option_gap);
+        int y = POWER_OPTIONS_STACK
+            ? options_y + index * (option_height + option_gap)
+            : options_y;
         int label_width = crazypod_popup_text_width(
             titles[index], &lv_font_montserrat_10);
         int group_width;
@@ -295,8 +339,9 @@ void crazypod_power_prompt_show(void)
         group_x = (option_width - group_width) / 2;
 
         prompt.rows[index] = make_box(
-            prompt.panel, x, options_y,
-            option_width, option_height, 9,
+            prompt.panel, x, y,
+            option_width, option_height,
+            POWER_OPTIONS_STACK ? 4 : 9,
             COLOR_WHITE, LV_OPA_TRANSP);
         symbol = make_label(
             prompt.rows[index], symbols[index],

@@ -34,20 +34,13 @@
 #include "../presentation/crazypod_panel_geometry.h"
 #include "../presentation/crazypod_ui_widgets.h"
 #include "crazypod_lock_screen.h"
-#include "../presentation/crazypod_ui_color.h"
+#include "../../crazypod_color.h"
 
 #define COLOR_WHITE 0xFFFFFF
 #define COLOR_CYAN 0x26CFF5
 #define UNLOCK_HOLD_TICKS ((HZ / 2) > 0 ? (HZ / 2) : 1)
 #define UNLOCK_OPEN_TICKS \
     ((HZ * 13 / 50) > 0 ? (HZ * 13 / 50) : 1)
-#define MEDIA_PANEL_SIDE_MARGIN 12
-#define MEDIA_PANEL_BOTTOM_MARGIN 12
-#define MEDIA_PANEL_X MEDIA_PANEL_SIDE_MARGIN
-#define MEDIA_PANEL_WIDTH (LCD_WIDTH - MEDIA_PANEL_SIDE_MARGIN * 2)
-#define MEDIA_PANEL_HEIGHT 94
-#define MEDIA_PANEL_Y \
-    (LCD_HEIGHT - MEDIA_PANEL_HEIGHT - MEDIA_PANEL_BOTTOM_MARGIN)
 #define MEDIA_PANEL_TINT_COLOR 0x11131A
 #define MEDIA_PANEL_TINT_OPA 48
 /* Reduce Effects High: a plain half-transparent slab instead of frosted
@@ -55,21 +48,83 @@
  * dissolves into whatever the lock wallpaper happens to be. */
 #define MEDIA_PANEL_FLAT_COLOR 0x0B0D12
 #define MEDIA_PANEL_FLAT_OPA 128
+#define MEDIA_ARTWORK_BANKS 2
+
+#ifdef HAVE_CRAZYPOD_COMPACT_UI
+/*
+ * The lock screen is the first thing the device shows, and on the design's
+ * canvas it is a 48px clock over a 94px media card. Neither fits here: the
+ * whole panel is 110 tall. The clock comes down to a size the compact type
+ * ladder actually builds, drawn unscaled -- a transform layer to enlarge a
+ * face costs a full-screen ARGB buffer per refresh, and there is nothing to
+ * enlarge it for.
+ */
+#define MEDIA_PANEL_SIDE_MARGIN 4
+#define MEDIA_PANEL_BOTTOM_MARGIN 4
+#define MEDIA_PANEL_HEIGHT 44
+#define MEDIA_ARTWORK_SIZE 34
+#define MEDIA_ARTWORK_X 5
+#define MEDIA_ARTWORK_Y 5
+#define MEDIA_TEXT_X 44
+#define MEDIA_TITLE_FONT_SIZE 12
+#define MEDIA_ARTIST_FONT_SIZE 10
+#define MEDIA_ALBUM_FONT_SIZE 8
+#define LOCK_MEDIA_TIME_SIZE 22
+#define LOCK_MEDIA_TIME_Y 2
+#define LOCK_MEDIA_DATE_Y 22
+#define LOCK_MEDIA_HINT_Y 36
+#define LOCK_CLOCK_SIZE 40
+#define LOCK_CLOCK_Y 26
+#define LOCK_DATE_Y 54
+#define LOCK_HINT_Y 76
+#define LOCK_SURFACE_SIZE 14
+#define LOCK_DATE_GAP 3
+#define LOCK_DATE_MARGIN 4
+#define LOCK_ROW_OPTICAL_Y (-2)
+#define LOCK_ICON_X 2
+#define LOCK_ICON_Y 2
+#define LOCK_ICON_WIDTH 10
+#define LOCK_ICON_HEIGHT 10
+#define LOCK_SHACKLE_X 2
+#define LOCK_SHACKLE_Y 1
+#define LOCK_SHACKLE_WIDTH 5
+#define LOCK_SHACKLE_HEIGHT 6
+#define LOCK_SHACKLE_RADIUS 3
+#define LOCK_SHACKLE_BORDER 1
+#define LOCK_BODY_X 1
+#define LOCK_BODY_Y 5
+#define LOCK_BODY_WIDTH 9
+#define LOCK_BODY_HEIGHT 5
+#define LOCK_BODY_RADIUS 1
+#define LOCK_KEYHOLE_X 4
+#define LOCK_KEYHOLE_Y 1
+#define LOCK_KEYHOLE_WIDTH 1
+#define LOCK_KEYHOLE_HEIGHT 3
+/* The hint reads "Hold Center to Unlock"; the pill has to be as wide as
+ * that sets at the compact face, which is most of the screen. */
+#define UNLOCK_FEEDBACK_WIDTH (LCD_WIDTH - 8)
+#define UNLOCK_FEEDBACK_HEIGHT 14
+#define UNLOCK_FEEDBACK_INSET 2
+#define UNLOCK_FEEDBACK_RADIUS 4
+#else
+#define MEDIA_PANEL_SIDE_MARGIN 12
+#define MEDIA_PANEL_BOTTOM_MARGIN 12
+#define MEDIA_PANEL_HEIGHT 94
 #define MEDIA_ARTWORK_SIZE 74
 #define MEDIA_ARTWORK_X 12
 #define MEDIA_ARTWORK_Y 10
 #define MEDIA_TEXT_X 96
-#define MEDIA_TEXT_WIDTH 188
-#define MEDIA_PROGRESS_WIDTH 188
 #define MEDIA_TITLE_FONT_SIZE 15
 #define MEDIA_ARTIST_FONT_SIZE 12
 #define MEDIA_ALBUM_FONT_SIZE 10
-#define LOCK_MEDIA_DATE_SCALE 307
-#define LOCK_MEDIA_TIME_SCALE 336
-#define LOCK_MEDIA_GROUP_OFFSET_Y 22
-#define LOCK_MEDIA_TIME_Y (4 + LOCK_MEDIA_GROUP_OFFSET_Y)
-#define LOCK_MEDIA_DATE_Y (68 + LOCK_MEDIA_GROUP_OFFSET_Y)
-#define LOCK_MEDIA_HINT_Y (95 + LOCK_MEDIA_GROUP_OFFSET_Y)
+#define LOCK_MEDIA_TIME_SIZE 48
+#define LOCK_MEDIA_TIME_Y (4 + 22)
+#define LOCK_MEDIA_DATE_Y (68 + 22)
+#define LOCK_MEDIA_HINT_Y (95 + 22)
+#define LOCK_CLOCK_SIZE 48
+#define LOCK_CLOCK_Y 62
+#define LOCK_DATE_Y 124
+#define LOCK_HINT_Y 153
 #define LOCK_SURFACE_SIZE 28
 #define LOCK_DATE_GAP 6
 #define LOCK_DATE_MARGIN 8
@@ -80,11 +135,32 @@
 #define LOCK_ICON_HEIGHT 16
 #define LOCK_SHACKLE_X 4
 #define LOCK_SHACKLE_Y 1
+#define LOCK_SHACKLE_WIDTH 8
+#define LOCK_SHACKLE_HEIGHT 9
+#define LOCK_SHACKLE_RADIUS 4
+#define LOCK_SHACKLE_BORDER 2
+#define LOCK_BODY_X 1
+#define LOCK_BODY_Y 8
+#define LOCK_BODY_WIDTH 14
+#define LOCK_BODY_HEIGHT 8
+#define LOCK_BODY_RADIUS 2
+#define LOCK_KEYHOLE_X 6
+#define LOCK_KEYHOLE_Y 2
+#define LOCK_KEYHOLE_WIDTH 2
+#define LOCK_KEYHOLE_HEIGHT 4
 #define UNLOCK_FEEDBACK_WIDTH 112
 #define UNLOCK_FEEDBACK_HEIGHT 20
 #define UNLOCK_FEEDBACK_INSET 2
 #define UNLOCK_FEEDBACK_RADIUS 8
-#define MEDIA_ARTWORK_BANKS 2
+#endif
+
+#define MEDIA_PANEL_X MEDIA_PANEL_SIDE_MARGIN
+#define MEDIA_PANEL_WIDTH (LCD_WIDTH - MEDIA_PANEL_SIDE_MARGIN * 2)
+#define MEDIA_PANEL_Y \
+    (LCD_HEIGHT - MEDIA_PANEL_HEIGHT - MEDIA_PANEL_BOTTOM_MARGIN)
+#define MEDIA_TEXT_WIDTH \
+    (MEDIA_PANEL_WIDTH - MEDIA_TEXT_X - MEDIA_ARTWORK_X)
+#define MEDIA_PROGRESS_WIDTH MEDIA_TEXT_WIDTH
 
 static crazypod_pixel_t media_artwork_pixels[
     MEDIA_ARTWORK_BANKS][MEDIA_ARTWORK_SIZE * MEDIA_ARTWORK_SIZE]
@@ -406,6 +482,38 @@ static void layout_lock_row(void)
         lock_state.date_label, LV_TEXT_ALIGN_LEFT, 0);
 }
 
+/*
+ * The clock face and how much it is enlarged.
+ *
+ * The design draws one 48px Montserrat face and scales it with a transform,
+ * which buys a size the font set does not contain at the price of a
+ * full-screen ARGB layer per refresh. The compact panel asks the runtime
+ * ladder for a face at the size it wants instead, and never scales: the
+ * layer would cost more than the whole screen is worth, and the ladder
+ * already has a face at every size this clock needs.
+ */
+static const lv_font_t *lock_clock_font(unsigned size)
+{
+#ifdef HAVE_CRAZYPOD_COMPACT_UI
+    const lv_font_t *font = crazypod_runtime_font_at_size(size);
+
+    return font != NULL ? font : &lv_font_montserrat_16;
+#else
+    (void)size;
+    return &lv_font_montserrat_48;
+#endif
+}
+
+static int32_t lock_clock_scale(int32_t scale)
+{
+#ifdef HAVE_CRAZYPOD_COMPACT_UI
+    (void)scale;
+    return 256;
+#else
+    return crazypod_state_reduce_effects() ? 256 : scale;
+#endif
+}
+
 static void apply_media_layout(bool media_active)
 {
     if(lock_state.time_label == NULL)
@@ -413,22 +521,18 @@ static void apply_media_layout(bool media_active)
     set_hidden(lock_state.media_panel, !media_active);
     if(media_active) {
         lv_obj_set_style_text_font(
-            lock_state.time_label, &lv_font_montserrat_48, 0);
+            lock_state.time_label, lock_clock_font(LOCK_MEDIA_TIME_SIZE), 0);
         lv_obj_set_width(lock_state.time_label, LCD_WIDTH);
         lv_obj_set_pos(
             lock_state.time_label, 0, LOCK_MEDIA_TIME_Y);
         lv_obj_set_style_transform_scale(
-            lock_state.time_label,
-            crazypod_state_reduce_effects()
-                ? 256 : LOCK_MEDIA_TIME_SCALE, 0);
+            lock_state.time_label, lock_clock_scale(336), 0);
         lv_obj_set_style_text_letter_space(
             lock_state.time_label, 0, 0);
         lv_obj_set_style_text_outline_stroke_width(
             lock_state.time_label, 1, 0);
         lv_obj_set_style_transform_scale(
-            lock_state.date_label,
-            crazypod_state_reduce_effects()
-                ? 256 : LOCK_MEDIA_DATE_SCALE, 0);
+            lock_state.date_label, lock_clock_scale(307), 0);
         lv_obj_set_width(lock_state.date_label, LCD_WIDTH);
         lock_state.date_y = LOCK_MEDIA_DATE_Y;
         lv_obj_set_pos(lock_state.date_label, 0, lock_state.date_y);
@@ -440,14 +544,13 @@ static void apply_media_layout(bool media_active)
     }
     else {
         lv_obj_set_style_text_font(
-            lock_state.time_label, &lv_font_montserrat_48, 0);
+            lock_state.time_label, lock_clock_font(LOCK_CLOCK_SIZE), 0);
         lv_obj_set_width(lock_state.time_label, LCD_WIDTH);
-        lv_obj_set_pos(lock_state.time_label, 0, 62);
+        lv_obj_set_pos(lock_state.time_label, 0, LOCK_CLOCK_Y);
         /* A scaled label renders through a transform layer on every
          * refresh; Reduce Effects keeps the 48 px face unscaled. */
         lv_obj_set_style_transform_scale(
-            lock_state.time_label,
-            crazypod_state_reduce_effects() ? 256 : 292, 0);
+            lock_state.time_label, lock_clock_scale(292), 0);
         lv_obj_set_style_text_letter_space(
             lock_state.time_label, 2, 0);
         lv_obj_set_style_text_outline_stroke_width(
@@ -455,12 +558,12 @@ static void apply_media_layout(bool media_active)
         lv_obj_set_style_transform_scale(
             lock_state.date_label, 256, 0);
         lv_obj_set_width(lock_state.date_label, LCD_WIDTH);
-        lock_state.date_y = 124;
+        lock_state.date_y = LOCK_DATE_Y;
         lv_obj_set_pos(lock_state.date_label, 0, lock_state.date_y);
         lv_obj_set_pos(
             lock_state.hint_progress,
             (LCD_WIDTH - UNLOCK_FEEDBACK_WIDTH) / 2,
-            153 - lv_obj_get_y(lock_state.hint_label));
+            LOCK_HINT_Y - lv_obj_get_y(lock_state.hint_label));
     }
     layout_lock_row();
 }
@@ -749,6 +852,17 @@ static void refresh_progress(void)
 }
 
 #ifdef SIMULATOR
+static void finish_unlock(bool animate_transition);
+
+void crazypod_lock_screen_simulator_unlock(void)
+{
+    /* The device boots onto the lock screen, so a snapshot of anything
+     * behind it has to get past it first. Same path as a held Select,
+     * without the half second of holding. */
+    if(lock_state.locked)
+        finish_unlock(false);
+}
+
 void crazypod_lock_screen_simulator_set_progress(int progress)
 {
     if(progress < 0)
@@ -1225,12 +1339,14 @@ lv_obj_t *crazypod_lock_screen_create(
         icon, LOCK_ICON_HEIGHT / 2, 0);
     lock_state.icon_shackle = make_box(
         icon, LOCK_SHACKLE_X, LOCK_SHACKLE_Y,
-        8, 9, 4, COLOR_WHITE, LV_OPA_TRANSP);
+        LOCK_SHACKLE_WIDTH, LOCK_SHACKLE_HEIGHT,
+        LOCK_SHACKLE_RADIUS, COLOR_WHITE, LV_OPA_TRANSP);
     lv_obj_set_style_transform_pivot_x(
-        lock_state.icon_shackle, 7, 0);
+        lock_state.icon_shackle, LOCK_SHACKLE_WIDTH - 1, 0);
     lv_obj_set_style_transform_pivot_y(
-        lock_state.icon_shackle, 8, 0);
-    lv_obj_set_style_border_width(lock_state.icon_shackle, 2, 0);
+        lock_state.icon_shackle, LOCK_SHACKLE_HEIGHT - 1, 0);
+    lv_obj_set_style_border_width(
+        lock_state.icon_shackle, LOCK_SHACKLE_BORDER, 0);
     lv_obj_set_style_border_side(
         lock_state.icon_shackle,
         LV_BORDER_SIDE_TOP | LV_BORDER_SIDE_LEFT | LV_BORDER_SIDE_RIGHT, 0);
@@ -1239,10 +1355,12 @@ lv_obj_t *crazypod_lock_screen_create(
     lv_obj_set_style_border_opa(
         lock_state.icon_shackle, LV_OPA_COVER, 0);
     body = make_box(
-        icon, 1, 8, 14, 8, 2,
+        icon, LOCK_BODY_X, LOCK_BODY_Y,
+        LOCK_BODY_WIDTH, LOCK_BODY_HEIGHT, LOCK_BODY_RADIUS,
         COLOR_WHITE, LV_OPA_COVER);
     make_box(
-        body, 6, 2, 2, 4,
+        body, LOCK_KEYHOLE_X, LOCK_KEYHOLE_Y,
+        LOCK_KEYHOLE_WIDTH, LOCK_KEYHOLE_HEIGHT,
         LV_RADIUS_CIRCLE, 0x0A1620, LV_OPA_COVER);
     lock_state.hint_progress = make_box(
         lock_state.root, 0, 0,

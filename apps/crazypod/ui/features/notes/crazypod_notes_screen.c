@@ -9,7 +9,7 @@
 #include "../../presentation/crazypod_ui_text.h"
 #include "../../presentation/crazypod_ui_widgets.h"
 #include "crazypod_notes_screen.h"
-#include "../../presentation/crazypod_ui_color.h"
+#include "../../../crazypod_color.h"
 
 #define CRAZYPOD_NOTES_FONT (&lv_font_source_han_sans_sc_14_cjk)
 #define CRAZYPOD_NOTES_WHITE 0xFFFFFF

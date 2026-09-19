@@ -22,7 +22,7 @@
 #include "../../features/now_playing/crazypod_now_playing_feature.h"
 #include "../../presentation/crazypod_marquee.h"
 #include "crazypod_miniapp_scene_internal.h"
-#include "../../presentation/crazypod_ui_color.h"
+#include "../../../crazypod_color.h"
 
 #define ADAPTIVE_LYRICS_INSET 2
 #define ADAPTIVE_LYRICS_CURRENT_LINE_SPACE 4

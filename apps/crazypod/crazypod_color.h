@@ -1,5 +1,5 @@
-#ifndef CRAZYPOD_UI_COLOR_H
-#define CRAZYPOD_UI_COLOR_H
+#ifndef CRAZYPOD_COLOR_H
+#define CRAZYPOD_COLOR_H
 
 #include "config.h"
 
@@ -7,7 +7,7 @@
 
 #include "lvgl.h"
 
-#include "../../crazypod_mono.h"
+#include "crazypod_mono.h"
 
 /*
  * Every colour the product UI draws with goes through here.
@@ -30,6 +30,20 @@ static inline lv_color_t crazypod_ui_color(uint32_t rgb)
 #ifdef HAVE_CRAZYPOD_MONO_UI
     rgb = crazypod_mono_rgb(rgb);
 #endif
+    return lv_color_hex(rgb);
+}
+
+/*
+ * A shade the monochrome build has already chosen, passed through unmapped.
+ *
+ * Almost nothing should need this: the map above is what keeps the design
+ * readable without every screen being rewritten. It is for the few places
+ * where two colours the design keeps apart both land on the same shade --
+ * a selection bar and the title knocked out of it -- and the code has to
+ * name ink and paper itself.
+ */
+static inline lv_color_t crazypod_ui_shade(uint32_t rgb)
+{
     return lv_color_hex(rgb);
 }
 

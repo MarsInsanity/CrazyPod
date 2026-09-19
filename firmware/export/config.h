@@ -1448,6 +1448,16 @@ Lyre prototype 1 */
 #undef HAVE_DIRCACHE
 
 /*
+ * The product UI blocks the USB thread on its own prompt until the person
+ * answers it, so it needs semaphores whatever the target would otherwise
+ * have decided. On the devices this is set for the USB stack already brings
+ * them in; their simulators do not have a USB stack and would not.
+ */
+#ifndef HAVE_SEMAPHORE_OBJECTS
+#define HAVE_SEMAPHORE_OBJECTS
+#endif
+
+/*
  * The product UI was drawn for a 320x240 RGB565 panel. Two targets diverge
  * from that canvas, and the UI asks about the divergence through these two
  * flags rather than naming a model.
@@ -1480,12 +1490,38 @@ Lyre prototype 1 */
 #endif
 
 /*
- * Native Mini App payloads. Their scenes are authored against the 320x240
+ * Surfaces that need a large colour panel to be worth having.
+ *
+ * Native Mini App payloads: their scenes are authored against the 320x240
  * colour canvas and their resources are validated against it at install
  * time, so a smaller or monochrome panel has nothing to run.
+ *
+ * The Game Boy: its frame is 160x144, wider and taller than the Mini's
+ * whole screen, and a game is not something to squint at in four shades.
+ *
+ * The media library -- the Media app's photos and videos: a photograph is
+ * the one thing four shades cannot carry, and the Mini has neither the
+ * panel to show one nor, with the decoder stack gone, anything to play.
  */
 #if !defined(HAVE_CRAZYPOD_MONO_UI) && !defined(HAVE_CRAZYPOD_COMPACT_UI)
 #define HAVE_CRAZYPOD_MINIAPPS
+#define HAVE_CRAZYPOD_GAMEBOY
+#define HAVE_CRAZYPOD_MEDIA_LIBRARY
+#endif
+
+/*
+ * Wallpaper. A photograph dithered into four shades and put behind type
+ * takes the type with it, so the monochrome build draws its pages flat.
+ *
+ * Icon themes are the same argument on a smaller canvas: sixteen sets of
+ * 160x160 colour artwork, every one of which comes out of the quantiser as
+ * the same handful of grey blobs. The monochrome build draws the product's
+ * own glyph set instead, which is what its lists already use, and keeps
+ * the 1.7 MB the loaded artwork would occupy.
+ */
+#ifndef HAVE_CRAZYPOD_MONO_UI
+#define HAVE_CRAZYPOD_WALLPAPER
+#define HAVE_CRAZYPOD_ICON_THEMES
 #endif
 #endif
 

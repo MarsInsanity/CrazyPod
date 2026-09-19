@@ -63,25 +63,22 @@ crazypod_customize_controller_select(
     enum crazypod_appearance_field field;
 
     switch(route) {
-    case DIY_ROUTE_MENU:
-        if(selected == 0)
-            return result(
-                CRAZYPOD_CUSTOMIZE_COMMAND_PUSH_ROUTE,
-                DIY_ROUTE_PRESETS, -1, 0);
-        if(selected == 1)
+    case DIY_ROUTE_MENU: {
+        /* Which rows exist depends on the panel, so the row is read for
+         * the screen it opens rather than for its position. */
+        enum crazypod_route target =
+            crazypod_customize_menu_route(selected);
+
+        if(target == DIY_ROUTE_ICONS)
             return result(
                 CRAZYPOD_CUSTOMIZE_COMMAND_SHOW_ICON_CHOICES,
                 route, CRAZYPOD_APPEARANCE_ICON_THEME,
                 crazypod_appearance_get()->icon_theme);
         return result(
-            CRAZYPOD_CUSTOMIZE_COMMAND_PUSH_ROUTE,
-            selected == 2 ? DIY_ROUTE_DETAILS :
-            selected == 3 ? DIY_ROUTE_BACKGROUNDS :
-            selected == 4 ? DIY_ROUTE_NOW_PLAYING_THEMES :
-            selected == 5 ? DIY_ROUTE_HEADPHONE_POPUP :
-                            DIY_ROUTE_LAYOUT,
-            -1, selected == 5
+            CRAZYPOD_CUSTOMIZE_COMMAND_PUSH_ROUTE, target, -1,
+            target == DIY_ROUTE_HEADPHONE_POPUP
                 ? crazypod_state_headphone_popup_style() : 0);
+    }
     case DIY_ROUTE_ICONS:
         crazypod_appearance_set_icon_theme(selected);
         return result(

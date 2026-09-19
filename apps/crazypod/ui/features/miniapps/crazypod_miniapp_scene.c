@@ -11,7 +11,7 @@
 #include "../../../crazypod_miniapps.h"
 #include "crazypod_miniapp_scene.h"
 #include "crazypod_miniapp_scene_internal.h"
-#include "../../presentation/crazypod_ui_color.h"
+#include "../../../crazypod_color.h"
 
 #define SCENE_ANIMATION_MAX 64u
 

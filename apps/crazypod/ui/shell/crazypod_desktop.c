@@ -17,12 +17,14 @@
 #include "../../crazypod_wallpaper.h"
 #include "../presentation/crazypod_hold_feedback.h"
 #include "../presentation/crazypod_ui_widgets.h"
+#include "../presentation/crazypod_menu_icon_assets.h"
 #include "crazypod_app_catalog.h"
 #include "crazypod_desktop.h"
+#include "../../crazypod_runtime_font.h"
 #include "crazypod_desktop_native.h"
 #include "crazypod_now_capsule.h"
 #include "crazypod_status_bar.h"
-#include "../presentation/crazypod_ui_color.h"
+#include "../../crazypod_color.h"
 
 #define COLOR_WHITE 0xFFFFFF
 #define HOME_POSITION_ONE (1L << 16)
@@ -34,15 +36,36 @@
 #define HOME_SPRING_DAMPING 37
 #define HOME_SPRING_POSITION_EPSILON (HOME_POSITION_ONE / 1024)
 #define HOME_SPRING_VELOCITY_EPSILON (HOME_POSITION_ONE / 64)
+#ifdef HAVE_CRAZYPOD_COMPACT_UI
+#define HOME_INDICATOR_WIDTH 3
+#define HOME_SELECTED_INDICATOR_WIDTH 8
+#define HOME_INDICATOR_GAP 2
+#define HOME_INDICATOR_HEIGHT 3
+#define HOME_TITLE_Y 64
+#define HOME_TITLE_HEIGHT 14
+#define HOME_INDICATOR_Y 80
+#define HOME_TITLE_FONT (crazypod_runtime_font_at_size(16))
+#else
 #define HOME_INDICATOR_WIDTH 5
 #define HOME_SELECTED_INDICATOR_WIDTH 14
 #define HOME_INDICATOR_GAP 4
+#define HOME_INDICATOR_HEIGHT 4
+#define HOME_TITLE_Y 150
+#define HOME_TITLE_HEIGHT 0
+#define HOME_INDICATOR_Y 169
+#define HOME_TITLE_FONT (&lv_font_montserrat_16)
+#endif
 
 static struct crazypod_desktop_host desktop_host;
 static lv_obj_t *screen;
 static lv_obj_t *wallpaper;
 static lv_obj_t *title;
 static lv_obj_t *indicators[CRAZYPOD_APP_COUNT];
+#ifndef HAVE_CRAZYPOD_ICON_THEMES
+/* The carousel as ordinary widgets: one image per visible position,
+ * created once and moved. See crazypod_desktop_native.h for why. */
+static lv_obj_t *carousel[CRAZYPOD_DESKTOP_NATIVE_MAX_VISIBLE];
+#endif
 static int selected_app;
 static int32_t position_q16;
 static int32_t spring_velocity_q16;
@@ -102,8 +125,8 @@ static void update_selection_chrome(void)
             continue;
         }
         lv_obj_remove_flag(indicators[i], LV_OBJ_FLAG_HIDDEN);
-        lv_obj_set_pos(indicators[i], indicator_x, 169);
-        lv_obj_set_size(indicators[i], width, 4);
+        lv_obj_set_pos(indicators[i], indicator_x, HOME_INDICATOR_Y);
+        lv_obj_set_size(indicators[i], width, HOME_INDICATOR_HEIGHT);
         lv_obj_set_style_bg_opa(
             indicators[i],
             i == selected_app ? LV_OPA_COVER : 89, 0);
@@ -302,13 +325,16 @@ lv_obj_t *crazypod_desktop_create(
 
     title = crazypod_ui_widget_label(
         screen, visible_app(0)->name,
-        &lv_font_montserrat_16, COLOR_WHITE, LV_OPA_COVER);
+        HOME_TITLE_FONT, COLOR_WHITE, LV_OPA_COVER);
     lv_obj_set_width(title, LCD_WIDTH);
     lv_obj_set_style_text_align(title, LV_TEXT_ALIGN_CENTER, 0);
-    lv_obj_set_pos(title, 0, 150);
+    lv_obj_set_pos(title, 0, HOME_TITLE_Y);
+    if(HOME_TITLE_HEIGHT > 0)
+        lv_obj_set_height(title, HOME_TITLE_HEIGHT);
     for(i = 0; i < CRAZYPOD_APP_COUNT; ++i)
         indicators[i] = crazypod_ui_widget_box(
-            screen, 0, 169, 5, 4,
+            screen, 0, HOME_INDICATOR_Y,
+            HOME_INDICATOR_WIDTH, HOME_INDICATOR_HEIGHT,
             LV_RADIUS_CIRCLE, COLOR_WHITE, 89);
 
     crazypod_now_capsule_create(screen, metadata_font);
@@ -520,6 +546,86 @@ void crazypod_desktop_refresh_appearance(void)
     lv_obj_invalidate(screen);
 }
 
+/* How far apart the carousel's icons sit. */
+#define CAROUSEL_GAP 6
+
+#ifndef HAVE_CRAZYPOD_ICON_THEMES
+/* What an icon a full step away from the middle is reduced to. */
+#define CAROUSEL_EDGE_SCALE 70
+#define CAROUSEL_EDGE_OPA 110
+
+/*
+ * Place the visible icons. The glyph set is the one the lists are drawn
+ * with, scaled up and recoloured: on a panel with four shades the product's
+ * own marks read better large than any of the colour artwork would.
+ */
+static bool render_carousel_widgets(
+    const int *app_indices, const int *centers_x, int icon_count,
+    int icon_size)
+{
+    int slot;
+
+    if(screen == NULL)
+        return false;
+    for(slot = 0; slot < CRAZYPOD_DESKTOP_NATIVE_MAX_VISIBLE; ++slot) {
+        const struct crazypod_app_descriptor *app =
+            slot < icon_count
+                ? crazypod_app_catalog_at(app_indices[slot]) : NULL;
+        const lv_image_dsc_t *asset = app != NULL
+            ? crazypod_menu_icon_asset(app->menu_icon) : NULL;
+        lv_obj_t *image = carousel[slot];
+
+        if(image == NULL) {
+            image = lv_image_create(screen);
+            crazypod_ui_widget_make_plain(image);
+            lv_obj_remove_flag(image, LV_OBJ_FLAG_CLICKABLE);
+            lv_obj_set_style_image_recolor_opa(image, LV_OPA_COVER, 0);
+            carousel[slot] = image;
+        }
+        if(asset == NULL) {
+            lv_obj_add_flag(image, LV_OBJ_FLAG_HIDDEN);
+            continue;
+        }
+        {
+            /*
+             * How far this icon is from the middle, as a fraction of one
+             * step. The carousel moves continuously, so size and weight
+             * fall off with distance rather than switching at the centre:
+             * otherwise every icon is faint for the whole of a spin.
+             */
+            int step = icon_size + CAROUSEL_GAP;
+            int offset = centers_x[slot] -
+                CRAZYPOD_DESKTOP_NATIVE_CENTER_X;
+            int distance = offset < 0 ? -offset : offset;
+            int away = distance * 256 / (step > 0 ? step : 1);
+            int size;
+            int opacity;
+
+            if(away > 256)
+                away = 256;
+            size = icon_size -
+                (icon_size - icon_size * CAROUSEL_EDGE_SCALE / 100) *
+                away / 256;
+            opacity = LV_OPA_COVER -
+                (LV_OPA_COVER - CAROUSEL_EDGE_OPA) * away / 256;
+            lv_image_set_src(image, asset);
+            lv_obj_set_style_image_recolor(
+                image, crazypod_ui_color(COLOR_WHITE), 0);
+            /* The asset is a small mark; scale it to the tile. */
+            lv_image_set_scale(
+                image, size * LV_SCALE_NONE / (int)asset->header.w);
+            lv_obj_set_size(image, size, size);
+            lv_obj_set_pos(
+                image, centers_x[slot] - size / 2,
+                CRAZYPOD_DESKTOP_NATIVE_CENTER_Y - size / 2);
+            lv_obj_set_style_opa(image, (lv_opa_t)opacity, 0);
+        }
+        lv_obj_remove_flag(image, LV_OBJ_FLAG_HIDDEN);
+    }
+    return true;
+}
+#endif
+
 static void render_desktop_icons(
     int tile_size, bool blocked, bool snapshot)
 {
@@ -529,7 +635,7 @@ static void render_desktop_icons(
     int app_indices[CRAZYPOD_DESKTOP_NATIVE_MAX_VISIBLE];
     int centers_x[CRAZYPOD_DESKTOP_NATIVE_MAX_VISIBLE];
     int whole = position_q16 >> 16;
-    int spacing = tile_size + 6;
+    int spacing = tile_size + CAROUSEL_GAP;
     int first = whole - 2;
     int visible = 0;
     int index;
@@ -543,7 +649,7 @@ static void render_desktop_icons(
 
         if(index < 0 || index >= count)
             continue;
-        center_x = 160 + (int)(((int64_t)
+        center_x = CRAZYPOD_DESKTOP_NATIVE_CENTER_X + (int)(((int64_t)
             (index * HOME_POSITION_ONE - position_q16) * spacing) >> 16);
         if(center_x + tile_size / 2 <= 0 ||
            center_x - tile_size / 2 >= LCD_WIDTH)
@@ -554,11 +660,16 @@ static void render_desktop_icons(
         ++visible;
     }
     render_started_us = crazypod_monotonic_usec();
+#ifdef HAVE_CRAZYPOD_ICON_THEMES
     rendered = snapshot
         ? crazypod_desktop_native_render_snapshot(
             app_indices, centers_x, visible, tile_size)
         : crazypod_desktop_native_render(
             app_indices, centers_x, visible, tile_size, false);
+#else
+    rendered = render_carousel_widgets(
+        app_indices, centers_x, visible, tile_size);
+#endif
     if(!rendered)
         return;
     if(snapshot)

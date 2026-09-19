@@ -12,7 +12,7 @@
 #include "../../presentation/crazypod_ui_widgets.h"
 #include "../../presentation/crazypod_preview_primitives.h"
 #include "crazypod_music_preview_cover.h"
-#include "../../presentation/crazypod_ui_color.h"
+#include "../../../crazypod_color.h"
 
 #define COLOR_WHITE 0xFFFFFF
 #define CRAZYPOD_MENU_ARTWORK_PRIORITY 20

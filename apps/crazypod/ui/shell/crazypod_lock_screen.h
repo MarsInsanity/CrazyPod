@@ -47,6 +47,7 @@ bool crazypod_lock_screen_motion_active(void);
 void crazypod_lock_screen_initialize_backlight_state(void);
 #ifdef SIMULATOR
 void crazypod_lock_screen_simulator_set_progress(int progress);
+void crazypod_lock_screen_simulator_unlock(void);
 #endif
 
 #endif

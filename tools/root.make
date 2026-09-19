@@ -20,6 +20,12 @@ IS_CRAZYPOD := $(filter $(MODELNAME),$(CRAZYPOD_MODELS))
 CRAZYPOD_MINIAPP_MODELS := ipod6g ipodvideo
 IS_CRAZYPOD_MINIAPPS := $(filter $(MODELNAME),$(CRAZYPOD_MINIAPP_MODELS))
 
+# And the ones that build the Game Boy. Its frame is 160x144, which is
+# wider and taller than the Mini's whole screen. Keep in sync with
+# HAVE_CRAZYPOD_GAMEBOY in firmware/export/config.h.
+CRAZYPOD_GAMEBOY_MODELS := ipod6g ipodvideo
+IS_CRAZYPOD_GAMEBOY := $(filter $(MODELNAME),$(CRAZYPOD_GAMEBOY_MODELS))
+
 DEFINES = -DROCKBOX -DMEMORYSIZE=$(MEMORYSIZE) $(TARGET) \
 	-DTARGET_ID=$(TARGET_ID) -DTARGET_NAME=\"$(MODELNAME)\" $(BUILDDATE) \
 	$(EXTRA_DEFINES) # <-- -DSIMULATOR or not

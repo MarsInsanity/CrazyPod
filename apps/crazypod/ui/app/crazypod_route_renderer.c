@@ -24,6 +24,7 @@
 #include "../presentation/crazypod_glass_slots.h"
 #include "../presentation/crazypod_menu_list.h"
 #include "../presentation/crazypod_menu_screen.h"
+#include "../presentation/crazypod_ui_metrics.h"
 #include "../presentation/crazypod_preview_motion.h"
 #include "../presentation/crazypod_screen_corners.h"
 #include "../presentation/crazypod_ui_widgets.h"
@@ -33,12 +34,12 @@
 #include "crazypod_menu_preview.h"
 #include "../../crazypod_perf_log.h"
 #include "crazypod_route_renderer.h"
-#include "../presentation/crazypod_ui_color.h"
+#include "../../crazypod_color.h"
 
-#define STATUS_BAR_HEIGHT 32
-#define MENU_PANEL_Y STATUS_BAR_HEIGHT
-#define MENU_PANEL_HEIGHT (LCD_HEIGHT - MENU_PANEL_Y)
-#define MENU_PANEL_WIDTH 160
+#define STATUS_BAR_HEIGHT CRAZYPOD_METRIC_STATUS_HEIGHT
+#define MENU_PANEL_Y CRAZYPOD_METRIC_MENU_PANEL_Y
+#define MENU_PANEL_HEIGHT CRAZYPOD_METRIC_MENU_PANEL_HEIGHT
+#define MENU_PANEL_WIDTH CRAZYPOD_METRIC_MENU_PANEL_WIDTH
 #define COLOR_DETAIL 0x08080D
 #define COLOR_PANEL 0x1B1B22
 #define COLOR_WHITE 0xFFFFFF
@@ -112,6 +113,26 @@ static void render_theme_font_error(void)
 
 static void create_panel_backgrounds(void)
 {
+#ifdef HAVE_CRAZYPOD_MONO_UI
+    /*
+     * The design's menu is a raised glass panel over a darker page, with
+     * the list on it and a preview beside it. On the Mini the list is the
+     * whole width, so there is no page left to be raised above -- and the
+     * glass, the tint and the hairline border all land on the same shade
+     * as the type. What is left of the idea is a page of paper and one
+     * rule under the status bar, which is the part that was doing the
+     * work: saying where the list starts.
+     */
+    lv_obj_t *page = crazypod_ui_widget_box_shade(
+        crazypod_shell_product_content(), 0, 0, LCD_WIDTH, LCD_HEIGHT, 0,
+        CRAZYPOD_MONO_PAPER, LV_OPA_COVER);
+    lv_obj_t *rule = crazypod_ui_widget_box_shade(
+        crazypod_shell_product_content(), 0, STATUS_BAR_HEIGHT - 1,
+        LCD_WIDTH, 1, 0, CRAZYPOD_MONO_SHADE_DARK, LV_OPA_COVER);
+
+    lv_obj_remove_flag(page, LV_OBJ_FLAG_CLICKABLE);
+    lv_obj_remove_flag(rule, LV_OBJ_FLAG_CLICKABLE);
+#else
     lv_obj_t *top;
     lv_obj_t *left;
     bool prepared;
@@ -148,6 +169,7 @@ static void create_panel_backgrounds(void)
     lv_obj_set_style_border_color(
         left, crazypod_ui_color(COLOR_WHITE), 0);
     lv_obj_set_style_border_opa(left, 22, 0);
+#endif
 }
 
 static lv_obj_t *make_search_panel(

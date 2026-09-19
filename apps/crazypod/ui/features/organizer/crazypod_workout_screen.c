@@ -10,7 +10,7 @@
 #include "../../../crazypod_workouts.h"
 #include "../../presentation/crazypod_ui_widgets.h"
 #include "crazypod_workout_screen.h"
-#include "../../presentation/crazypod_ui_color.h"
+#include "../../../crazypod_color.h"
 
 #define CRAZYPOD_WORKOUT_FONT (&lv_font_source_han_sans_sc_14_cjk)
 #define CRAZYPOD_WORKOUT_WHITE 0xFFFFFF

@@ -7,7 +7,7 @@
 #include "../../crazypod_state.h"
 #include "crazypod_alpha_jump_hud.h"
 #include "crazypod_ui_widgets.h"
-#include "crazypod_ui_color.h"
+#include "../../crazypod_color.h"
 
 #define COLOR_WHITE 0xFFFFFF
 #define HUD_BACKGROUND 0x080A10

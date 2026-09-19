@@ -1,6 +1,6 @@
 #include "config.h"
 
-#ifdef HAVE_CRAZYPOD_UI
+#if defined(HAVE_CRAZYPOD_UI) && defined(HAVE_CRAZYPOD_ICON_THEMES)
 
 #include <stdbool.h>
 #include <stdio.h>

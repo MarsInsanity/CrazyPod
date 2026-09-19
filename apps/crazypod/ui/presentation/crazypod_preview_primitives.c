@@ -5,7 +5,7 @@
 #include "crazypod_marquee.h"
 #include "crazypod_preview_primitives.h"
 #include "crazypod_ui_widgets.h"
-#include "crazypod_ui_color.h"
+#include "../../crazypod_color.h"
 
 #define COLOR_WHITE 0xFFFFFF
 #define TEXT_PANEL_WIDTH 140

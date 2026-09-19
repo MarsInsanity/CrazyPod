@@ -21,14 +21,40 @@
 #include "../../presentation/crazypod_ui_widgets.h"
 #include "crazypod_now_presentation.h"
 #include "crazypod_now_screen.h"
-#include "../../presentation/crazypod_ui_color.h"
+#include "../../../crazypod_color.h"
 
 #define COLOR_CYAN 0x55D6E7
 #define COLOR_FAVORITE 0xFF375F
 #define COLOR_WHITE 0xFFFFFF
+/*
+ * Now Playing is a cover on the left and the track's words on the right,
+ * with a wave and a clock under both. The compact panel keeps that
+ * arrangement -- it is the one thing on this screen that has to survive --
+ * at about a third of the area: a 44-pixel cover, the metadata beside it,
+ * and no lyrics pane, because three lines of type at nine pixels in the
+ * seventy pixels that are left is not reading, it is squinting.
+ */
+#ifdef HAVE_CRAZYPOD_COMPACT_UI
+#define CRAZYPOD_NOW_COVER_X 4
+#define CRAZYPOD_NOW_COVER_Y 16
+#define CRAZYPOD_NOW_LYRICS_COVER_SIZE 44
+#define CRAZYPOD_NOW_META_X 54
+#define CRAZYPOD_NOW_META_WIDTH (LCD_WIDTH - CRAZYPOD_NOW_META_X - 4)
+#define CRAZYPOD_NOW_META_ROW_HEIGHT 14
+#define CRAZYPOD_NOW_TITLE_Y 16
+#define CRAZYPOD_NOW_BADGE_Y 58
+#define CRAZYPOD_NOW_BADGE_GAP 16
+#else
 #define CRAZYPOD_NOW_COVER_X 24
 #define CRAZYPOD_NOW_COVER_Y 55
 #define CRAZYPOD_NOW_LYRICS_COVER_SIZE 108
+#define CRAZYPOD_NOW_META_X 144
+#define CRAZYPOD_NOW_META_WIDTH 158
+#define CRAZYPOD_NOW_META_ROW_HEIGHT 24
+#define CRAZYPOD_NOW_TITLE_Y 71
+#define CRAZYPOD_NOW_BADGE_Y 143
+#define CRAZYPOD_NOW_BADGE_GAP 25
+#endif
 #define CRAZYPOD_NOW_COVER_CAPTION_HEIGHT \
     (CRAZYPOD_NOW_LYRICS_COVER_SIZE / 3)
 #define CRAZYPOD_NOW_COVER_CAPTION_Y \
@@ -58,6 +84,35 @@
     ((HZ * 2) > 0 ? (HZ * 2) : 1)
 #define CRAZYPOD_NOW_WAVE_FRAME_TICKS \
     ((HZ / 10) > 0 ? (HZ / 10) : 1)
+
+/*
+ * Where the wave and the clock go, and how far the progress marker runs.
+ * The marker travels the wave's width less its own, which is the one
+ * number the playback tick needs and the one that was written out by hand.
+ */
+#ifdef HAVE_CRAZYPOD_COMPACT_UI
+#define CRAZYPOD_NOW_WAVE_X 4
+#define CRAZYPOD_NOW_WAVE_Y 68
+#define CRAZYPOD_NOW_WAVE_WIDTH (LCD_WIDTH - 8)
+#define CRAZYPOD_NOW_WAVE_HEIGHT 18
+#define CRAZYPOD_NOW_MARKER_SIZE 5
+#define CRAZYPOD_NOW_MARKER_Y 7
+#define CRAZYPOD_NOW_CLOCK_Y 90
+#define CRAZYPOD_NOW_CLOCK_INSET 5
+#define CRAZYPOD_NOW_CLOCK_WIDTH 40
+#else
+#define CRAZYPOD_NOW_WAVE_X 16
+#define CRAZYPOD_NOW_WAVE_Y 181
+#define CRAZYPOD_NOW_WAVE_WIDTH 288
+#define CRAZYPOD_NOW_WAVE_HEIGHT 32
+#define CRAZYPOD_NOW_MARKER_SIZE 7
+#define CRAZYPOD_NOW_MARKER_Y 14
+#define CRAZYPOD_NOW_CLOCK_Y 218
+#define CRAZYPOD_NOW_CLOCK_INSET 30
+#define CRAZYPOD_NOW_CLOCK_WIDTH 60
+#endif
+#define CRAZYPOD_NOW_MARKER_TRAVEL \
+    (CRAZYPOD_NOW_WAVE_WIDTH - CRAZYPOD_NOW_MARKER_SIZE)
 
 static struct crazypod_now_screen_view now_view;
 static char rendered_track_path[MAX_PATH];
@@ -315,7 +370,7 @@ void crazypod_now_screen_render(
     else {
         content_color = context->fallback_color(track);
         backdrop = make_box(
-            context->parent, 0, 0, 320, 240, 0,
+            context->parent, 0, 0, LCD_WIDTH, LCD_HEIGHT, 0,
             artwork_color(track != NULL ? track->album : "", 0),
             LV_OPA_COVER);
         lv_obj_set_style_bg_grad_color(
@@ -327,7 +382,7 @@ void crazypod_now_screen_render(
             backdrop, LV_GRAD_DIR_VER, 0);
     }
     shade = make_box(
-        context->parent, 0, 0, 320, 240, 0,
+        context->parent, 0, 0, LCD_WIDTH, LCD_HEIGHT, 0,
         CRAZYPOD_NOW_SHADE_COLOR, CRAZYPOD_NOW_SHADE_OPA);
     (void)shade;
 
@@ -347,7 +402,9 @@ void crazypod_now_screen_render(
             CRAZYPOD_NOW_COVER_X, CRAZYPOD_NOW_COVER_Y,
             CRAZYPOD_NOW_LYRICS_COVER_SIZE,
             lyrics_artwork, false);
-        make_box(context->parent, 134, 55, 1, 106, 0,
+        make_box(context->parent,
+                 CRAZYPOD_NOW_META_X - 10, CRAZYPOD_NOW_COVER_Y, 1,
+                 CRAZYPOD_NOW_LYRICS_COVER_SIZE - 2, 0,
                  content_color, 38);
         if(lyrics_available) {
             if(cover_caption != NULL) {
@@ -438,22 +495,27 @@ void crazypod_now_screen_render(
                 track != NULL ? track->title : CP_TR("No Track"),
                 context->metadata_font,
                 content_color, LV_OPA_COVER);
-            lv_obj_set_size(title, 158, 23);
+            lv_obj_set_size(title, CRAZYPOD_NOW_META_WIDTH,
+                            CRAZYPOD_NOW_META_ROW_HEIGHT - 1);
             lv_obj_set_style_text_align(
                 title, LV_TEXT_ALIGN_CENTER, 0);
             crazypod_marquee_configure(title, true);
-            lv_obj_set_pos(title, 144, 71);
+            lv_obj_set_pos(title, CRAZYPOD_NOW_META_X,
+                           CRAZYPOD_NOW_TITLE_Y);
 
             artist = make_label(
                 context->parent,
                 track != NULL ? track->artist : CP_TR("Local Music"),
                 context->metadata_font,
                 content_color, 220);
-            lv_obj_set_size(artist, 158, 23);
+            lv_obj_set_size(artist, CRAZYPOD_NOW_META_WIDTH,
+                            CRAZYPOD_NOW_META_ROW_HEIGHT - 1);
             lv_obj_set_style_text_align(
                 artist, LV_TEXT_ALIGN_CENTER, 0);
             crazypod_marquee_configure(artist, true);
-            lv_obj_set_pos(artist, 144, 95);
+            lv_obj_set_pos(
+                artist, CRAZYPOD_NOW_META_X,
+                CRAZYPOD_NOW_TITLE_Y + CRAZYPOD_NOW_META_ROW_HEIGHT);
 
             album = make_label(
                 context->parent,
@@ -461,14 +523,20 @@ void crazypod_now_screen_render(
                     ? track->album : "",
                 context->metadata_font,
                 content_color, 190);
-            lv_obj_set_size(album, 158, 23);
+            lv_obj_set_size(album, CRAZYPOD_NOW_META_WIDTH,
+                            CRAZYPOD_NOW_META_ROW_HEIGHT - 1);
             lv_obj_set_style_text_align(
                 album, LV_TEXT_ALIGN_CENTER, 0);
             crazypod_marquee_configure(album, true);
-            lv_obj_set_pos(album, 144, 119);
+            lv_obj_set_pos(
+                album, CRAZYPOD_NOW_META_X,
+                CRAZYPOD_NOW_TITLE_Y + 2 * CRAZYPOD_NOW_META_ROW_HEIGHT);
 
             crazypod_ui_widget_icon(
-                context->parent, 190, 143,
+                context->parent,
+                CRAZYPOD_NOW_META_X +
+                    (CRAZYPOD_NOW_META_WIDTH - CRAZYPOD_NOW_BADGE_GAP) / 2,
+                CRAZYPOD_NOW_BADGE_Y,
                 CRAZYPOD_UI_ICON_HEART,
                 favorite ? COLOR_FAVORITE : content_color,
                 favorite ? LV_OPA_COVER : 120);
@@ -481,7 +549,10 @@ void crazypod_now_screen_render(
             else
                 mode_icon = CRAZYPOD_UI_ICON_PLAY;
             crazypod_ui_widget_icon(
-                context->parent, 215, 143, mode_icon,
+                context->parent,
+                CRAZYPOD_NOW_META_X +
+                    (CRAZYPOD_NOW_META_WIDTH + CRAZYPOD_NOW_BADGE_GAP) / 2,
+                CRAZYPOD_NOW_BADGE_Y, mode_icon,
                 crazypod_queue_repeat() != REPEAT_OFF ||
                 crazypod_queue_shuffle() ? COLOR_CYAN : content_color,
                 220);
@@ -490,10 +561,12 @@ void crazypod_now_screen_render(
 
     view->wave_surface = lv_obj_create(context->parent);
     crazypod_ui_widget_make_plain(view->wave_surface);
-    lv_obj_set_pos(view->wave_surface, 16, 181);
-    /* 32 rows: the clock labels below start at row 214, and sharing a
-     * row would redraw the whole wave on every clock tick. */
-    lv_obj_set_size(view->wave_surface, 288, 32);
+    lv_obj_set_pos(view->wave_surface,
+                   CRAZYPOD_NOW_WAVE_X, CRAZYPOD_NOW_WAVE_Y);
+    /* The wave keeps its own rows: the clock labels below start after it,
+     * and sharing a row would redraw the whole wave on every clock tick. */
+    lv_obj_set_size(view->wave_surface,
+                    CRAZYPOD_NOW_WAVE_WIDTH, CRAZYPOD_NOW_WAVE_HEIGHT);
     lv_obj_set_style_bg_opa(view->wave_surface, LV_OPA_TRANSP, 0);
     lv_obj_remove_flag(view->wave_surface, LV_OBJ_FLAG_CLICKABLE);
     lv_obj_add_event_cb(view->wave_surface, context->draw_wave,
@@ -503,7 +576,8 @@ void crazypod_now_screen_render(
         (audio_status() & AUDIO_STATUS_PAUSE) == 0;
     view->wave_tick = current_tick;
     view->progress_marker = make_box(
-        view->wave_surface, 0, 14, 7, 7,
+        view->wave_surface, 0, CRAZYPOD_NOW_MARKER_Y,
+        CRAZYPOD_NOW_MARKER_SIZE, CRAZYPOD_NOW_MARKER_SIZE,
         LV_RADIUS_CIRCLE, COLOR_WHITE, LV_OPA_COVER);
     lv_obj_set_style_shadow_width(view->progress_marker, 6, 0);
     lv_obj_set_style_shadow_color(
@@ -513,13 +587,17 @@ void crazypod_now_screen_render(
     view->elapsed = make_label(context->parent, "0:00",
                              &lv_font_montserrat_8,
                              COLOR_WHITE, 180);
-    lv_obj_set_pos(view->elapsed, 30, 218);
+    lv_obj_set_pos(view->elapsed,
+                   CRAZYPOD_NOW_CLOCK_INSET, CRAZYPOD_NOW_CLOCK_Y);
     view->remaining = make_label(context->parent, "-0:00",
                                &lv_font_montserrat_8,
                                COLOR_WHITE, 180);
-    lv_obj_set_width(view->remaining, 60);
+    lv_obj_set_width(view->remaining, CRAZYPOD_NOW_CLOCK_WIDTH);
     lv_obj_set_style_text_align(view->remaining, LV_TEXT_ALIGN_RIGHT, 0);
-    lv_obj_set_pos(view->remaining, 230, 218);
+    lv_obj_set_pos(
+        view->remaining,
+        LCD_WIDTH - CRAZYPOD_NOW_CLOCK_INSET - CRAZYPOD_NOW_CLOCK_WIDTH,
+        CRAZYPOD_NOW_CLOCK_Y);
 }
 
 void crazypod_now_screen_reset(void)
@@ -613,7 +691,8 @@ void crazypod_now_screen_update_playback(
          * last chapter as 5%, which is exactly what was reported -- while
          * every ordinary track, being well under the limit, was right.
          */
-        int x = crazypod_ui_text_bar_fill(281, elapsed_ms, length_ms);
+        int x = crazypod_ui_text_bar_fill(
+            CRAZYPOD_NOW_MARKER_TRAVEL, elapsed_ms, length_ms);
         char elapsed[16];
         char remaining[16];
         uint32_t left =
@@ -621,8 +700,8 @@ void crazypod_now_screen_update_playback(
 
         if(x < 0)
             x = 0;
-        if(x > 281)
-            x = 281;
+        if(x > CRAZYPOD_NOW_MARKER_TRAVEL)
+            x = CRAZYPOD_NOW_MARKER_TRAVEL;
         lv_obj_set_x(now_view.progress_marker, x);
         format_time_ms(elapsed_ms, elapsed, sizeof(elapsed));
         format_time_ms(left, remaining + 1, sizeof(remaining) - 1);

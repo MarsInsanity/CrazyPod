@@ -9,8 +9,23 @@
 
 #include "../../../crazypod_appearance.h"
 #include "../../../crazypod_wallpaper.h"
+#include "../../navigation/crazypod_ui_routes.h"
 
+/*
+ * Backgrounds chooses a page colour and a wallpaper, and the monochrome
+ * build has neither to offer: its pages are paper, and a photograph
+ * dithered into four shades behind type takes the type with it. Now
+ * Playing themes are Mini App payloads, which are not built where the
+ * scenes they are drawn for cannot be shown. Both entries are left out
+ * rather than opening onto a screen with nothing on it.
+ */
+#if defined(HAVE_CRAZYPOD_WALLPAPER) && defined(HAVE_CRAZYPOD_MINIAPPS)
 #define CRAZYPOD_CUSTOMIZE_MENU_COUNT 7
+#elif defined(HAVE_CRAZYPOD_WALLPAPER) || defined(HAVE_CRAZYPOD_MINIAPPS)
+#define CRAZYPOD_CUSTOMIZE_MENU_COUNT 6
+#else
+#define CRAZYPOD_CUSTOMIZE_MENU_COUNT 5
+#endif
 #define CRAZYPOD_CUSTOMIZE_PRESET_ACTION_COUNT 3
 #define CRAZYPOD_CUSTOMIZE_PRESET_EDIT_COUNT 3
 /*
@@ -32,6 +47,12 @@ extern const char *const crazypod_customize_menu_titles[
     CRAZYPOD_CUSTOMIZE_MENU_COUNT];
 extern const char *const crazypod_customize_menu_symbols[
     CRAZYPOD_CUSTOMIZE_MENU_COUNT];
+
+/*
+ * Which screen a row of the Customize menu opens. The rows are not a fixed
+ * list any more, so nothing may select by position.
+ */
+enum crazypod_route crazypod_customize_menu_route(int index);
 extern const char *const crazypod_customize_preset_actions[
     CRAZYPOD_CUSTOMIZE_PRESET_ACTION_COUNT];
 extern const char *const crazypod_customize_preset_edit_actions[

@@ -35,6 +35,16 @@ void crazypod_ui_widget_align_row_label(
 lv_obj_t *crazypod_ui_widget_box(lv_obj_t *parent, int x, int y,
                                  int width, int height, int radius,
                                  uint32_t color, lv_opa_t opacity);
+/*
+ * The same two, for a colour the caller has already resolved to one of the
+ * panel's own shades. See crazypod_ui_shade() for when that is warranted.
+ */
+lv_obj_t *crazypod_ui_widget_label_shade(
+    lv_obj_t *parent, const char *text, const lv_font_t *font,
+    uint32_t shade, lv_opa_t opacity);
+lv_obj_t *crazypod_ui_widget_box_shade(
+    lv_obj_t *parent, int x, int y, int width, int height, int radius,
+    uint32_t shade, lv_opa_t opacity);
 void crazypod_ui_widget_pixel_heart(lv_obj_t *parent, int x, int y,
                                     int unit, uint32_t color,
                                     lv_opa_t opacity);

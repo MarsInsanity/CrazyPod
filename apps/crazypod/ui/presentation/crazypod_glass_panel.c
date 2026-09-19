@@ -7,7 +7,7 @@
 #include "../../crazypod_state.h"
 #include "crazypod_ui_widgets.h"
 #include "crazypod_glass_panel.h"
-#include "crazypod_ui_color.h"
+#include "../../crazypod_color.h"
 
 #define COLOR_PANEL 0x1B1B22
 #define COLOR_WHITE 0xFFFFFF

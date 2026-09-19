@@ -23,7 +23,23 @@ def function_body(source: str, name: str) -> str:
     return match.group("body")
 
 
-photos_source = PHOTOS.read_text(encoding="utf-8")
+def media_library_build(source: str) -> str:
+    """The half of crazypod_photos.c that has a photo library in it.
+
+    The file opens with an empty implementation for the panels that do not
+    build one -- the Mini has no Media app -- and the real one follows. A
+    search from the top of the file finds the empty version and concludes
+    the policy below has been dropped, which is the opposite of true.
+    """
+    marker = "#elif defined(HAVE_CRAZYPOD_UI)"
+    index = source.find(marker)
+    if index < 0:
+        raise SystemExit(
+            f"{PHOTOS} no longer has a media-library build to check")
+    return source[index:]
+
+
+photos_source = media_library_build(PHOTOS.read_text(encoding="utf-8"))
 cache_source = CACHE.read_text(encoding="utf-8")
 prompts_source = SYSTEM_PROMPTS.read_text(encoding="utf-8")
 
