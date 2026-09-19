@@ -68,8 +68,20 @@ OTHER_SRC += $(LVGL_SRC)
 # renderer real time in its hot loops (blends, masks, glyph blits, style
 # lookups), so LVGL alone is built at -O2 there; the size increase lands in
 # SDRAM code space, which the PortalPlayer targets have to spare.
-ifneq (,$(findstring -DIPOD_VIDEO,$(TARGET)))
+#
+# ARCH_VERSION is 4 on exactly those targets: the Video and the Mini, both
+# PP502x at the same clock. It is 5 on the 6G's S5L8702 and empty in the
+# simulator. Keying this on the architecture rather than on one model's
+# name is deliberate -- the condition was IPOD_VIDEO, so the Mini, the same
+# chip running the same renderer, silently got neither the -O2 build nor
+# the perf-log instrumentation below.
+ifeq ($(ARCH_VERSION),4)
 LVGL_OPTFLAGS := -O2
+# The perf log's LVGL columns -- render time by draw task, invalidations by
+# object and caller, layer renders, the refresh phase split. The backend is
+# already built for every PortalPlayer target; this compiles in the hooks
+# that feed it.
+LVGL_OPTFLAGS += -DCRAZYPOD_LVGL_PERF
 else
 LVGL_OPTFLAGS :=
 endif

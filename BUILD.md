@@ -288,22 +288,34 @@ performance log is for.
 
 `ipodmini2g` builds the product UI against Rockbox's iPod Mini 2nd
 generation platform layer. It is the first CrazyPod target without a colour
-panel, and almost everything below differs from the 6G because of that one
-fact.
+panel, and almost everything below follows from that one fact.
 
-The panel is 138x110 at `LCD_DEPTH 2`: four shades of grey, packed four
-pixels to a byte (`LCD_PIXELFORMAT HORIZONTAL_PACKING`). The SoC is a
-PP5022 as on the Video, so the dual-core, performance-log and 32 MiB notes
-in the Video section apply here too; the Mini always has 32 MiB.
+Compare it against the Video, not the 6G. The Mini and the Video are both
+PP5022: same core, same dual-core release, same clocking and boost
+behaviour, same LCD update path, same 32 MiB budget. The 6G is an S5L8702
+and shares none of it. So everything in the Video section above -- the
+memory budget, the performance log, the ipodpatcher install -- applies to
+the Mini as written, and the panel is what is left.
 
-| Area | 6G | iPod Mini 2G |
+That panel is 138x110 at `LCD_DEPTH 2`: four shades of grey, packed four
+pixels to a byte (`LCD_PIXELFORMAT HORIZONTAL_PACKING`).
+
+| Area | iPod Video | iPod Mini 2G |
 | --- | --- | --- |
 | Panel | 320x240 RGB565 | 138x110, 4 greys, 2bpp packed |
-| SoC | S5L8702, ARMv5, single core | PP5022, ARMv4T, dual core |
-| RAM | 64 MiB | 32 MiB |
-| Keypad | `IPOD_4G_PAD` | `IPOD_4G_PAD` (unchanged) |
-| Display setting | backlight brightness | LCD contrast and invert |
-| Install | DFU plus `mks5lboot` | `bootloader-ipodmini2g.ipod` via `ipodpatcher` |
+| SoC | PP5022, ARMv4T, dual core | same |
+| RAM | 64 MiB, or 32 MiB on 30 GB units | 32 MiB always, no runtime probe |
+| Keypad | `IPOD_4G_PAD` | same |
+| Backlight | on/off plus timeout, dimmable | on/off plus timeout, not dimmable |
+| Display settings | Brightness, LCD Sleep | Contrast, Invert Display |
+| Install | `bootloader-ipodvideo.ipod` via `ipodpatcher` | `bootloader-ipodmini2g.ipod` via `ipodpatcher` |
+
+Because the two are the same chip, anything tuned for the PortalPlayer
+targets is keyed on `CPU_PP` (or, in the LVGL makefile, `ARCH_VERSION` 4)
+rather than on a model name, so the Mini inherits it. The exceptions are
+genuinely Video-specific hardware -- the 64/32 MiB probe in
+`firmware/core_alloc.c`, the replaceable-battery capacity setting in
+`apps/settings_list.c` -- and those stay keyed to `IPOD_VIDEO`.
 
 ### How colour becomes ink
 

@@ -1082,7 +1082,7 @@ static lv_obj_tree_walk_res_t blur_walk_cb(lv_obj_t * obj, void * user_data)
 
 }
 
-#if defined(IPOD_VIDEO) && !defined(SIMULATOR)
+#if defined(CRAZYPOD_LVGL_PERF) && !defined(SIMULATOR)
 /* CrazyPod bring-up: attribute invalidations to objects and callers. */
 #include "system.h"
 void crazypod_perf_log_invalidate(

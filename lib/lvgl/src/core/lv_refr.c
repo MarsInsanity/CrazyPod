@@ -51,7 +51,7 @@ static void wait_for_flushing(lv_display_t * disp);
 static lv_result_t layer_get_area(lv_layer_t * layer, lv_obj_t * obj, lv_layer_type_t layer_type,
                                   lv_area_t * layer_area_out, lv_area_t * obj_draw_size_out);
 
-#if defined(IPOD_VIDEO) && !defined(SIMULATOR)
+#if defined(CRAZYPOD_LVGL_PERF) && !defined(SIMULATOR)
 /* CrazyPod bring-up: attribute layer renders to objects. type 3 marks the
  * two strips a clip_corner object renders its children through. */
 void crazypod_perf_log_layer(const void * obj, int type);
@@ -369,7 +369,7 @@ void lv_refr_set_disp_refreshing(lv_display_t * disp)
     disp_refr = disp;
 }
 
-#if defined(IPOD_VIDEO) && !defined(SIMULATOR)
+#if defined(CRAZYPOD_LVGL_PERF) && !defined(SIMULATOR)
 /*
  * CrazyPod bring-up: lv_timer_handler costs far more than the rendering
  * inside it, and the refresh timer does two things before a pixel is

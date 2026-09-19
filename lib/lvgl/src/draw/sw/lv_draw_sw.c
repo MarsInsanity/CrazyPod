@@ -381,7 +381,7 @@ static void render_thread_cb(void * ptr)
 }
 #endif
 
-#if defined(IPOD_VIDEO) && !defined(SIMULATOR)
+#if defined(CRAZYPOD_LVGL_PERF) && !defined(SIMULATOR)
 /* CrazyPod bring-up: attribute render time to draw task types. */
 void crazypod_perf_log_draw_begin(void);
 void crazypod_perf_log_draw_end(int type);
