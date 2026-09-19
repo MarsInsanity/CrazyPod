@@ -1,4 +1,5 @@
 #include "config.h"
+#include "crazypod_pixel.h"
 
 #ifdef HAVE_CRAZYPOD_UI
 
@@ -156,9 +157,9 @@ void crazypod_coverflow_configure(void (*boost)(int ticks))
     boost_cpu = boost;
 }
 
-static fb_data *framebuffer(void)
+static crazypod_pixel_t *framebuffer(void)
 {
-    return (fb_data *)lcd_framebuffer_default.data;
+    return (crazypod_pixel_t *)lcd_framebuffer_default.data;
 }
 
 static inline unsigned alpha_weight6(int alpha)
@@ -170,8 +171,8 @@ static inline unsigned alpha_weight6(int alpha)
     return ((unsigned)alpha + 2) >> 2;
 }
 
-static inline __attribute__((always_inline)) fb_data blend565_weight(
-    fb_data foreground, fb_data background, unsigned foreground_weight)
+static inline __attribute__((always_inline)) crazypod_pixel_t blend565_weight(
+    crazypod_pixel_t foreground, crazypod_pixel_t background, unsigned foreground_weight)
 {
     unsigned inverse;
     unsigned result;
@@ -192,10 +193,10 @@ static inline __attribute__((always_inline)) fb_data blend565_weight(
     result |=
         (((foreground & 0x07e0) * foreground_weight +
           (background & 0x07e0) * inverse) >> 6) & 0x07e0;
-    return (fb_data)result;
+    return (crazypod_pixel_t)result;
 }
 
-static inline fb_data blend565(fb_data foreground, fb_data background,
+static inline crazypod_pixel_t blend565(crazypod_pixel_t foreground, crazypod_pixel_t background,
                                int alpha)
 {
     return blend565_weight(
@@ -204,8 +205,8 @@ static inline fb_data blend565(fb_data foreground, fb_data background,
 
 static void clear_flow_area(void)
 {
-    fb_data *pixels = framebuffer();
-    fb_data color = LCD_RGBPACK(0, 0, 0);
+    crazypod_pixel_t *pixels = framebuffer();
+    crazypod_pixel_t color = CRAZYPOD_PIXEL_PACK(0, 0, 0);
     int y;
 
     for(y = FLOW_TOP; y < FLOW_BOTTOM; ++y)
@@ -390,7 +391,7 @@ static void reset_cache(void)
     cache_initialized = true;
 }
 
-static fb_data placeholder_sample(int album_index, int x, int y,
+static crazypod_pixel_t placeholder_sample(int album_index, int x, int y,
                                   int width, int height)
 {
     int base = 28 + ((unsigned)album_index & 3) * 4;
@@ -400,7 +401,7 @@ static fb_data placeholder_sample(int album_index, int x, int y,
     int radius_squared;
     int outer_radius = width * 27 / 100;
     int inner_radius = width * 8 / 100;
-    fb_data color;
+    crazypod_pixel_t color;
 
     if(x < 0)
         x = 0;
@@ -414,16 +415,16 @@ static fb_data placeholder_sample(int album_index, int x, int y,
     dy = y - height / 2;
     radius_squared = dx * dx + dy * dy;
     gradient = 188 + (y * 52 >> 7);
-    color = LCD_RGBPACK(base * gradient >> 8,
+    color = CRAZYPOD_PIXEL_PACK(base * gradient >> 8,
                         base * gradient >> 8,
                         (base + 2) * gradient >> 8);
     if(x < 3 || x >= width - 3 || y < 3 || y >= height - 3)
-        return blend565(LCD_RGBPACK(245, 245, 248), color, 104);
+        return blend565(CRAZYPOD_PIXEL_PACK(245, 245, 248), color, 104);
     if(radius_squared <= outer_radius * outer_radius) {
-        fb_data disc = LCD_RGBPACK(24, 24, 30);
+        crazypod_pixel_t disc = CRAZYPOD_PIXEL_PACK(24, 24, 30);
 
         if(radius_squared <= inner_radius * inner_radius)
-            disc = LCD_RGBPACK(222, 222, 228);
+            disc = CRAZYPOD_PIXEL_PACK(222, 222, 228);
         return blend565(disc, color, 218);
     }
     return color;
@@ -504,8 +505,8 @@ static int32_t flow_trig_q15(int32_t angle_q16, bool cosine)
                    amount_q16) >> 16);
 }
 
-static inline __attribute__((always_inline)) fb_data shade565_weight(
-    fb_data color, unsigned weight)
+static inline __attribute__((always_inline)) crazypod_pixel_t shade565_weight(
+    crazypod_pixel_t color, unsigned weight)
 {
     unsigned result;
 
@@ -517,7 +518,7 @@ static inline __attribute__((always_inline)) fb_data shade565_weight(
         (((color & 0xf81f) * weight) >> 6) & 0xf81f;
     result |=
         (((color & 0x07e0) * weight) >> 6) & 0x07e0;
-    return (fb_data)result;
+    return (crazypod_pixel_t)result;
 }
 
 static int32_t divide_q15(int32_t numerator, int32_t denominator)
@@ -578,8 +579,8 @@ static void draw_projected_image(const lv_image_dsc_t *image,
                                  int size, int32_t yaw_q16, int alpha,
                                  int side)
 {
-    const fb_data *source;
-    fb_data *pixels = framebuffer();
+    const crazypod_pixel_t *source;
+    crazypod_pixel_t *pixels = framebuffer();
     int source_width;
     int source_height;
     int half_size = size / 2;
@@ -619,7 +620,7 @@ static void draw_projected_image(const lv_image_dsc_t *image,
         source_height = FLOW_COVER_SIZE;
     }
     else {
-        source = (const fb_data *)image->data;
+        source = (const crazypod_pixel_t *)image->data;
         source_width = image->header.w;
         source_height = image->header.h;
     }
@@ -701,8 +702,8 @@ static void draw_projected_image(const lv_image_dsc_t *image,
             int py = center_y - 1;
 
             while(source_y_q16 >= 0 && py >= FLOW_TOP) {
-                fb_data *destination;
-                fb_data color;
+                crazypod_pixel_t *destination;
+                crazypod_pixel_t color;
                 int sy = source_y_q16 >> 16;
 
                 if(placeholder) {
@@ -729,8 +730,8 @@ static void draw_projected_image(const lv_image_dsc_t *image,
 
             while(source_y_q16 < (source_height << 16) &&
                   py < FLOW_BOTTOM) {
-                fb_data *destination;
-                fb_data color;
+                crazypod_pixel_t *destination;
+                crazypod_pixel_t color;
                 int sy = source_y_q16 >> 16;
 
                 if(placeholder) {
@@ -756,8 +757,8 @@ static void draw_projected_image(const lv_image_dsc_t *image,
         for(y = 0; y < 9; ++y) {
             int py = reflection_y + y;
             int reflection_alpha = draw_alpha * (27 - y * 3) >> 8;
-            fb_data *destination;
-            fb_data color;
+            crazypod_pixel_t *destination;
+            crazypod_pixel_t color;
             int sy =
                 source_height - 1 -
                 (y + 1) * source_height / 18;

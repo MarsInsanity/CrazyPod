@@ -3,6 +3,10 @@
 #ifndef __LCD_GB_H__
 #define __LCD_GB_H__
 
+#ifdef CRAZYPOD_GAMEBOY_CORE
+#include "crazypod_pixel.h"
+#endif
+
 #include "lcd.h"
 #include "defs.h"
 
@@ -24,7 +28,17 @@ struct scan
 #elif LCD_DEPTH > 4
     byte buf[256];
 #endif
+#ifdef CRAZYPOD_GAMEBOY_CORE
+    /*
+     * The CrazyPod core renders into a buffer of its own rather than the
+     * panel, so its palette is a CrazyPod pixel whatever the panel takes.
+     * On the Mini fb_data is a byte holding four packed pixels, which a
+     * palette entry cannot be.
+     */
+    crazypod_pixel_t pal[64];
+#else
     fb_data pal[64];
+#endif
     byte pri[256];
     struct vissprite vs[16];
     int ns, l, x, y, s, t, u, v, wx, wy, wt, wv;

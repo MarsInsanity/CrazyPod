@@ -1,4 +1,5 @@
 #include "config.h"
+#include "crazypod_pixel.h"
 
 #ifdef HAVE_CRAZYPOD_UI
 
@@ -32,7 +33,7 @@
 #define CRAZYPOD_PHOTO_WAKE 1
 #define CRAZYPOD_PHOTO_DECODE_EXTRA (64 * 1024)
 struct photo_slot {
-    fb_data pixels[2][CRAZYPOD_PHOTO_THUMB_SIZE *
+    crazypod_pixel_t pixels[2][CRAZYPOD_PHOTO_THUMB_SIZE *
                       CRAZYPOD_PHOTO_THUMB_SIZE]
         CACHEALIGN_AT_LEAST_ATTR(16);
     lv_image_dsc_t descriptor[2];
@@ -50,7 +51,7 @@ struct photo_slot {
 };
 
 struct photo_view_slot {
-    fb_data pixels[2][CRAZYPOD_PHOTO_VIEW_WIDTH *
+    crazypod_pixel_t pixels[2][CRAZYPOD_PHOTO_VIEW_WIDTH *
                       CRAZYPOD_PHOTO_VIEW_HEIGHT]
         CACHEALIGN_AT_LEAST_ATTR(16);
     lv_image_dsc_t descriptor[2];
@@ -121,12 +122,12 @@ static void finish_background_work(int old_priority)
 
  static bool decode_photo(const struct photo_decode_request *request,
                          lv_image_dsc_t *descriptor,
-                         fb_data *destination)
+                         crazypod_pixel_t *destination)
 {
     struct bitmap bitmap;
-    fb_data *decode_buffer;
+    crazypod_pixel_t *decode_buffer;
     size_t pixel_bytes =
-        (size_t)request->width * request->height * sizeof(fb_data);
+        (size_t)request->width * request->height * sizeof(crazypod_pixel_t);
     size_t decode_bytes = pixel_bytes + CRAZYPOD_PHOTO_DECODE_EXTRA;
     int decode_handle;
     int result;
@@ -147,13 +148,13 @@ static void finish_background_work(int old_priority)
         result = read_jpeg_file(
             request->path, &bitmap, decode_bytes,
             FORMAT_NATIVE | FORMAT_RESIZE | FORMAT_KEEP_ASPECT,
-            &format_native);
+            CRAZYPOD_BITMAP_FORMAT);
     }
     else {
         result = read_bmp_file(
             request->path, &bitmap, decode_bytes,
             FORMAT_NATIVE | FORMAT_RESIZE | FORMAT_KEEP_ASPECT,
-            &format_native);
+            CRAZYPOD_BITMAP_FORMAT);
     }
     crazypod_image_decode_unlock();
     if(result < 0 || bitmap.width <= 0 || bitmap.height <= 0 ||
@@ -164,8 +165,8 @@ static void finish_background_work(int old_priority)
     }
     for(row = 0; row < bitmap.height; ++row) {
         memcpy(destination + row * bitmap.width,
-               (fb_data *)bitmap.data + row * bitmap.width,
-               (size_t)bitmap.width * sizeof(fb_data));
+               (crazypod_pixel_t *)bitmap.data + row * bitmap.width,
+               (size_t)bitmap.width * sizeof(crazypod_pixel_t));
     }
     core_free(decode_handle);
     return crazypod_image_configure_rgb565(
@@ -298,7 +299,7 @@ static void photo_thread(void)
         while(true) {
             struct photo_decode_request request;
             lv_image_dsc_t *descriptor;
-            fb_data *pixels;
+            crazypod_pixel_t *pixels;
             int bank;
             bool cache_hit = false;
             bool valid;

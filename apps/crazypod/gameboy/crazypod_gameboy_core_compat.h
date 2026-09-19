@@ -3,6 +3,7 @@
 
 /* A core build uses no Rockbox plugin API, menus, allocators or IRAM. */
 #include "config.h"
+#include "crazypod_pixel.h"
 #include "lcd.h"
 #include <stdbool.h>
 #include <stddef.h>
@@ -97,6 +98,6 @@ extern struct options options;
 void set_pal(void);
 void die(char *message, ...);
 void crazypod_gameboy_scanline(
-    int line, const uint8_t *pixels, const fb_data *palette);
+    int line, const uint8_t *pixels, const crazypod_pixel_t *palette);
 
 #endif

@@ -1,4 +1,5 @@
 #include "config.h"
+#include "crazypod_pixel.h"
 
 #ifdef HAVE_CRAZYPOD_UI
 
@@ -13,7 +14,7 @@
 
 #define WIDTH LCD_WIDTH
 #define HEIGHT LCD_HEIGHT
-#define PIXEL_BYTES (WIDTH * HEIGHT * sizeof(fb_data))
+#define PIXEL_BYTES (WIDTH * HEIGHT * sizeof(crazypod_pixel_t))
 #define STATE_DIRECTORY "/.crazypod"
 #define CACHE_DIRECTORY STATE_DIRECTORY "/cache"
 #define HOME_PATH CACHE_DIRECTORY "/home.wall"
@@ -106,7 +107,7 @@ void crazypod_wallpaper_store_init(void)
 
 bool crazypod_wallpaper_store_load(
     enum crazypod_wallpaper_target target,
-    const char *source_path, fb_data *pixels,
+    const char *source_path, crazypod_pixel_t *pixels,
     lv_image_dsc_t *descriptor)
 {
     struct store_header header;
@@ -131,7 +132,7 @@ bool crazypod_wallpaper_store_load(
 
 bool crazypod_wallpaper_store_save(
     enum crazypod_wallpaper_target target,
-    const char *source_path, const fb_data *pixels,
+    const char *source_path, const crazypod_pixel_t *pixels,
     enum crazypod_wallpaper_apply_result *error)
 {
     struct store_header header;

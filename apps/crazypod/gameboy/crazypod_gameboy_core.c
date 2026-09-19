@@ -1,3 +1,4 @@
+#include "crazypod_pixel.h"
 #include "crazypod_gameboy_core.h"
 #include "crazypod_gameboy_core_compat.h"
 #include "../../plugins/rockboy/cpu-gb.h"
@@ -34,7 +35,7 @@ int rockboy_pcm_submit(void)
 }
 
 void crazypod_gameboy_scanline(
-    int line, const uint8_t *indices, const fb_data *palette)
+    int line, const uint8_t *indices, const crazypod_pixel_t *palette)
 {
     int x;
 

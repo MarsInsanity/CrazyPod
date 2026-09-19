@@ -1,4 +1,5 @@
 #include "config.h"
+#include "crazypod_pixel.h"
 
 #ifdef HAVE_CRAZYPOD_UI
 
@@ -28,18 +29,18 @@
 
 static char track_paths[PRESENTATION_BANKS][MAX_PATH];
 static unsigned generations[PRESENTATION_BANKS];
-static fb_data backdrop_pixels[BACKDROP_WIDTH * BACKDROP_HEIGHT]
+static crazypod_pixel_t backdrop_pixels[BACKDROP_WIDTH * BACKDROP_HEIGHT]
     CACHEALIGN_AT_LEAST_ATTR(16);
-static fb_data backdrop_scratch[BACKDROP_WIDTH * BACKDROP_HEIGHT]
+static crazypod_pixel_t backdrop_scratch[BACKDROP_WIDTH * BACKDROP_HEIGHT]
     CACHEALIGN_AT_LEAST_ATTR(16);
-static fb_data backdrop_render_pixels[
+static crazypod_pixel_t backdrop_render_pixels[
     PRESENTATION_BANKS][LCD_WIDTH * LCD_HEIGHT]
     CACHEALIGN_AT_LEAST_ATTR(16);
 static lv_image_dsc_t backdrop_descriptors[PRESENTATION_BANKS];
-static fb_data cover_pixels[PRESENTATION_BANKS][COVER_SIZE * COVER_SIZE]
+static crazypod_pixel_t cover_pixels[PRESENTATION_BANKS][COVER_SIZE * COVER_SIZE]
     CACHEALIGN_AT_LEAST_ATTR(16);
 static lv_image_dsc_t cover_descriptors[PRESENTATION_BANKS];
-static fb_data cover_caption_pixels[
+static crazypod_pixel_t cover_caption_pixels[
     PRESENTATION_BANKS][COVER_SIZE * COVER_CAPTION_HEIGHT]
     CACHEALIGN_AT_LEAST_ATTR(16);
 static lv_image_dsc_t cover_caption_descriptors[PRESENTATION_BANKS];
@@ -49,7 +50,7 @@ static int active_bank = -1;
 
 static bool prepare_cover(const lv_image_dsc_t *source, int bank)
 {
-    const fb_data *source_pixels;
+    const crazypod_pixel_t *source_pixels;
     int width;
     int height;
 
@@ -60,11 +61,11 @@ static bool prepare_cover(const lv_image_dsc_t *source, int bank)
     width = source->header.w;
     height = source->header.h;
     if(width <= 1 || height <= 1 ||
-       source->header.stride != width * sizeof(fb_data))
+       source->header.stride != width * sizeof(crazypod_pixel_t))
         return false;
     if(cover_descriptors[bank].header.magic == LV_IMAGE_HEADER_MAGIC)
         lv_image_cache_drop(&cover_descriptors[bank]);
-    source_pixels = (const fb_data *)source->data;
+    source_pixels = (const crazypod_pixel_t *)source->data;
     crazypod_image_scale_rgb565(
         source_pixels, width, height, width,
         cover_pixels[bank], COVER_SIZE, COVER_SIZE);
@@ -87,7 +88,7 @@ static bool prepare_cover_caption(int bank)
 
 static bool prepare_backdrop(const lv_image_dsc_t *artwork, int bank)
 {
-    const fb_data *source;
+    const crazypod_pixel_t *source;
     int source_stride;
     int crop_x;
     int crop_y;
@@ -107,8 +108,8 @@ static bool prepare_backdrop(const lv_image_dsc_t *artwork, int bank)
                sizeof(backdrop_descriptors[bank]));
         return true;
     }
-    source = (const fb_data *)artwork->data;
-    source_stride = artwork->header.stride / sizeof(fb_data);
+    source = (const crazypod_pixel_t *)artwork->data;
+    source_stride = artwork->header.stride / sizeof(crazypod_pixel_t);
     crop_x = 0;
     crop_y = 0;
     crop_width = artwork->header.w;
@@ -146,17 +147,17 @@ static bool prepare_backdrop(const lv_image_dsc_t *artwork, int bank)
             for(sy = sy0; sy < sy1; ++sy) {
                 int sx;
                 for(sx = sx0; sx < sx1; ++sx) {
-                    fb_data pixel = source[sy * source_stride + sx];
-                    red += RGB_UNPACK_RED(pixel);
-                    green += RGB_UNPACK_GREEN(pixel);
-                    blue += RGB_UNPACK_BLUE(pixel);
+                    crazypod_pixel_t pixel = source[sy * source_stride + sx];
+                    red += CRAZYPOD_PIXEL_RED(pixel);
+                    green += CRAZYPOD_PIXEL_GREEN(pixel);
+                    blue += CRAZYPOD_PIXEL_BLUE(pixel);
                     ++samples;
                 }
             }
             if(samples == 0)
                 samples = 1;
             backdrop_pixels[y * BACKDROP_WIDTH + x] =
-                LCD_RGBPACK(
+                CRAZYPOD_PIXEL_PACK(
                     red / samples, green / samples, blue / samples);
         }
     }
@@ -173,18 +174,18 @@ static bool prepare_backdrop(const lv_image_dsc_t *artwork, int bank)
             int offset;
             for(offset = -2; offset <= 2; ++offset) {
                 int sample_x = x + offset;
-                fb_data pixel;
+                crazypod_pixel_t pixel;
                 if(sample_x < 0)
                     sample_x = 0;
                 if(sample_x >= BACKDROP_WIDTH)
                     sample_x = BACKDROP_WIDTH - 1;
                 pixel = backdrop_pixels[y * BACKDROP_WIDTH + sample_x];
-                red += RGB_UNPACK_RED(pixel);
-                green += RGB_UNPACK_GREEN(pixel);
-                blue += RGB_UNPACK_BLUE(pixel);
+                red += CRAZYPOD_PIXEL_RED(pixel);
+                green += CRAZYPOD_PIXEL_GREEN(pixel);
+                blue += CRAZYPOD_PIXEL_BLUE(pixel);
             }
             backdrop_scratch[y * BACKDROP_WIDTH + x] =
-                LCD_RGBPACK(red / 5, green / 5, blue / 5);
+                CRAZYPOD_PIXEL_PACK(red / 5, green / 5, blue / 5);
         }
     }
     yield();
@@ -197,19 +198,19 @@ static bool prepare_backdrop(const lv_image_dsc_t *artwork, int bank)
             int offset;
             for(offset = -2; offset <= 2; ++offset) {
                 int sample_y = y + offset;
-                fb_data pixel;
+                crazypod_pixel_t pixel;
                 if(sample_y < 0)
                     sample_y = 0;
                 if(sample_y >= BACKDROP_HEIGHT)
                     sample_y = BACKDROP_HEIGHT - 1;
                 pixel = backdrop_scratch[
                     sample_y * BACKDROP_WIDTH + x];
-                red += RGB_UNPACK_RED(pixel);
-                green += RGB_UNPACK_GREEN(pixel);
-                blue += RGB_UNPACK_BLUE(pixel);
+                red += CRAZYPOD_PIXEL_RED(pixel);
+                green += CRAZYPOD_PIXEL_GREEN(pixel);
+                blue += CRAZYPOD_PIXEL_BLUE(pixel);
             }
             backdrop_pixels[y * BACKDROP_WIDTH + x] =
-                LCD_RGBPACK(red / 5, green / 5, blue / 5);
+                CRAZYPOD_PIXEL_PACK(red / 5, green / 5, blue / 5);
         }
     }
 
@@ -230,31 +231,31 @@ static bool prepare_backdrop(const lv_image_dsc_t *artwork, int bank)
             int x0 = source_x_q8 >> 8;
             int x1 = x0 + 1 < BACKDROP_WIDTH ? x0 + 1 : x0;
             int fx = source_x_q8 & 255;
-            fb_data p00 = backdrop_pixels[y0 * BACKDROP_WIDTH + x0];
-            fb_data p10 = backdrop_pixels[y0 * BACKDROP_WIDTH + x1];
-            fb_data p01 = backdrop_pixels[y1 * BACKDROP_WIDTH + x0];
-            fb_data p11 = backdrop_pixels[y1 * BACKDROP_WIDTH + x1];
+            crazypod_pixel_t p00 = backdrop_pixels[y0 * BACKDROP_WIDTH + x0];
+            crazypod_pixel_t p10 = backdrop_pixels[y0 * BACKDROP_WIDTH + x1];
+            crazypod_pixel_t p01 = backdrop_pixels[y1 * BACKDROP_WIDTH + x0];
+            crazypod_pixel_t p11 = backdrop_pixels[y1 * BACKDROP_WIDTH + x1];
             unsigned red0 =
-                RGB_UNPACK_RED(p00) * (256 - fx) +
-                RGB_UNPACK_RED(p10) * fx;
+                CRAZYPOD_PIXEL_RED(p00) * (256 - fx) +
+                CRAZYPOD_PIXEL_RED(p10) * fx;
             unsigned red1 =
-                RGB_UNPACK_RED(p01) * (256 - fx) +
-                RGB_UNPACK_RED(p11) * fx;
+                CRAZYPOD_PIXEL_RED(p01) * (256 - fx) +
+                CRAZYPOD_PIXEL_RED(p11) * fx;
             unsigned green0 =
-                RGB_UNPACK_GREEN(p00) * (256 - fx) +
-                RGB_UNPACK_GREEN(p10) * fx;
+                CRAZYPOD_PIXEL_GREEN(p00) * (256 - fx) +
+                CRAZYPOD_PIXEL_GREEN(p10) * fx;
             unsigned green1 =
-                RGB_UNPACK_GREEN(p01) * (256 - fx) +
-                RGB_UNPACK_GREEN(p11) * fx;
+                CRAZYPOD_PIXEL_GREEN(p01) * (256 - fx) +
+                CRAZYPOD_PIXEL_GREEN(p11) * fx;
             unsigned blue0 =
-                RGB_UNPACK_BLUE(p00) * (256 - fx) +
-                RGB_UNPACK_BLUE(p10) * fx;
+                CRAZYPOD_PIXEL_BLUE(p00) * (256 - fx) +
+                CRAZYPOD_PIXEL_BLUE(p10) * fx;
             unsigned blue1 =
-                RGB_UNPACK_BLUE(p01) * (256 - fx) +
-                RGB_UNPACK_BLUE(p11) * fx;
+                CRAZYPOD_PIXEL_BLUE(p01) * (256 - fx) +
+                CRAZYPOD_PIXEL_BLUE(p11) * fx;
 
             backdrop_render_pixels[bank][y * LCD_WIDTH + x] =
-                LCD_RGBPACK(
+                CRAZYPOD_PIXEL_PACK(
                     (red0 * (256 - fy) + red1 * fy) >> 16,
                     (green0 * (256 - fy) + green1 * fy) >> 16,
                     (blue0 * (256 - fy) + blue1 * fy) >> 16);
@@ -283,7 +284,7 @@ static unsigned shaded_luminance(
 
 static uint32_t contrast_color(int bank)
 {
-    const fb_data *pixels = backdrop_render_pixels[bank];
+    const crazypod_pixel_t *pixels = backdrop_render_pixels[bank];
     unsigned long luminance = 0;
     unsigned samples = 0;
     int y;
@@ -291,11 +292,11 @@ static uint32_t contrast_color(int bank)
     for(y = 68; y <= 148; y += 8) {
         int x;
         for(x = 144; x <= 296; x += 8) {
-            fb_data pixel = pixels[y * LCD_WIDTH + x];
+            crazypod_pixel_t pixel = pixels[y * LCD_WIDTH + x];
             luminance += shaded_luminance(
-                RGB_UNPACK_RED(pixel),
-                RGB_UNPACK_GREEN(pixel),
-                RGB_UNPACK_BLUE(pixel));
+                CRAZYPOD_PIXEL_RED(pixel),
+                CRAZYPOD_PIXEL_GREEN(pixel),
+                CRAZYPOD_PIXEL_BLUE(pixel));
             ++samples;
         }
     }

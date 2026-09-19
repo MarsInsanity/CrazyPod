@@ -22,6 +22,7 @@ static bool extension_is(const char *extension, const char *expected)
 
 bool crazypod_video_engine_path_supported(const char *path)
 {
+#ifdef HAVE_CRAZYPOD_VIDEO
     const char *extension = path_extension(path);
 
     if(extension_is(extension, ".mpg") ||
@@ -32,6 +33,11 @@ bool crazypod_video_engine_path_supported(const char *path)
         extension_is(extension, ".m4v") ||
         extension_is(extension, ".mov");
 #else
+    return false;
+#endif
+#else
+    /* No decoder is built for this panel; nothing is playable. */
+    (void)path;
     return false;
 #endif
 }
@@ -45,6 +51,7 @@ void crazypod_video_engine_set_host(
 enum crazypod_video_engine_result
 crazypod_video_engine_open(const char *path)
 {
+#ifdef HAVE_CRAZYPOD_VIDEO
     const char *extension = path_extension(path);
 
     crazypod_video_engine_close();
@@ -61,6 +68,11 @@ crazypod_video_engine_open(const char *path)
         return CRAZYPOD_VIDEO_ENGINE_UNSUPPORTED;
 
     return engine_ops->open(path, engine_host);
+#else
+    (void)path;
+    crazypod_video_engine_close();
+    return CRAZYPOD_VIDEO_ENGINE_UNSUPPORTED;
+#endif
 }
 
 enum crazypod_video_engine_result crazypod_video_engine_play(void)

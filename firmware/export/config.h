@@ -1446,6 +1446,47 @@ Lyre prototype 1 */
  * edge. Thread creation failures are still handled transactionally. */
 #define TARGET_EXTRA_THREADS 8
 #undef HAVE_DIRCACHE
+
+/*
+ * The product UI was drawn for a 320x240 RGB565 panel. Two targets diverge
+ * from that canvas, and the UI asks about the divergence through these two
+ * flags rather than naming a model.
+ *
+ * HAVE_CRAZYPOD_MONO_UI: the panel shows shades of one colour, so the
+ * design's tinted glass, glows and accent hues have nothing to land on and
+ * the UI draws itself in ink and paper instead.
+ *
+ * HAVE_CRAZYPOD_COMPACT_UI: the panel is materially smaller than the design
+ * canvas, so screens that assume room for a list and a preview beside it
+ * have to give the list the whole width.
+ */
+#ifndef HAVE_LCD_COLOR
+#define HAVE_CRAZYPOD_MONO_UI
+#endif
+#if LCD_WIDTH < 240 || LCD_HEIGHT < 180
+#define HAVE_CRAZYPOD_COMPACT_UI
+#endif
+
+/*
+ * Video playback. The MPEG decoder renders straight into the framebuffer in
+ * the panel's own format and the Rockbox player reaches for the greyscale
+ * library below 16 bits per pixel -- a library this product does not build,
+ * for a picture four shades could not carry anyway. So the Videos surface
+ * and the whole decoder stack are built only where there is a colour panel
+ * to show them on.
+ */
+#ifdef HAVE_LCD_COLOR
+#define HAVE_CRAZYPOD_VIDEO
+#endif
+
+/*
+ * Native Mini App payloads. Their scenes are authored against the 320x240
+ * colour canvas and their resources are validated against it at install
+ * time, so a smaller or monochrome panel has nothing to run.
+ */
+#if !defined(HAVE_CRAZYPOD_MONO_UI) && !defined(HAVE_CRAZYPOD_COMPACT_UI)
+#define HAVE_CRAZYPOD_MINIAPPS
+#endif
 #endif
 
 /* This attribute can be used to enable to detection of plugin file handles leaks.

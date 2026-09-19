@@ -108,6 +108,20 @@ struct rowset;
 
 extern const struct custom_format format_native;
 
+#ifdef HAVE_CRAZYPOD_MONO_UI
+/*
+ * The CrazyPod product UI composes in RGB565 whatever the panel takes, so a
+ * cover decoded for it cannot be written in the Mini's packed two bits per
+ * pixel. This format keeps the greyscale path's ordered dithering -- which
+ * is most of what makes a photograph readable in four shades -- and stores
+ * each dithered shade as the RGB565 grey that quantises back to exactly it.
+ */
+extern const struct custom_format format_crazypod_gray;
+#define CRAZYPOD_BITMAP_FORMAT (&format_crazypod_gray)
+#else
+#define CRAZYPOD_BITMAP_FORMAT (&format_native)
+#endif
+
 int recalc_dimension(struct dim *dst, struct dim *src);
 
 int resize_on_load(struct bitmap *bm, bool dither,

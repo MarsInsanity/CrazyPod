@@ -1240,8 +1240,14 @@ static bool load_header(
             state->backlight_timeout_plugged =
                 global_settings.backlight_timeout_plugged;
 #endif
+#ifdef HAVE_LCD_SLEEP_SETTING
             state->lcd_sleep_after_backlight_off =
                 global_settings.lcd_sleep_after_backlight_off;
+#else
+            /* A panel that cannot be put to sleep separately keeps the
+             * stored value, so the file still moves between devices. */
+            state->lcd_sleep_after_backlight_off = -1;
+#endif
             state->sleeptimer_duration =
                 global_settings.sleeptimer_duration;
             state->usb_charging = global_settings.usb_charging;
@@ -1305,8 +1311,10 @@ static void apply_runtime_settings(void)
     backlight_set_timeout_plugged(
         global_settings.backlight_timeout_plugged);
 #endif
+#ifdef HAVE_LCD_SLEEP_SETTING
     lcd_set_sleep_after_backlight_off(
         global_settings.lcd_sleep_after_backlight_off);
+#endif
     storage_set_storage_mode(global_settings.storage_mode);
     set_poweroff_timeout(global_settings.poweroff);
     reset_poweroff_timer();
@@ -1356,10 +1364,12 @@ static void clamp_and_apply_settings(const struct crazypod_state_disk *state)
     global_settings.backlight_timeout_plugged =
         clamp_int(state->backlight_timeout_plugged, 0, 7200);
 #endif
+#ifdef HAVE_LCD_SLEEP_SETTING
     global_settings.lcd_sleep_after_backlight_off =
         clamp_int(state->lcd_sleep_after_backlight_off, -1, 7200);
     if(global_settings.lcd_sleep_after_backlight_off == 0)
         global_settings.lcd_sleep_after_backlight_off = 1;
+#endif
     global_settings.storage_mode =
         clamp_int(state->storage_mode, 0, 2);
     global_settings.poweroff = clamp_int(state->poweroff, 0, 60);
@@ -1734,8 +1744,10 @@ void crazypod_state_save(bool force)
     state.backlight_timeout_plugged =
         global_settings.backlight_timeout_plugged;
 #endif
+#ifdef HAVE_LCD_SLEEP_SETTING
     state.lcd_sleep_after_backlight_off =
         global_settings.lcd_sleep_after_backlight_off;
+#endif
     state.sleeptimer_duration = global_settings.sleeptimer_duration;
     state.sleeptimer_on_startup =
         global_settings.sleeptimer_on_startup ? 1 : 0;

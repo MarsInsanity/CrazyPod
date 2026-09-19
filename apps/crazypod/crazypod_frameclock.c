@@ -1,4 +1,5 @@
 #include "config.h"
+#include "crazypod_pixel.h"
 
 #ifdef HAVE_CRAZYPOD_UI
 
@@ -355,7 +356,7 @@ void crazypod_present_now(void)
     simulator_present_crc = crc_32(
         lcd_framebuffer_default.data,
         (uint32_t)(
-            lcd_framebuffer_default.elems * sizeof(fb_data)),
+            lcd_framebuffer_default.elems * sizeof(crazypod_pixel_t)),
         0xffffffffu);
 #endif
     promote_deferred_present();

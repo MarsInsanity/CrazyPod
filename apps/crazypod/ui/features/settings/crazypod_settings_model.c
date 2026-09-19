@@ -95,6 +95,12 @@ const char *crazypod_ui_settings_item_title(int item)
     case SETTINGS_ITEM_BACKLIGHT_TIMEOUT: return CP_TR("Backlight");
     case SETTINGS_ITEM_BACKLIGHT_TIMEOUT_PLUGGED: return CP_TR("Charging Light");
     case SETTINGS_ITEM_LCD_SLEEP: return CP_TR("LCD Sleep");
+#ifdef HAVE_LCD_CONTRAST
+    case SETTINGS_ITEM_LCD_CONTRAST: return CP_TR("Contrast");
+#endif
+#ifdef HAVE_LCD_INVERT
+    case SETTINGS_ITEM_LCD_INVERT: return CP_TR("Invert Display");
+#endif
     case SETTINGS_ITEM_REDUCE_MOTION: return CP_TR("Reduce Motion");
     case SETTINGS_ITEM_REDUCE_EFFECTS: return CP_TR("Reduce Effects");
     case SETTINGS_ITEM_DATE_YEAR: return CP_TR("Year");
@@ -142,6 +148,12 @@ const char *crazypod_ui_settings_item_symbol(int item)
     case SETTINGS_ITEM_BACKLIGHT_TIMEOUT:
     case SETTINGS_ITEM_BACKLIGHT_TIMEOUT_PLUGGED:
     case SETTINGS_ITEM_LCD_SLEEP:
+#ifdef HAVE_LCD_CONTRAST
+    case SETTINGS_ITEM_LCD_CONTRAST:
+#endif
+#ifdef HAVE_LCD_INVERT
+    case SETTINGS_ITEM_LCD_INVERT:
+#endif
         return LV_SYMBOL_EYE_OPEN;
     case SETTINGS_ITEM_REDUCE_MOTION:
         return LV_SYMBOL_EYE_CLOSE;
@@ -312,8 +324,18 @@ static int settings_item_current_value(int item)
     case SETTINGS_ITEM_BACKLIGHT_TIMEOUT_PLUGGED:
         return global_settings.backlight_timeout_plugged;
 #endif
+#ifdef HAVE_LCD_SLEEP_SETTING
     case SETTINGS_ITEM_LCD_SLEEP:
         return global_settings.lcd_sleep_after_backlight_off;
+#endif
+#ifdef HAVE_LCD_CONTRAST
+    case SETTINGS_ITEM_LCD_CONTRAST:
+        return global_settings.contrast;
+#endif
+#ifdef HAVE_LCD_INVERT
+    case SETTINGS_ITEM_LCD_INVERT:
+        return global_settings.invert ? 1 : 0;
+#endif
     case SETTINGS_ITEM_REDUCE_MOTION:
         return crazypod_state_reduce_motion() ? 1 : 0;
     case SETTINGS_ITEM_REDUCE_EFFECTS:
@@ -387,6 +409,9 @@ int crazypod_ui_settings_choice_count(int item)
     case SETTINGS_ITEM_TIME_FORMAT:
         return 2;
     case SETTINGS_ITEM_EQ_ENABLED:
+#ifdef HAVE_LCD_INVERT
+    case SETTINGS_ITEM_LCD_INVERT:
+#endif
     case SETTINGS_ITEM_REDUCE_MOTION:
     case SETTINGS_ITEM_SHUFFLE:
     case SETTINGS_ITEM_ORIGINAL_IPOD_MUSIC:
@@ -431,6 +456,11 @@ int crazypod_ui_settings_choice_count(int item)
     case SETTINGS_ITEM_LCD_SLEEP:
         return (int)(sizeof(setting_lcd_sleep_values) /
                      sizeof(setting_lcd_sleep_values[0]));
+#ifdef HAVE_LCD_CONTRAST
+    case SETTINGS_ITEM_LCD_CONTRAST:
+        return range_choice_count(MIN_CONTRAST_SETTING,
+                                  MAX_CONTRAST_SETTING, 1);
+#endif
     case SETTINGS_ITEM_DATE_YEAR:
         return SETTINGS_RTC_YEAR_MAX - SETTINGS_RTC_YEAR_MIN + 1;
     case SETTINGS_ITEM_DATE_MONTH:
@@ -478,6 +508,9 @@ static int settings_choice_value(int item, int index)
     case SETTINGS_ITEM_TIME_FORMAT:
         return index > 0 ? 1 : 0;
     case SETTINGS_ITEM_EQ_ENABLED:
+#ifdef HAVE_LCD_INVERT
+    case SETTINGS_ITEM_LCD_INVERT:
+#endif
     case SETTINGS_ITEM_REDUCE_MOTION:
     case SETTINGS_ITEM_SHUFFLE:
     case SETTINGS_ITEM_ORIGINAL_IPOD_MUSIC:
@@ -526,6 +559,11 @@ static int settings_choice_value(int item, int index)
         return setting_timeout_values[index];
     case SETTINGS_ITEM_LCD_SLEEP:
         return setting_lcd_sleep_values[index];
+#ifdef HAVE_LCD_CONTRAST
+    case SETTINGS_ITEM_LCD_CONTRAST:
+        return range_choice_value(index, MIN_CONTRAST_SETTING,
+                                  MAX_CONTRAST_SETTING, 1);
+#endif
     case SETTINGS_ITEM_DATE_YEAR:
         return range_choice_value(index, SETTINGS_RTC_YEAR_MIN,
                                   SETTINGS_RTC_YEAR_MAX, 1);
@@ -578,6 +616,9 @@ int crazypod_ui_settings_choice_index(int item)
     case SETTINGS_ITEM_TIME_FORMAT:
         return current;
     case SETTINGS_ITEM_EQ_ENABLED:
+#ifdef HAVE_LCD_INVERT
+    case SETTINGS_ITEM_LCD_INVERT:
+#endif
     case SETTINGS_ITEM_REDUCE_MOTION:
     case SETTINGS_ITEM_SHUFFLE:
     case SETTINGS_ITEM_ORIGINAL_IPOD_MUSIC:
@@ -634,6 +675,11 @@ int crazypod_ui_settings_choice_index(int item)
             (int)(sizeof(setting_lcd_sleep_values) /
                   sizeof(setting_lcd_sleep_values[0])),
             current);
+#ifdef HAVE_LCD_CONTRAST
+    case SETTINGS_ITEM_LCD_CONTRAST:
+        return range_choice_index(current, MIN_CONTRAST_SETTING,
+                                  MAX_CONTRAST_SETTING, 1);
+#endif
     case SETTINGS_ITEM_DATE_YEAR:
         return range_choice_index(current, SETTINGS_RTC_YEAR_MIN,
                                   SETTINGS_RTC_YEAR_MAX, 1);
@@ -748,6 +794,9 @@ const char *crazypod_ui_settings_choice_title(int item, int index)
         return value > 0 ? formats[1] : formats[0];
     }
     case SETTINGS_ITEM_EQ_ENABLED:
+#ifdef HAVE_LCD_INVERT
+    case SETTINGS_ITEM_LCD_INVERT:
+#endif
     case SETTINGS_ITEM_REDUCE_MOTION:
     case SETTINGS_ITEM_SHUFFLE:
     case SETTINGS_ITEM_ORIGINAL_IPOD_MUSIC:
@@ -791,6 +840,14 @@ const char *crazypod_ui_settings_choice_title(int item, int index)
 #endif
     case SETTINGS_ITEM_LCD_SLEEP:
         return format_timeout_value(value);
+#ifdef HAVE_LCD_CONTRAST
+    case SETTINGS_ITEM_LCD_CONTRAST: {
+        static char text[8];
+
+        snprintf(text, sizeof(text), CP_FMT("%d"), value);
+        return text;
+    }
+#endif
     case SETTINGS_ITEM_REPEAT:
         return settings_repeat_title(value);
     case SETTINGS_ITEM_IDLE_POWEROFF:
@@ -898,11 +955,25 @@ bool crazypod_ui_settings_apply_choice(int item, int index)
             global_settings.backlight_timeout_plugged);
         break;
 #endif
+#ifdef HAVE_LCD_SLEEP_SETTING
     case SETTINGS_ITEM_LCD_SLEEP:
         global_settings.lcd_sleep_after_backlight_off = value;
         lcd_set_sleep_after_backlight_off(
             global_settings.lcd_sleep_after_backlight_off);
         break;
+#endif
+#ifdef HAVE_LCD_CONTRAST
+    case SETTINGS_ITEM_LCD_CONTRAST:
+        global_settings.contrast = value;
+        lcd_set_contrast(global_settings.contrast);
+        break;
+#endif
+#ifdef HAVE_LCD_INVERT
+    case SETTINGS_ITEM_LCD_INVERT:
+        global_settings.invert = value != 0;
+        lcd_set_invert_display(global_settings.invert);
+        break;
+#endif
     case SETTINGS_ITEM_REDUCE_MOTION:
         crazypod_state_set_reduce_motion(value != 0);
         break;

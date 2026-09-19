@@ -7,6 +7,7 @@ crazypod/accessory/crazypod_iap_simple.c
 crazypod/accessory/crazypod_usb_iap.c
 #endif
 crazypod/crazypod_lcd.c
+crazypod/crazypod_mono.c
 crazypod/crazypod_runtime_font.c
 crazypod/crazypod_miniapp_asset_font.c
 crazypod/crazypod_frameclock.c
@@ -19,9 +20,11 @@ crazypod/crazypod_screen_recording.c
 crazypod/video/crazypod_video_catalog.c
 crazypod/video/crazypod_video_poster.c
 crazypod/video/crazypod_video_engine.c
+#ifdef HAVE_CRAZYPOD_VIDEO
 crazypod/video/crazypod_video_engine_mpeg.c
 #ifdef SIMULATOR
 crazypod/video/crazypod_video_engine_ffmpeg.c
+#endif
 #endif
 crazypod/photos/crazypod_photo_catalog.c
 crazypod/photos/crazypod_photo_cache.c
@@ -62,7 +65,9 @@ crazypod/ui/features/miniapps/crazypod_miniapp_runtime_controller.c
 crazypod/ui/features/miniapps/crazypod_miniapp_input.c
 crazypod/ui/features/miniapps/crazypod_miniapp_activation.c
 crazypod/crazypod_videos.c
+#ifdef HAVE_CRAZYPOD_VIDEO
 crazypod/crazypod_video_mpeg_misc.c
+#endif
 crazypod/crazypod_artwork.c
 crazypod/crazypod_artwork_palette.c
 crazypod/crazypod_coverflow.c
@@ -246,6 +251,7 @@ codec_thread.c
 playback.c
 codecs.c
 
+#ifdef HAVE_CRAZYPOD_VIDEO
 plugins/mpegplayer/libmpeg2/decode.c
 plugins/mpegplayer/libmpeg2/header.c
 plugins/mpegplayer/libmpeg2/idct.c
@@ -270,6 +276,7 @@ plugins/mpegplayer/pcm_output.c
 plugins/mpegplayer/stream_mgr.c
 plugins/mpegplayer/video_out_rockbox.c
 plugins/mpegplayer/video_thread.c
+#endif
 
 beep.c
 

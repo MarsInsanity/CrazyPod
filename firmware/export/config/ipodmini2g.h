@@ -9,6 +9,9 @@
 /* For Rolo and boot loader */
 #define MODEL_NUMBER 11
 
+/* Build the CrazyPod LVGL product UI instead of the Rockbox app layer */
+#define HAVE_CRAZYPOD_UI
+
 /* define this if you use an ATA controller */
 #define CONFIG_STORAGE STORAGE_ATA
 
@@ -18,7 +21,11 @@
 /* define this if you have recording possibility */
 /*#define HAVE_RECORDING*/
 
-#define INPUT_SRC_CAPS (SRC_CAP_FMRADIO)
+/*
+ * CrazyPod ships no recording or radio surface, so the Mini has no input
+ * source to offer.
+ */
+#define INPUT_SRC_CAPS 0
 
 /* define the bitmask of hardware sample rates */
 #define HW_SAMPR_CAPS   (/*SAMPR_CAP_96 | SAMPR_CAP_88 |*/ SAMPR_CAP_48 | \
@@ -100,7 +107,15 @@
 /* The number of bytes reserved for loadable codecs */
 #define CODEC_SIZE 0x100000
 
-/* The number of bytes reserved for loadable plugins */
+/*
+ * The number of bytes reserved for loadable plugins.
+ *
+ * The 6G and the Video raise this to 3 MiB because native Mini App payloads
+ * load into the plugin buffer. The Mini ships no Mini Apps -- their scenes
+ * are authored against a 320x240 colour panel -- so the buffer stays at the
+ * Rockbox default and the 2.5 MiB difference stays in the audio buffer,
+ * which matters on a 32 MiB unit.
+ */
 #define PLUGIN_BUFFER_SIZE 0x80000
 
 /* Define this if you have the WM8711 audio codec */
@@ -158,10 +173,10 @@
 #define HAVE_USB_CHARGING_ENABLE
 
 
-/* Define Apple remote tuner */
-#define CONFIG_TUNER IPOD_REMOTE_TUNER
-#define HAVE_RDS_CAP
-#define CONFIG_RDS RDS_CFG_PUSH
+/* Define Apple remote tuner - unused while CrazyPod ships no radio UI */
+//#define CONFIG_TUNER IPOD_REMOTE_TUNER
+//#define HAVE_RDS_CAP
+//#define CONFIG_RDS RDS_CFG_PUSH
 
 /* Define this if you have a PortalPlayer PP5022 */
 #define CONFIG_CPU PP5022
@@ -196,7 +211,7 @@
 #define HAVE_USBSTACK
 #define USB_VENDOR_ID 0x05ac
 #define USB_PRODUCT_ID 0x1205
-#define HAVE_USB_HID_MOUSE
+//#define HAVE_USB_HID_MOUSE
 
 /* Define this if you have adjustable CPU frequency */
 #define HAVE_ADJUSTABLE_CPU_FREQ

@@ -1,4 +1,5 @@
 #include "config.h"
+#include "crazypod_pixel.h"
 
 #ifdef HAVE_CRAZYPOD_UI
 
@@ -140,7 +141,7 @@ bool crazypod_artwork_palette_extract(
 {
     struct color_bucket buckets[ARTWORK_PALETTE_BUCKETS];
     struct color_sample samples[ARTWORK_PALETTE_BUCKETS];
-    const fb_data *pixels;
+    const crazypod_pixel_t *pixels;
     int width;
     int height;
     int stride;
@@ -157,15 +158,15 @@ bool crazypod_artwork_palette_extract(
        artwork->header.cf != LV_COLOR_FORMAT_RGB565 ||
        artwork->header.w == 0 || artwork->header.h == 0 ||
        artwork->header.stride <
-           artwork->header.w * sizeof(fb_data))
+           artwork->header.w * sizeof(crazypod_pixel_t))
         return false;
 
     memset(buckets, 0, sizeof(buckets));
     memset(samples, 0, sizeof(samples));
-    pixels = (const fb_data *)artwork->data;
+    pixels = (const crazypod_pixel_t *)artwork->data;
     width = artwork->header.w;
     height = artwork->header.h;
-    stride = artwork->header.stride / sizeof(fb_data);
+    stride = artwork->header.stride / sizeof(crazypod_pixel_t);
     step_x = (width + ARTWORK_PALETTE_SAMPLE_SIDE - 1) /
         ARTWORK_PALETTE_SAMPLE_SIDE;
     step_y = (height + ARTWORK_PALETTE_SAMPLE_SIDE - 1) /
@@ -175,10 +176,10 @@ bool crazypod_artwork_palette_extract(
         int x;
 
         for(x = 0; x < width; x += step_x) {
-            fb_data pixel = pixels[y * stride + x];
-            unsigned red = FB_UNPACK_RED(pixel);
-            unsigned green = FB_UNPACK_GREEN(pixel);
-            unsigned blue = FB_UNPACK_BLUE(pixel);
+            crazypod_pixel_t pixel = pixels[y * stride + x];
+            unsigned red = CRAZYPOD_PIXEL_RED(pixel);
+            unsigned green = CRAZYPOD_PIXEL_GREEN(pixel);
+            unsigned blue = CRAZYPOD_PIXEL_BLUE(pixel);
             unsigned hue;
             unsigned saturation;
             unsigned brightness;

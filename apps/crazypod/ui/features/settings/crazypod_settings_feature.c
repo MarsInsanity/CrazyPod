@@ -156,6 +156,12 @@ static enum crazypod_menu_icon settings_item_icon(int item)
     case SETTINGS_ITEM_BACKLIGHT_TIMEOUT_PLUGGED:
         return CRAZYPOD_MENU_ICON_CHARGING;
     case SETTINGS_ITEM_LCD_SLEEP:
+#ifdef HAVE_LCD_CONTRAST
+    case SETTINGS_ITEM_LCD_CONTRAST:
+#endif
+#ifdef HAVE_LCD_INVERT
+    case SETTINGS_ITEM_LCD_INVERT:
+#endif
         return CRAZYPOD_MENU_ICON_DISPLAY_SLEEP;
     case SETTINGS_ITEM_REDUCE_MOTION:
         return CRAZYPOD_MENU_ICON_MOTION_OFF;

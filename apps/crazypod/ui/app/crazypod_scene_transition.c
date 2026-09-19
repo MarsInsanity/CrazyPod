@@ -1,4 +1,5 @@
 #include "config.h"
+#include "crazypod_pixel.h"
 
 #ifdef HAVE_CRAZYPOD_UI
 
@@ -22,9 +23,9 @@
 #define EDGE_SHADOW_WIDTH 28
 #define EDGE_SHADOW_OFFSET_Y (-10)
 
-static fb_data from_pixels[FRAME_PIXELS]
+static crazypod_pixel_t from_pixels[FRAME_PIXELS]
     CACHEALIGN_AT_LEAST_ATTR(16);
-static fb_data to_pixels[FRAME_PIXELS]
+static crazypod_pixel_t to_pixels[FRAME_PIXELS]
     CACHEALIGN_AT_LEAST_ATTR(16);
 static lv_image_dsc_t from_descriptor;
 static lv_image_dsc_t to_descriptor;
@@ -133,7 +134,7 @@ static void transition_completed(lv_anim_t *animation)
 bool crazypod_scene_transition_begin(
     enum crazypod_scene_motion_kind kind)
 {
-    const fb_data *framebuffer =
+    const crazypod_pixel_t *framebuffer =
         crazypod_platform_display_framebuffer();
 
     if(kind == CRAZYPOD_SCENE_MOTION_NONE || framebuffer == NULL ||
@@ -150,7 +151,7 @@ bool crazypod_scene_transition_begin(
 
 bool crazypod_scene_transition_commit(lv_obj_t *parent)
 {
-    const fb_data *framebuffer =
+    const crazypod_pixel_t *framebuffer =
         crazypod_platform_display_framebuffer();
     lv_anim_t animation;
     lv_obj_t *first_page;

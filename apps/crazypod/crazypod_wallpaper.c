@@ -1,4 +1,5 @@
 #include "config.h"
+#include "crazypod_pixel.h"
 
 #ifdef HAVE_CRAZYPOD_UI
 
@@ -29,7 +30,7 @@
 #define WALLPAPER_HEIGHT LCD_HEIGHT
 #define WALLPAPER_SOURCE_ROW_BYTES (WALLPAPER_WIDTH * 4)
 #define WALLPAPER_PIXEL_BYTES \
-    (WALLPAPER_WIDTH * WALLPAPER_HEIGHT * sizeof(fb_data))
+    (WALLPAPER_WIDTH * WALLPAPER_HEIGHT * sizeof(crazypod_pixel_t))
 #define WALLPAPER_DECODE_BYTES \
     (WALLPAPER_PIXEL_BYTES + 64 * 1024)
 #define WALLPAPER_PATH "/.rockbox/crazypod/default-home.bmp"
@@ -52,14 +53,14 @@
     (WALLPAPER_HEIGHT - FROSTED_LOCK_MEDIA_HEIGHT - \
      FROSTED_LOCK_MEDIA_BOTTOM_MARGIN)
 
-static fb_data wallpaper_pixels[WALLPAPER_WIDTH * WALLPAPER_HEIGHT]
+static crazypod_pixel_t wallpaper_pixels[WALLPAPER_WIDTH * WALLPAPER_HEIGHT]
     CACHEALIGN_AT_LEAST_ATTR(16);
 static lv_image_dsc_t wallpaper_descriptor;
-static fb_data custom_home_pixels[WALLPAPER_WIDTH * WALLPAPER_HEIGHT]
+static crazypod_pixel_t custom_home_pixels[WALLPAPER_WIDTH * WALLPAPER_HEIGHT]
     CACHEALIGN_AT_LEAST_ATTR(16);
-static fb_data custom_menu_pixels[WALLPAPER_WIDTH * WALLPAPER_HEIGHT]
+static crazypod_pixel_t custom_menu_pixels[WALLPAPER_WIDTH * WALLPAPER_HEIGHT]
     CACHEALIGN_AT_LEAST_ATTR(16);
-static fb_data custom_lock_pixels[WALLPAPER_WIDTH * WALLPAPER_HEIGHT]
+static crazypod_pixel_t custom_lock_pixels[WALLPAPER_WIDTH * WALLPAPER_HEIGHT]
     CACHEALIGN_AT_LEAST_ATTR(16);
 static lv_image_dsc_t custom_home_descriptor;
 static lv_image_dsc_t custom_menu_descriptor;
@@ -79,8 +80,8 @@ struct frosted_region_cache {
 };
 
 struct frosted_region_source {
-    const fb_data *pixels;
-    fb_data solid_pixel;
+    const crazypod_pixel_t *pixels;
+    crazypod_pixel_t solid_pixel;
     int width;
     int height;
     int stride;
@@ -160,7 +161,7 @@ static bool valid_target(enum crazypod_wallpaper_target target)
     return CRAZYPOD_APPEARANCE_HOME_BACKGROUND;
 }
 
-static fb_data *pixels_for_target(
+static crazypod_pixel_t *pixels_for_target(
     enum crazypod_wallpaper_target target)
 {
     if(target == CRAZYPOD_WALLPAPER_MENU)
@@ -205,11 +206,11 @@ static void set_target_valid(
                       extension) == 0;
 }
 
-static bool decode_custom_wallpaper(const char *path, fb_data *pixels,
+static bool decode_custom_wallpaper(const char *path, crazypod_pixel_t *pixels,
                                     lv_image_dsc_t *descriptor)
 {
     struct bitmap bitmap;
-    fb_data *decode_buffer;
+    crazypod_pixel_t *decode_buffer;
     int decode_handle;
     int format = FORMAT_NATIVE | FORMAT_RESIZE;
     int result;
@@ -232,11 +233,11 @@ static bool decode_custom_wallpaper(const char *path, fb_data *pixels,
        path_has_extension(path, ".jpeg"))
         result = read_jpeg_file(path, &bitmap,
                                 WALLPAPER_DECODE_BYTES,
-                                format, &format_native);
+                                format, CRAZYPOD_BITMAP_FORMAT);
     else if(path_has_extension(path, ".bmp"))
         result = read_bmp_file(path, &bitmap,
                                WALLPAPER_DECODE_BYTES,
-                               format, &format_native);
+                               format, CRAZYPOD_BITMAP_FORMAT);
     else {
         crazypod_image_decode_unlock();
         core_free(decode_handle);
@@ -260,7 +261,7 @@ static bool decode_custom_wallpaper(const char *path, fb_data *pixels,
 
 static bool load_custom_wallpaper(
     enum crazypod_wallpaper_target target,
-    const char *path, fb_data *pixels,
+    const char *path, crazypod_pixel_t *pixels,
     lv_image_dsc_t *descriptor)
 {
     if(crazypod_wallpaper_store_load(
@@ -370,7 +371,7 @@ void crazypod_wallpaper_init(void)
             const uint8_t *source = row + x * 4;
 
             wallpaper_pixels[target_row * WALLPAPER_WIDTH + x] =
-                LCD_RGBPACK(source[2], source[1], source[0]);
+                CRAZYPOD_PIXEL_PACK(source[2], source[1], source[0]);
         }
     }
     close(fd);
@@ -384,7 +385,7 @@ void crazypod_wallpaper_init(void)
 bool crazypod_wallpaper_select(
     enum crazypod_wallpaper_target target, const char *path)
 {
-    fb_data *pixels;
+    crazypod_pixel_t *pixels;
     lv_image_dsc_t *descriptor;
     bool loaded;
 
@@ -416,7 +417,7 @@ enum crazypod_wallpaper_apply_result crazypod_wallpaper_apply_crop(
     crazypod_wallpaper_progress_cb progress_cb,
     void *progress_user_data)
 {
-    fb_data *destination;
+    crazypod_pixel_t *destination;
     lv_image_dsc_t *descriptor;
     int source_width;
     int source_height;
@@ -484,7 +485,7 @@ static void select_frosted_region_source(
 {
     const struct crazypod_appearance *appearance =
         crazypod_appearance_get();
-    const fb_data *custom_pixels = target == CRAZYPOD_WALLPAPER_LOCK
+    const crazypod_pixel_t *custom_pixels = target == CRAZYPOD_WALLPAPER_LOCK
         ? custom_lock_pixels : custom_home_pixels;
     const char *custom_path = target == CRAZYPOD_WALLPAPER_LOCK
         ? appearance->lock_wallpaper : appearance->home_wallpaper;
@@ -520,7 +521,7 @@ static void select_frosted_region_source(
         source->key = 2;
     }
     else {
-        source->solid_pixel = LCD_RGBPACK(
+        source->solid_pixel = CRAZYPOD_PIXEL_PACK(
             (color >> 16) & 0xff,
             (color >> 8) & 0xff,
             color & 0xff);
@@ -543,9 +544,9 @@ static bool prepare_frosted_region(
     uint32_t tint, unsigned tint_opa)
 {
     struct frosted_region_source source;
-    fb_data *render_pixels;
-    fb_data *sample_pixels;
-    fb_data *scratch_pixels;
+    crazypod_pixel_t *render_pixels;
+    crazypod_pixel_t *sample_pixels;
+    crazypod_pixel_t *scratch_pixels;
     size_t sample_count =
         crazypod_image_glass_sample_pixels(width, height);
     int workspace_handle;
@@ -559,11 +560,11 @@ static bool prepare_frosted_region(
         release_frosted_region(cache);
 
     cache->handle = core_alloc_ex(
-        width * height * sizeof(fb_data), &buflib_ops_locked);
+        width * height * sizeof(crazypod_pixel_t), &buflib_ops_locked);
     if(cache->handle < 0)
         return false;
     workspace_handle = core_alloc(
-        sample_count * 2 * sizeof(fb_data));
+        sample_count * 2 * sizeof(crazypod_pixel_t));
     if(workspace_handle < 0) {
         cache->handle = core_free(cache->handle);
         return false;

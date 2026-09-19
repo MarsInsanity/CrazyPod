@@ -43,6 +43,9 @@
 #include "debug.h"
 #endif
 #include "lcd.h"
+#ifdef HAVE_CRAZYPOD_MONO_UI
+#include "crazypod_pixel.h"
+#endif
 #include "file.h"
 #ifdef HAVE_REMOTE_LCD
 #include "lcd-remote.h"
@@ -738,6 +741,41 @@ static void output_row_32_native(uint32_t row, void * row_in,
                 }
 #endif /* LCD_DEPTH */
 }
+#endif
+
+#ifdef HAVE_CRAZYPOD_MONO_UI
+static void output_row_32_crazypod_gray(uint32_t row, void * row_in,
+                                        struct scaler_context *ctx)
+{
+    crazypod_pixel_t *dest =
+        (crazypod_pixel_t *)ctx->bm->data + ctx->bm->width * row;
+    uint32_t *qp = (uint32_t *)row_in;
+    uint8_t dy = DITHERY(row);
+    int delta = 127;
+    int col;
+
+    for (col = 0; col < ctx->bm->width; col++) {
+        unsigned bright;
+
+        if (ctx->dither)
+            delta = DITHERXDY(col,dy);
+        bright = SC_OUT(*qp++, ctx);
+        bright = (3 * bright + (bright >> 6) + delta) >> 8;
+        *dest++ = crazypod_gray_pixel(bright);
+    }
+}
+
+static unsigned int get_size_crazypod_gray(struct bitmap *bm)
+{
+    return (unsigned int)bm->width * (unsigned int)bm->height *
+           sizeof(crazypod_pixel_t);
+}
+
+const struct custom_format format_crazypod_gray = {
+    .output_row_8 = output_row_8_crazypod_gray,
+    .output_row_32 = output_row_32_crazypod_gray,
+    .get_size = get_size_crazypod_gray
+};
 #endif
 
 #if (defined(PLUGIN) || defined(HAVE_CRAZYPOD_UI)) && LCD_DEPTH > 1

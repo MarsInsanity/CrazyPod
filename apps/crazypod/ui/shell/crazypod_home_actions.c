@@ -8,6 +8,7 @@
 #include <string.h>
 
 #include "backlight.h"
+#include "lcd.h"
 #include "button.h"
 #include "iap-usb.h"
 #include "misc.h"
@@ -31,9 +32,49 @@
 
 enum home_action {
     HOME_ACTION_QUEUE = 0,
-    HOME_ACTION_BRIGHTNESS,
+    HOME_ACTION_DISPLAY_LEVEL,
     HOME_ACTION_VOLUME,
 };
+
+/*
+ * The middle quick control adjusts whatever the panel's readability is set
+ * by. On the colour iPods that is the backlight's brightness; the Mini's
+ * backlight is only on or off, and what its reflective panel answers to is
+ * contrast, so that is what the same control moves there.
+ */
+#if defined(HAVE_BACKLIGHT_BRIGHTNESS)
+#define HOME_DISPLAY_LEVEL_TITLE CP_TR("Brightness")
+#define HOME_DISPLAY_LEVEL_MIN MIN_BRIGHTNESS_SETTING
+#define HOME_DISPLAY_LEVEL_MAX MAX_BRIGHTNESS_SETTING
+
+static int home_display_level(void)
+{
+    return global_settings.brightness;
+}
+
+static void home_display_level_set(int level)
+{
+    global_settings.brightness = level;
+    backlight_set_brightness(level);
+}
+#elif defined(HAVE_LCD_CONTRAST)
+#define HOME_DISPLAY_LEVEL_TITLE CP_TR("Contrast")
+#define HOME_DISPLAY_LEVEL_MIN MIN_CONTRAST_SETTING
+#define HOME_DISPLAY_LEVEL_MAX MAX_CONTRAST_SETTING
+
+static int home_display_level(void)
+{
+    return global_settings.contrast;
+}
+
+static void home_display_level_set(int level)
+{
+    global_settings.contrast = level;
+    lcd_set_contrast(level);
+}
+#else
+#error "CrazyPod needs a panel level to put on the home quick controls"
+#endif
 
 struct home_actions_state {
     lv_obj_t *parent;
@@ -56,8 +97,8 @@ static const char *action_title(enum home_action action)
     switch(action) {
     case HOME_ACTION_QUEUE:
         return CP_TR("Playback Queue");
-    case HOME_ACTION_BRIGHTNESS:
-        return CP_TR("Brightness");
+    case HOME_ACTION_DISPLAY_LEVEL:
+        return HOME_DISPLAY_LEVEL_TITLE;
     case HOME_ACTION_VOLUME:
         return CP_TR("VOLUME");
     }
@@ -69,7 +110,7 @@ static enum crazypod_menu_icon action_icon(enum home_action action)
     switch(action) {
     case HOME_ACTION_QUEUE:
         return CRAZYPOD_MENU_ICON_QUEUE;
-    case HOME_ACTION_BRIGHTNESS:
+    case HOME_ACTION_DISPLAY_LEVEL:
         return CRAZYPOD_MENU_ICON_BRIGHTNESS;
     case HOME_ACTION_VOLUME:
         return CRAZYPOD_MENU_ICON_SPEAKER;
@@ -214,10 +255,10 @@ static int current_level_percent(void)
     int minimum;
     int maximum;
 
-    if(actions.selected == HOME_ACTION_BRIGHTNESS) {
-        value = global_settings.brightness;
-        minimum = MIN_BRIGHTNESS_SETTING;
-        maximum = MAX_BRIGHTNESS_SETTING;
+    if(actions.selected == HOME_ACTION_DISPLAY_LEVEL) {
+        value = home_display_level();
+        minimum = HOME_DISPLAY_LEVEL_MIN;
+        maximum = HOME_DISPLAY_LEVEL_MAX;
     }
     else {
         value = global_status.volume;
@@ -327,16 +368,15 @@ static void adjust_level(int direction)
 {
     if(direction == 0 || !actions.adjusting)
         return;
-    if(actions.selected == HOME_ACTION_BRIGHTNESS) {
-        int next = global_settings.brightness + direction;
+    if(actions.selected == HOME_ACTION_DISPLAY_LEVEL) {
+        int next = home_display_level() + direction;
 
-        if(next < MIN_BRIGHTNESS_SETTING)
-            next = MIN_BRIGHTNESS_SETTING;
-        if(next > MAX_BRIGHTNESS_SETTING)
-            next = MAX_BRIGHTNESS_SETTING;
-        if(next != global_settings.brightness) {
-            global_settings.brightness = next;
-            backlight_set_brightness(next);
+        if(next < HOME_DISPLAY_LEVEL_MIN)
+            next = HOME_DISPLAY_LEVEL_MIN;
+        if(next > HOME_DISPLAY_LEVEL_MAX)
+            next = HOME_DISPLAY_LEVEL_MAX;
+        if(next != home_display_level()) {
+            home_display_level_set(next);
             crazypod_state_mark_dirty();
         }
     }

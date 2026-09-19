@@ -1,4 +1,5 @@
 #include "config.h"
+#include "crazypod_pixel.h"
 
 #include "../../../crazypod_l10n.h"
 
@@ -28,7 +29,7 @@ static const int now_artwork_slots[NOW_ARTWORK_SLOT_COUNT] = {
 };
 static int configured_source_size = CRAZYPOD_ARTWORK_CACHE_SIZE;
 
-static fb_data placeholder_pixels[
+static crazypod_pixel_t placeholder_pixels[
     NOW_ARTWORK_PLACEHOLDER_SIZE * NOW_ARTWORK_PLACEHOLDER_SIZE]
     CACHEALIGN_AT_LEAST_ATTR(16);
 static lv_image_dsc_t placeholder_descriptor;
@@ -80,11 +81,11 @@ static void prepare_placeholder(void)
             unsigned shade = 18u +
                 (unsigned)(x + y) * 128u /
                     (24u * NOW_ARTWORK_PLACEHOLDER_SIZE);
-            fb_data color = LCD_RGBPACK(shade, shade, shade + 6u);
+            crazypod_pixel_t color = CRAZYPOD_PIXEL_PACK(shade, shade, shade + 6u);
 
             if(radius >= ring_inner * ring_inner &&
                radius <= ring_outer * ring_outer)
-                color = LCD_RGBPACK(48, 49, 61);
+                color = CRAZYPOD_PIXEL_PACK(48, 49, 61);
             if((x >= stem_left && x <= stem_right &&
                 y >= stem_top && y <= stem_bottom) ||
                (x >= stem_right && x <= flag_right &&
@@ -93,7 +94,7 @@ static void prepare_placeholder(void)
                ((x - note_x) * (x - note_x) +
                 (y - note_y) * (y - note_y) <=
                     note_radius * note_radius))
-                color = LCD_RGBPACK(173, 177, 195);
+                color = CRAZYPOD_PIXEL_PACK(173, 177, 195);
             placeholder_pixels[y * NOW_ARTWORK_PLACEHOLDER_SIZE + x] =
                 color;
         }

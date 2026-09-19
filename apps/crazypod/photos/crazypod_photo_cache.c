@@ -1,4 +1,5 @@
 #include "config.h"
+#include "crazypod_pixel.h"
 
 #ifdef HAVE_CRAZYPOD_UI
 
@@ -153,7 +154,7 @@ static void rebuild(struct cache_store *store)
            !read_exact(fd, &header, sizeof(header)))
             break;
         expected_size =
-            (uint32_t)header.width * header.height * sizeof(fb_data);
+            (uint32_t)header.width * header.height * sizeof(crazypod_pixel_t);
         if(header.magic != store->magic ||
            header.version != CACHE_VERSION ||
            header.header_size != sizeof(header) ||
@@ -207,7 +208,7 @@ void crazypod_photo_cache_invalidate(void)
 bool crazypod_photo_cache_load(
     bool view, const char *path, uint32_t source_size,
     uint32_t source_mtime, lv_image_dsc_t *descriptor,
-    fb_data *pixels)
+    crazypod_pixel_t *pixels)
 {
     struct cache_store *store = store_for(view);
     uint32_t key = crazypod_photo_catalog_key(path);

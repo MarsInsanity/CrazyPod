@@ -5,7 +5,7 @@
 #include "mem.h"
 #include "lcd-gb.h"
 #include "fb.h"
-#ifdef HAVE_LCD_COLOR
+#if defined(HAVE_LCD_COLOR) || defined(CRAZYPOD_GAMEBOY_CORE)
 #include "palette-presets.h"
 #endif
 #ifdef USE_ASM
@@ -1017,7 +1017,7 @@ void lcd_refreshline(void)
 #endif /* CRAZYPOD_GAMEBOY_CORE */
 }
 
-#ifdef HAVE_LCD_COLOR
+#if defined(HAVE_LCD_COLOR) || defined(CRAZYPOD_GAMEBOY_CORE)
 void set_pal(void)
 {
     memcpy(dmg_pal,palettes[options.pal], sizeof(dmg_pal));
@@ -1027,10 +1027,21 @@ void set_pal(void)
 static void updatepalette(int i)
 {
     int c, r, g, b;
+#ifdef CRAZYPOD_GAMEBOY_CORE
+    crazypod_pixel_t px;
+#else
     fb_data px;
+#endif
 
     c = (lcd.pal[i<<1] | ((int)lcd.pal[(i<<1)|1] << 8)) & 0x7FFF;
-#if LCD_PIXELFORMAT == RGB565 || LCD_PIXELFORMAT == RGB565SWAPPED
+#ifdef CRAZYPOD_GAMEBOY_CORE
+    /* extract color channels to 5 bit red and blue, and 6 bit green */
+    r = c & 0x001F;
+    g = (c & 0x03E0) >> 4;
+    b = c >> 10;
+    g |= (g >> 5);
+    px = (crazypod_pixel_t)((r << 11) | (g << 5) | b);
+#elif LCD_PIXELFORMAT == RGB565 || LCD_PIXELFORMAT == RGB565SWAPPED
     /* extract color channels to 5 bit red and blue, and 6 bit green */
     r = c & 0x001F;
     g = (c & 0x03E0) >> 4;
@@ -1050,7 +1061,7 @@ static void updatepalette(int i)
     /* updatepalette might get called, but the pallete does not necessarily
      *  need to be updated.
      */
-    if(memcmp(&PAL[i], &px, sizeof(fb_data)))
+    if(memcmp(&PAL[i], &px, sizeof(px)))
     {
         PAL[i] = px;
 #if defined(HAVE_LCD_MODES) && (HAVE_LCD_MODES & LCD_MODE_PAL256)
@@ -1058,13 +1069,13 @@ static void updatepalette(int i)
 #endif
     }
 }
-#endif /* HAVE_LCD_COLOR */
+#endif /* HAVE_LCD_COLOR || CRAZYPOD_GAMEBOY_CORE */
 
 void pal_write(int i, byte b)
 {
     if (lcd.pal[i] == b) return;
     lcd.pal[i] = b;
-#ifdef HAVE_LCD_COLOR
+#if defined(HAVE_LCD_COLOR) || defined(CRAZYPOD_GAMEBOY_CORE)
     updatepalette(i>>1);
 #endif
 }
@@ -1107,7 +1118,7 @@ void vram_dirty(void)
 
 void pal_dirty(void)
 {
-#ifdef HAVE_LCD_COLOR
+#if defined(HAVE_LCD_COLOR) || defined(CRAZYPOD_GAMEBOY_CORE)
     int i;
 #endif
     if (!hw.cgb)
@@ -1118,7 +1129,7 @@ void pal_dirty(void)
         pal_write_dmg(64, 2, R_OBP0);
         pal_write_dmg(72, 3, R_OBP1);
     }
-#ifdef HAVE_LCD_COLOR
+#if defined(HAVE_LCD_COLOR) || defined(CRAZYPOD_GAMEBOY_CORE)
     for (i = 0; i < 64; i++)
         updatepalette(i);
 #endif

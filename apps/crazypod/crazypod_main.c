@@ -74,7 +74,10 @@ static void crazypod_platform_init(void)
     button_init();
     powermgmt_init();
     backlight_init();
+#ifdef HAVE_BACKLIGHT_BRIGHTNESS
+    /* A panel whose backlight is only on or off has no level to set. */
     backlight_set_brightness(DEFAULT_BRIGHTNESS_SETTING);
+#endif
     backlight_set_timeout(30);
 #ifdef HAVE_BACKLIGHT_BRIGHTNESS
     backlight_set_timeout_plugged(60);
@@ -173,7 +176,10 @@ static void crazypod_platform_init(void)
     usb_init();
 #endif
     backlight_init();
+#ifdef HAVE_BACKLIGHT_BRIGHTNESS
+    /* A panel whose backlight is only on or off has no level to set. */
     backlight_set_brightness(DEFAULT_BRIGHTNESS_SETTING);
+#endif
     backlight_set_timeout(30);
 #ifdef HAVE_BACKLIGHT_BRIGHTNESS
     backlight_set_timeout_plugged(60);

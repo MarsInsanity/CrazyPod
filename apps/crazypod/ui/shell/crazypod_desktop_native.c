@@ -1,4 +1,5 @@
 #include "config.h"
+#include "crazypod_pixel.h"
 
 #ifdef HAVE_CRAZYPOD_UI
 
@@ -25,9 +26,9 @@
 #define NATIVE_ICON_CENTER_Y 91
 #define NATIVE_MAX_ICON_SIZE 120
 
-static fb_data backdrop[LCD_WIDTH * NATIVE_HEIGHT]
+static crazypod_pixel_t backdrop[LCD_WIDTH * NATIVE_HEIGHT]
     CACHEALIGN_AT_LEAST_ATTR(16);
-static fb_data modal_underlay[LCD_WIDTH * NATIVE_HEIGHT]
+static crazypod_pixel_t modal_underlay[LCD_WIDTH * NATIVE_HEIGHT]
     CACHEALIGN_AT_LEAST_ATTR(16);
 static lv_image_dsc_t modal_underlay_descriptor;
 static uint8_t scaled_icons
@@ -100,7 +101,7 @@ static void icon_bounds(int center_x, int center_y, int size,
 }
 
 static void restore_backdrop_rect(
-    fb_data *framebuffer, int left, int top, int width, int height)
+    crazypod_pixel_t *framebuffer, int left, int top, int width, int height)
 {
     int row;
 
@@ -108,7 +109,7 @@ static void restore_backdrop_rect(
         memcpy(
             framebuffer + (top + row) * LCD_WIDTH + left,
             backdrop + (top + row - NATIVE_TOP) * LCD_WIDTH + left,
-            (size_t)width * sizeof(fb_data));
+            (size_t)width * sizeof(crazypod_pixel_t));
     }
 }
 
@@ -153,8 +154,8 @@ void crazypod_desktop_native_restore_after_modal(void)
 lv_obj_t *crazypod_desktop_native_create_modal_underlay(
     lv_obj_t *parent)
 {
-    const fb_data *framebuffer =
-        (const fb_data *)crazypod_platform_display_framebuffer();
+    const crazypod_pixel_t *framebuffer =
+        (const crazypod_pixel_t *)crazypod_platform_display_framebuffer();
     lv_obj_t *image;
 
     if(parent == NULL || framebuffer == NULL)
@@ -191,7 +192,7 @@ void crazypod_desktop_native_preserve_modal_underlay(void)
 
 void crazypod_desktop_native_capture_flush(const lv_area_t *area)
 {
-    fb_data *framebuffer;
+    crazypod_pixel_t *framebuffer;
     int left;
     int right;
     int top;
@@ -204,7 +205,7 @@ void crazypod_desktop_native_capture_flush(const lv_area_t *area)
         return;
     }
     if(backdrop_ready) {
-        framebuffer = (fb_data *)crazypod_platform_display_framebuffer();
+        framebuffer = (crazypod_pixel_t *)crazypod_platform_display_framebuffer();
         left = area->x1 < 0 ? 0 : area->x1;
         right = area->x2 >= LCD_WIDTH ? LCD_WIDTH - 1 : area->x2;
         top = area->y1 < NATIVE_TOP ? NATIVE_TOP : area->y1;
@@ -215,24 +216,24 @@ void crazypod_desktop_native_capture_flush(const lv_area_t *area)
             memcpy(
                 backdrop + (y - NATIVE_TOP) * LCD_WIDTH + left,
                 framebuffer + y * LCD_WIDTH + left,
-                (size_t)width * sizeof(fb_data));
+                (size_t)width * sizeof(crazypod_pixel_t));
         }
         rendered_bounds_valid = false;
     }
     dirty = true;
 }
 
-static fb_data desktop_blend565(fb_data foreground, fb_data background,
+static crazypod_pixel_t desktop_blend565(crazypod_pixel_t foreground, crazypod_pixel_t background,
                                 int alpha)
 {
-    int fr = RGB_UNPACK_RED(foreground);
-    int fg = RGB_UNPACK_GREEN(foreground);
-    int fb = RGB_UNPACK_BLUE(foreground);
-    int br = RGB_UNPACK_RED(background);
-    int bg = RGB_UNPACK_GREEN(background);
-    int bb = RGB_UNPACK_BLUE(background);
+    int fr = CRAZYPOD_PIXEL_RED(foreground);
+    int fg = CRAZYPOD_PIXEL_GREEN(foreground);
+    int fb = CRAZYPOD_PIXEL_BLUE(foreground);
+    int br = CRAZYPOD_PIXEL_RED(background);
+    int bg = CRAZYPOD_PIXEL_GREEN(background);
+    int bb = CRAZYPOD_PIXEL_BLUE(background);
 
-    return LCD_RGBPACK(
+    return CRAZYPOD_PIXEL_PACK(
         (fr * alpha + br * (256 - alpha)) >> 8,
         (fg * alpha + bg * (256 - alpha)) >> 8,
         (fb * alpha + bb * (256 - alpha)) >> 8);
@@ -241,12 +242,12 @@ static fb_data desktop_blend565(fb_data foreground, fb_data background,
 static void draw_desktop_placeholder(int app_index, int center_x,
                                      int center_y, int size, int opacity)
 {
-    fb_data *pixels =
-        (fb_data *)crazypod_platform_display_framebuffer();
+    crazypod_pixel_t *pixels =
+        (crazypod_pixel_t *)crazypod_platform_display_framebuffer();
     const struct crazypod_app_descriptor *app =
         crazypod_app_catalog_at(app_index);
     uint32_t rgb = app != NULL ? app->color : 0x59606B;
-    fb_data color = LCD_RGBPACK((rgb >> 16) & 0xff,
+    crazypod_pixel_t color = CRAZYPOD_PIXEL_PACK((rgb >> 16) & 0xff,
                                 (rgb >> 8) & 0xff,
                                 rgb & 0xff);
     int left = center_x - size / 2;
@@ -261,7 +262,7 @@ static void draw_desktop_placeholder(int app_index, int center_x,
             continue;
         for(x = 0; x < size; ++x) {
             int px = left + x;
-            fb_data *destination;
+            crazypod_pixel_t *destination;
             if(px < 0 || px >= LCD_WIDTH)
                 continue;
             if(pixel_occluded(px, py))
@@ -289,24 +290,24 @@ static FORCE_INLINE int interpolate_channel(
             (bottom_q8 - top_q8) * fraction_y) >> 16;
 }
 
-static inline fb_data blend_icon_premultiplied(
+static inline crazypod_pixel_t blend_icon_premultiplied(
     int red, int green, int blue, int alpha,
-    fb_data background, int opacity)
+    crazypod_pixel_t background, int opacity)
 {
     int scale = opacity + 1;
     int inverse;
 
     if(opacity == 255 && alpha == 255)
-        return LCD_RGBPACK(red, green, blue);
+        return CRAZYPOD_PIXEL_PACK(red, green, blue);
     alpha = alpha * scale >> 8;
     red = red * scale >> 8;
     green = green * scale >> 8;
     blue = blue * scale >> 8;
     inverse = 256 - alpha;
-    red += RGB_UNPACK_RED(background) * inverse >> 8;
-    green += RGB_UNPACK_GREEN(background) * inverse >> 8;
-    blue += RGB_UNPACK_BLUE(background) * inverse >> 8;
-    return LCD_RGBPACK(red, green, blue);
+    red += CRAZYPOD_PIXEL_RED(background) * inverse >> 8;
+    green += CRAZYPOD_PIXEL_GREEN(background) * inverse >> 8;
+    blue += CRAZYPOD_PIXEL_BLUE(background) * inverse >> 8;
+    return CRAZYPOD_PIXEL_PACK(red, green, blue);
 }
 
 static bool prepare_scaled_icon(int app_index, int size)
@@ -398,8 +399,8 @@ static bool prepare_scaled_icon(int app_index, int size)
 static void draw_desktop_icon(int app_index, int center_x, int center_y,
                               int size)
 {
-    fb_data *pixels =
-        (fb_data *)crazypod_platform_display_framebuffer();
+    crazypod_pixel_t *pixels =
+        (crazypod_pixel_t *)crazypod_platform_display_framebuffer();
     const uint8_t *source;
     int left = center_x - size / 2;
     int top = center_y - size / 2;
@@ -420,7 +421,7 @@ static void draw_desktop_icon(int app_index, int center_x, int center_y,
     for(y = first_y; y < last_y; ++y) {
         const uint8_t *source_pixel = source +
             (y * NATIVE_MAX_ICON_SIZE + first_x) * 4;
-        fb_data *destination =
+        crazypod_pixel_t *destination =
             pixels + (top + y) * LCD_WIDTH + left + first_x;
         int x;
 
@@ -441,8 +442,8 @@ static bool render_desktop(
     const int *app_indices, const int *centers_x, int icon_count,
     int icon_size, bool blocked, bool queue_present)
 {
-    fb_data *framebuffer =
-        (fb_data *)crazypod_platform_display_framebuffer();
+    crazypod_pixel_t *framebuffer =
+        (crazypod_pixel_t *)crazypod_platform_display_framebuffer();
     int left[CRAZYPOD_DESKTOP_NATIVE_MAX_VISIBLE];
     int top[CRAZYPOD_DESKTOP_NATIVE_MAX_VISIBLE];
     int width[CRAZYPOD_DESKTOP_NATIVE_MAX_VISIBLE];

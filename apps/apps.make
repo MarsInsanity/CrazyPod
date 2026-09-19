@@ -13,7 +13,9 @@ SRC += $(call preprocess, $(APPSDIR)/SOURCES)
 ifneq (,$(IS_CRAZYPOD))
   include $(APPSDIR)/crazypod/gameboy/crazypod_gameboy.make
   include $(ROOTDIR)/lib/lvgl/lvgl-rockbox.make
-  include $(ROOTDIR)/miniapps/miniapps.make
+  ifneq (,$(IS_CRAZYPOD_MINIAPPS))
+    include $(ROOTDIR)/miniapps/miniapps.make
+  endif
   ifeq ($(APP_TYPE),sdl-sim)
     CRAZYPOD_FFMPEG_PACKAGES := libavformat libavcodec libavutil \
       libswscale libswresample

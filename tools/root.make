@@ -11,8 +11,14 @@ include $(TOOLSDIR)/functions.make
 
 # Targets that ship the CrazyPod LVGL product UI in place of the Rockbox
 # app layer. Keep in sync with HAVE_CRAZYPOD_UI in firmware/export/config/.
-CRAZYPOD_MODELS := ipod6g ipodvideo
+CRAZYPOD_MODELS := ipod6g ipodvideo ipodmini2g
 IS_CRAZYPOD := $(filter $(MODELNAME),$(CRAZYPOD_MODELS))
+
+# Of those, the ones that carry native Mini App payloads. A Mini App scene is
+# authored against the 320x240 colour canvas and its resources are validated
+# against it, so the Mini neither builds the loader nor links the payloads.
+CRAZYPOD_MINIAPP_MODELS := ipod6g ipodvideo
+IS_CRAZYPOD_MINIAPPS := $(filter $(MODELNAME),$(CRAZYPOD_MINIAPP_MODELS))
 
 DEFINES = -DROCKBOX -DMEMORYSIZE=$(MEMORYSIZE) $(TARGET) \
 	-DTARGET_ID=$(TARGET_ID) -DTARGET_NAME=\"$(MODELNAME)\" $(BUILDDATE) \

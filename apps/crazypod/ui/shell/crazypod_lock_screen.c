@@ -1,3 +1,4 @@
+#include "crazypod_pixel.h"
 #include "settings.h"
 
 #include "../presentation/crazypod_ui_text.h"
@@ -84,7 +85,7 @@
 #define UNLOCK_FEEDBACK_RADIUS 8
 #define MEDIA_ARTWORK_BANKS 2
 
-static fb_data media_artwork_pixels[
+static crazypod_pixel_t media_artwork_pixels[
     MEDIA_ARTWORK_BANKS][MEDIA_ARTWORK_SIZE * MEDIA_ARTWORK_SIZE]
     CACHEALIGN_AT_LEAST_ATTR(16);
 static lv_image_dsc_t media_artwork_descriptors[MEDIA_ARTWORK_BANKS];
@@ -466,7 +467,7 @@ static void apply_media_layout(bool media_active)
 static const lv_image_dsc_t *prepare_media_artwork(
     const lv_image_dsc_t *source)
 {
-    const fb_data *source_pixels;
+    const crazypod_pixel_t *source_pixels;
     int source_stride;
     int crop_size;
     int crop_x;
@@ -478,16 +479,16 @@ static const lv_image_dsc_t *prepare_media_artwork(
        source->header.cf != LV_COLOR_FORMAT_RGB565 ||
        source->header.w <= 0 || source->header.h <= 0 ||
        (size_t)source->header.stride <
-           (size_t)source->header.w * sizeof(fb_data) ||
+           (size_t)source->header.w * sizeof(crazypod_pixel_t) ||
        (size_t)source->data_size <
            (size_t)source->header.stride * source->header.h)
         return NULL;
-    source_stride = source->header.stride / sizeof(fb_data);
+    source_stride = source->header.stride / sizeof(crazypod_pixel_t);
     crop_size = source->header.w < source->header.h
         ? source->header.w : source->header.h;
     crop_x = (source->header.w - crop_size) / 2;
     crop_y = (source->header.h - crop_size) / 2;
-    source_pixels = (const fb_data *)source->data +
+    source_pixels = (const crazypod_pixel_t *)source->data +
         crop_y * source_stride + crop_x;
     bank = lock_state.media_artwork_bank == 0 ? 1 : 0;
     if(media_artwork_descriptors[bank].header.magic ==

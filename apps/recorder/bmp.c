@@ -47,6 +47,9 @@
 #include "debug.h"
 #endif
 #include "lcd.h"
+#ifdef HAVE_CRAZYPOD_MONO_UI
+#include "crazypod_pixel.h"
+#endif
 #include "file.h"
 #include "bmp.h"
 #ifdef HAVE_REMOTE_LCD
@@ -388,6 +391,29 @@ static inline int rgbcmp(const struct uint8_rgb *rgb1, const struct uint8_rgb *r
 #if !defined(PLUGIN) && !defined(HAVE_JPEG) && !defined(HAVE_BMP_SCALING)
 static inline
 #endif
+#ifdef HAVE_CRAZYPOD_MONO_UI
+void output_row_8_crazypod_gray(uint32_t row, void * row_in,
+                                struct scaler_context *ctx)
+{
+    crazypod_pixel_t *dest =
+        (crazypod_pixel_t *)ctx->bm->data + ctx->bm->width * row;
+    uint8_t *qp = (uint8_t *)row_in;
+    uint8_t dy = DITHERY(row);
+    int delta = 127;
+    int col;
+
+    for (col = 0; col < ctx->bm->width; col++) {
+        unsigned bright;
+
+        if (ctx->dither)
+            delta = DITHERXDY(col,dy);
+        bright = *qp++;
+        bright = (3 * bright + (bright >> 6) + delta) >> 8;
+        *dest++ = crazypod_gray_pixel(bright);
+    }
+}
+#endif
+
 void output_row_8_native(uint32_t row, void * row_in,
                               struct scaler_context *ctx)
 {

@@ -1,4 +1,5 @@
 #include "config.h"
+#include "crazypod_pixel.h"
 
 #ifdef HAVE_CRAZYPOD_UI
 
@@ -14,7 +15,7 @@
 #include "../crazypod_photos.h"
 #include "crazypod_photo_viewport.h"
 
-static fb_data pixels[
+static crazypod_pixel_t pixels[
     CRAZYPOD_PHOTO_VIEWPORT_WIDTH * CRAZYPOD_PHOTO_VIEWPORT_HEIGHT]
     CACHEALIGN_AT_LEAST_ATTR(16);
 static lv_image_dsc_t descriptor;
@@ -48,8 +49,8 @@ static void finish_background_render(int old_priority)
 #endif
 }
 
-static fb_data sample_bilinear(
-    const fb_data *source, int width, int height,
+static crazypod_pixel_t sample_bilinear(
+    const crazypod_pixel_t *source, int width, int height,
     int x_q8, int y_q8)
 {
     int x0 = x_q8 >> 8;
@@ -58,10 +59,10 @@ static fb_data sample_bilinear(
     int y1;
     int fx;
     int fy;
-    fb_data p00;
-    fb_data p10;
-    fb_data p01;
-    fb_data p11;
+    crazypod_pixel_t p00;
+    crazypod_pixel_t p10;
+    crazypod_pixel_t p01;
+    crazypod_pixel_t p11;
     unsigned red0;
     unsigned red1;
     unsigned green0;
@@ -85,19 +86,19 @@ static fb_data sample_bilinear(
     p10 = source[y0 * width + x1];
     p01 = source[y1 * width + x0];
     p11 = source[y1 * width + x1];
-    red0 = RGB_UNPACK_RED(p00) * (256 - fx) +
-        RGB_UNPACK_RED(p10) * fx;
-    red1 = RGB_UNPACK_RED(p01) * (256 - fx) +
-        RGB_UNPACK_RED(p11) * fx;
-    green0 = RGB_UNPACK_GREEN(p00) * (256 - fx) +
-        RGB_UNPACK_GREEN(p10) * fx;
-    green1 = RGB_UNPACK_GREEN(p01) * (256 - fx) +
-        RGB_UNPACK_GREEN(p11) * fx;
-    blue0 = RGB_UNPACK_BLUE(p00) * (256 - fx) +
-        RGB_UNPACK_BLUE(p10) * fx;
-    blue1 = RGB_UNPACK_BLUE(p01) * (256 - fx) +
-        RGB_UNPACK_BLUE(p11) * fx;
-    return LCD_RGBPACK(
+    red0 = CRAZYPOD_PIXEL_RED(p00) * (256 - fx) +
+        CRAZYPOD_PIXEL_RED(p10) * fx;
+    red1 = CRAZYPOD_PIXEL_RED(p01) * (256 - fx) +
+        CRAZYPOD_PIXEL_RED(p11) * fx;
+    green0 = CRAZYPOD_PIXEL_GREEN(p00) * (256 - fx) +
+        CRAZYPOD_PIXEL_GREEN(p10) * fx;
+    green1 = CRAZYPOD_PIXEL_GREEN(p01) * (256 - fx) +
+        CRAZYPOD_PIXEL_GREEN(p11) * fx;
+    blue0 = CRAZYPOD_PIXEL_BLUE(p00) * (256 - fx) +
+        CRAZYPOD_PIXEL_BLUE(p10) * fx;
+    blue1 = CRAZYPOD_PIXEL_BLUE(p01) * (256 - fx) +
+        CRAZYPOD_PIXEL_BLUE(p11) * fx;
+    return CRAZYPOD_PIXEL_PACK(
         (red0 * (256 - fy) + red1 * fy) >> 16,
         (green0 * (256 - fy) + green1 * fy) >> 16,
         (blue0 * (256 - fy) + blue1 * fy) >> 16);
@@ -114,7 +115,7 @@ const lv_image_dsc_t *crazypod_photo_viewport_render(
     int index, const lv_image_dsc_t *source_descriptor,
     int zoom_percent, int *pan_x, int *pan_y)
 {
-    const fb_data *source;
+    const crazypod_pixel_t *source;
     uint32_t scale_x;
     uint32_t scale_y;
     uint32_t scale;
@@ -138,7 +139,7 @@ const lv_image_dsc_t *crazypod_photo_viewport_render(
 
     if(source_descriptor == NULL || pan_x == NULL || pan_y == NULL)
         return NULL;
-    source = (const fb_data *)source_descriptor->data;
+    source = (const crazypod_pixel_t *)source_descriptor->data;
     source_width = source_descriptor->header.w;
     source_height = source_descriptor->header.h;
     if(source == NULL || source_width <= 0 || source_height <= 0)
@@ -225,7 +226,7 @@ const lv_image_dsc_t *crazypod_photo_viewport_render(
                         retained_x],
                 &pixels[source_y * CRAZYPOD_PHOTO_VIEWPORT_WIDTH +
                         source_x],
-                retained_width * sizeof(fb_data));
+                retained_width * sizeof(crazypod_pixel_t));
         }
     }
     else {
@@ -278,7 +279,7 @@ const lv_image_dsc_t *crazypod_photo_viewport_render_crop(
 {
     const int preview_width = CRAZYPOD_PHOTO_VIEWPORT_WIDTH;
     const int preview_height = CRAZYPOD_PHOTO_VIEWPORT_HEIGHT;
-    const fb_data *source;
+    const crazypod_pixel_t *source;
     int source_width;
     int source_height;
     int display_width;
@@ -290,7 +291,7 @@ const lv_image_dsc_t *crazypod_photo_viewport_render_crop(
 
     if(source_descriptor == NULL)
         return NULL;
-    source = (const fb_data *)source_descriptor->data;
+    source = (const crazypod_pixel_t *)source_descriptor->data;
     source_width = source_descriptor->header.w;
     source_height = source_descriptor->header.h;
     if(source == NULL || source_width <= 0 || source_height <= 0)
@@ -329,7 +330,7 @@ const lv_image_dsc_t *crazypod_photo_viewport_render_crop(
     old_priority = begin_background_render();
     if(descriptor.header.magic == LV_IMAGE_HEADER_MAGIC)
         lv_image_cache_drop(&descriptor);
-    memset(pixels, 0, preview_width * preview_height * sizeof(fb_data));
+    memset(pixels, 0, preview_width * preview_height * sizeof(crazypod_pixel_t));
     for(y = 0; y < preview_height; ++y) {
         int display_y = y - image_y;
         int source_y_q8 = 0;

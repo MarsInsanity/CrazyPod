@@ -10,6 +10,9 @@
 
 #include "lvgl.h"
 
+#include "crazypod_pixel.h"
+
+#include "../crazypod_mono.h"
 #include "../crazypod_perf_log.h"
 #include "crazypod_platform_display.h"
 
@@ -24,10 +27,24 @@
 #else
 #define DRAW_ROWS 40
 #endif
+#if DRAW_ROWS > LCD_HEIGHT
+/*
+ * The Mini's whole screen is 30 KiB of RGB565, less than a single strip on
+ * the larger panels. Asking for more rows than the screen has only wastes
+ * the difference, so it renders in one pass.
+ */
+#undef DRAW_ROWS
+#define DRAW_ROWS LCD_HEIGHT
+#endif
 #define DISPLAY_REFRESH_PERIOD_MS 20
 
 static struct crazypod_platform_display_host display_host;
-static fb_data draw_buffer[LCD_WIDTH * DRAW_ROWS]
+/*
+ * LVGL renders RGB565 on every target. On the colour iPods that is already
+ * the panel's format and the strip is copied across; on the Mini it is
+ * quantised into the panel's packed two bits per pixel on the way.
+ */
+static crazypod_pixel_t draw_buffer[LCD_WIDTH * DRAW_ROWS]
     CACHEALIGN_AT_LEAST_ATTR(16);
 
 extern struct frame_buffer_t lcd_framebuffer_default;
@@ -53,26 +70,41 @@ static void display_flush(
     static int dirty_y1;
     static int dirty_x2;
     static int dirty_y2;
-    fb_data *destination;
-    const fb_data *source = (const fb_data *)pixels;
+    const crazypod_pixel_t *source = (const crazypod_pixel_t *)pixels;
     const lv_draw_buf_t *active_buffer =
         lv_display_get_buf_active(display);
     int source_stride =
-        active_buffer->header.stride / sizeof(fb_data);
+        active_buffer->header.stride / sizeof(crazypod_pixel_t);
     int x = area->x1;
     int y = area->y1;
     int width = area->x2 - area->x1 + 1;
     int height = area->y2 - area->y1 + 1;
     int row;
 
-    destination = (fb_data *)lcd_framebuffer_default.data +
-                  y * LCD_WIDTH + x;
-    for(row = 0; row < height; ++row) {
-        memcpy(destination, source,
-               (size_t)width * sizeof(fb_data));
-        destination += LCD_WIDTH;
-        source += source_stride;
+#ifdef HAVE_CRAZYPOD_MONO_UI
+    {
+        uint8_t *destination = (uint8_t *)lcd_framebuffer_default.data +
+                               (size_t)y * LCD_FBWIDTH;
+
+        for(row = 0; row < height; ++row) {
+            crazypod_mono_blit_row(destination, x, width, source);
+            destination += LCD_FBWIDTH;
+            source += source_stride;
+        }
     }
+#else
+    {
+        fb_data *destination = (fb_data *)lcd_framebuffer_default.data +
+                               (size_t)y * LCD_WIDTH + x;
+
+        for(row = 0; row < height; ++row) {
+            memcpy(destination, source,
+                   (size_t)width * sizeof(fb_data));
+            destination += LCD_WIDTH;
+            source += source_stride;
+        }
+    }
+#endif
     crazypod_perf_log_flush((unsigned)width * (unsigned)height);
 #if defined(CPU_PP) && !defined(SIMULATOR)
     /*

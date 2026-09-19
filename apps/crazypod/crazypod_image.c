@@ -1,4 +1,5 @@
 #include "config.h"
+#include "crazypod_pixel.h"
 
 #ifdef HAVE_CRAZYPOD_UI
 
@@ -26,7 +27,7 @@ void crazypod_image_decode_unlock(void)
 }
 
 bool crazypod_image_configure_rgb565(
-    lv_image_dsc_t *descriptor, const fb_data *pixels,
+    lv_image_dsc_t *descriptor, const crazypod_pixel_t *pixels,
     int width, int height)
 {
     if(descriptor == NULL || pixels == NULL || width <= 0 || height <= 0)
@@ -37,16 +38,16 @@ bool crazypod_image_configure_rgb565(
     descriptor->header.cf = LV_COLOR_FORMAT_RGB565;
     descriptor->header.w = width;
     descriptor->header.h = height;
-    descriptor->header.stride = width * sizeof(fb_data);
+    descriptor->header.stride = width * sizeof(crazypod_pixel_t);
     descriptor->data_size =
-        (size_t)width * height * sizeof(fb_data);
+        (size_t)width * height * sizeof(crazypod_pixel_t);
     descriptor->data = (const uint8_t *)pixels;
     return true;
 }
 
 bool crazypod_image_scale_rgb565(
-    const fb_data *source, int source_width, int source_height,
-    int source_stride, fb_data *destination,
+    const crazypod_pixel_t *source, int source_width, int source_height,
+    int source_stride, crazypod_pixel_t *destination,
     int destination_width, int destination_height)
 {
     int source_x_step;
@@ -77,31 +78,31 @@ bool crazypod_image_scale_rgb565(
             int x0 = source_x_q8 >> 8;
             int x1 = x0 + 1 < source_width ? x0 + 1 : x0;
             int fx = source_x_q8 & 255;
-            fb_data p00 = source[y0 * source_stride + x0];
-            fb_data p10 = source[y0 * source_stride + x1];
-            fb_data p01 = source[y1 * source_stride + x0];
-            fb_data p11 = source[y1 * source_stride + x1];
+            crazypod_pixel_t p00 = source[y0 * source_stride + x0];
+            crazypod_pixel_t p10 = source[y0 * source_stride + x1];
+            crazypod_pixel_t p01 = source[y1 * source_stride + x0];
+            crazypod_pixel_t p11 = source[y1 * source_stride + x1];
             unsigned red0 =
-                RGB_UNPACK_RED(p00) * (256 - fx) +
-                RGB_UNPACK_RED(p10) * fx;
+                CRAZYPOD_PIXEL_RED(p00) * (256 - fx) +
+                CRAZYPOD_PIXEL_RED(p10) * fx;
             unsigned red1 =
-                RGB_UNPACK_RED(p01) * (256 - fx) +
-                RGB_UNPACK_RED(p11) * fx;
+                CRAZYPOD_PIXEL_RED(p01) * (256 - fx) +
+                CRAZYPOD_PIXEL_RED(p11) * fx;
             unsigned green0 =
-                RGB_UNPACK_GREEN(p00) * (256 - fx) +
-                RGB_UNPACK_GREEN(p10) * fx;
+                CRAZYPOD_PIXEL_GREEN(p00) * (256 - fx) +
+                CRAZYPOD_PIXEL_GREEN(p10) * fx;
             unsigned green1 =
-                RGB_UNPACK_GREEN(p01) * (256 - fx) +
-                RGB_UNPACK_GREEN(p11) * fx;
+                CRAZYPOD_PIXEL_GREEN(p01) * (256 - fx) +
+                CRAZYPOD_PIXEL_GREEN(p11) * fx;
             unsigned blue0 =
-                RGB_UNPACK_BLUE(p00) * (256 - fx) +
-                RGB_UNPACK_BLUE(p10) * fx;
+                CRAZYPOD_PIXEL_BLUE(p00) * (256 - fx) +
+                CRAZYPOD_PIXEL_BLUE(p10) * fx;
             unsigned blue1 =
-                RGB_UNPACK_BLUE(p01) * (256 - fx) +
-                RGB_UNPACK_BLUE(p11) * fx;
+                CRAZYPOD_PIXEL_BLUE(p01) * (256 - fx) +
+                CRAZYPOD_PIXEL_BLUE(p11) * fx;
 
             destination[y * destination_width + x] =
-                LCD_RGBPACK(
+                CRAZYPOD_PIXEL_PACK(
                     (red0 * (256 - fy) + red1 * fy) >> 16,
                     (green0 * (256 - fy) + green1 * fy) >> 16,
                     (blue0 * (256 - fy) + blue1 * fy) >> 16);
@@ -137,24 +138,24 @@ static int clamp_sample_coordinate(int value, int maximum)
     return value;
 }
 
-static fb_data mix_rgb565(fb_data first, fb_data second, unsigned fraction)
+static crazypod_pixel_t mix_rgb565(crazypod_pixel_t first, crazypod_pixel_t second, unsigned fraction)
 {
     unsigned inverse = 256 - fraction;
 
     if(fraction == 0)
         return first;
-    return LCD_RGBPACK(
-        (RGB_UNPACK_RED(first) * inverse +
-         RGB_UNPACK_RED(second) * fraction) >> 8,
-        (RGB_UNPACK_GREEN(first) * inverse +
-         RGB_UNPACK_GREEN(second) * fraction) >> 8,
-        (RGB_UNPACK_BLUE(first) * inverse +
-         RGB_UNPACK_BLUE(second) * fraction) >> 8);
+    return CRAZYPOD_PIXEL_PACK(
+        (CRAZYPOD_PIXEL_RED(first) * inverse +
+         CRAZYPOD_PIXEL_RED(second) * fraction) >> 8,
+        (CRAZYPOD_PIXEL_GREEN(first) * inverse +
+         CRAZYPOD_PIXEL_GREEN(second) * fraction) >> 8,
+        (CRAZYPOD_PIXEL_BLUE(first) * inverse +
+         CRAZYPOD_PIXEL_BLUE(second) * fraction) >> 8);
 }
 
 static bool scale_glass_rgb565(
-    const fb_data *source, int source_width, int source_height,
-    fb_data *destination, int destination_width, int destination_height)
+    const crazypod_pixel_t *source, int source_width, int source_height,
+    crazypod_pixel_t *destination, int destination_width, int destination_height)
 {
     int source_x_step;
     int source_y_step;
@@ -206,12 +207,12 @@ static bool scale_glass_rgb565(
 }
 
 bool crazypod_image_render_glass_rgb565(
-    const fb_data *source, int source_width, int source_height,
+    const crazypod_pixel_t *source, int source_width, int source_height,
     int source_stride, int source_x, int source_y,
     int source_region_width, int source_region_height,
     uint32_t tint, unsigned tint_opa,
-    fb_data *sample_pixels, fb_data *scratch_pixels,
-    size_t sample_capacity, fb_data *destination,
+    crazypod_pixel_t *sample_pixels, crazypod_pixel_t *scratch_pixels,
+    size_t sample_capacity, crazypod_pixel_t *destination,
     int destination_width, int destination_height)
 {
     int sample_width;
@@ -266,19 +267,19 @@ bool crazypod_image_render_glass_rgb565(
                 if(sx1 > source_x + source_region_width)
                     sx1 = source_x + source_region_width;
                 for(sy = sy0; sy < sy1; ++sy) {
-                    const fb_data *row = source + sy * source_stride;
+                    const crazypod_pixel_t *row = source + sy * source_stride;
                     int sx;
 
                     for(sx = sx0; sx < sx1; ++sx) {
-                        fb_data pixel = row[sx];
+                        crazypod_pixel_t pixel = row[sx];
 
-                        red += RGB_UNPACK_RED(pixel);
-                        green += RGB_UNPACK_GREEN(pixel);
-                        blue += RGB_UNPACK_BLUE(pixel);
+                        red += CRAZYPOD_PIXEL_RED(pixel);
+                        green += CRAZYPOD_PIXEL_GREEN(pixel);
+                        blue += CRAZYPOD_PIXEL_BLUE(pixel);
                         ++samples;
                     }
                 }
-                sample_pixels[y * sample_width + x] = LCD_RGBPACK(
+                sample_pixels[y * sample_width + x] = CRAZYPOD_PIXEL_PACK(
                     red / samples, green / samples, blue / samples);
             }
         }
@@ -330,19 +331,19 @@ bool crazypod_image_render_glass_rgb565(
                     for(sx = sx0; sx < sx1; ++sx) {
                         int source_sample_x =
                             clamp_sample_coordinate(sx, source_width);
-                        fb_data pixel = source[
+                        crazypod_pixel_t pixel = source[
                             source_sample_y * source_stride +
                             source_sample_x];
 
-                        red += RGB_UNPACK_RED(pixel);
-                        green += RGB_UNPACK_GREEN(pixel);
-                        blue += RGB_UNPACK_BLUE(pixel);
+                        red += CRAZYPOD_PIXEL_RED(pixel);
+                        green += CRAZYPOD_PIXEL_GREEN(pixel);
+                        blue += CRAZYPOD_PIXEL_BLUE(pixel);
                         ++samples;
                     }
                 }
                 if(samples == 0)
                     samples = 1;
-                sample_pixels[y * sample_width + x] = LCD_RGBPACK(
+                sample_pixels[y * sample_width + x] = CRAZYPOD_PIXEL_PACK(
                     red / samples, green / samples, blue / samples);
             }
         }
@@ -358,30 +359,30 @@ bool crazypod_image_render_glass_rgb565(
         for(offset = -2; offset <= 2; ++offset) {
             int sample_x = clamp_sample_coordinate(
                 offset, sample_width);
-            fb_data pixel =
+            crazypod_pixel_t pixel =
                 sample_pixels[y * sample_width + sample_x];
 
-            red += RGB_UNPACK_RED(pixel);
-            green += RGB_UNPACK_GREEN(pixel);
-            blue += RGB_UNPACK_BLUE(pixel);
+            red += CRAZYPOD_PIXEL_RED(pixel);
+            green += CRAZYPOD_PIXEL_GREEN(pixel);
+            blue += CRAZYPOD_PIXEL_BLUE(pixel);
         }
         for(x = 0; x < sample_width; ++x) {
             scratch_pixels[y * sample_width + x] =
-                LCD_RGBPACK(red / 5, green / 5, blue / 5);
+                CRAZYPOD_PIXEL_PACK(red / 5, green / 5, blue / 5);
             if(x + 1 < sample_width) {
-                fb_data removed = sample_pixels[
+                crazypod_pixel_t removed = sample_pixels[
                     y * sample_width + clamp_sample_coordinate(
                         x - 2, sample_width)];
-                fb_data added = sample_pixels[
+                crazypod_pixel_t added = sample_pixels[
                     y * sample_width + clamp_sample_coordinate(
                         x + 3, sample_width)];
 
-                red -= RGB_UNPACK_RED(removed);
-                green -= RGB_UNPACK_GREEN(removed);
-                blue -= RGB_UNPACK_BLUE(removed);
-                red += RGB_UNPACK_RED(added);
-                green += RGB_UNPACK_GREEN(added);
-                blue += RGB_UNPACK_BLUE(added);
+                red -= CRAZYPOD_PIXEL_RED(removed);
+                green -= CRAZYPOD_PIXEL_GREEN(removed);
+                blue -= CRAZYPOD_PIXEL_BLUE(removed);
+                red += CRAZYPOD_PIXEL_RED(added);
+                green += CRAZYPOD_PIXEL_GREEN(added);
+                blue += CRAZYPOD_PIXEL_BLUE(added);
             }
         }
     }
@@ -398,12 +399,12 @@ bool crazypod_image_render_glass_rgb565(
             for(offset = -2; offset <= 2; ++offset) {
                 int sample_y = clamp_sample_coordinate(
                     offset, sample_height);
-                fb_data pixel =
+                crazypod_pixel_t pixel =
                     scratch_pixels[sample_y * sample_width + x];
 
-                red += RGB_UNPACK_RED(pixel);
-                green += RGB_UNPACK_GREEN(pixel);
-                blue += RGB_UNPACK_BLUE(pixel);
+                red += CRAZYPOD_PIXEL_RED(pixel);
+                green += CRAZYPOD_PIXEL_GREEN(pixel);
+                blue += CRAZYPOD_PIXEL_BLUE(pixel);
             }
             for(y = 0; y < sample_height; ++y) {
                 unsigned tinted_red = red / 5;
@@ -416,22 +417,22 @@ bool crazypod_image_render_glass_rgb565(
                     tint_green * tint_opa + 127) / 255;
                 tinted_blue = (tinted_blue * (255 - tint_opa) +
                     tint_blue * tint_opa + 127) / 255;
-                sample_pixels[y * sample_width + x] = LCD_RGBPACK(
+                sample_pixels[y * sample_width + x] = CRAZYPOD_PIXEL_PACK(
                     tinted_red, tinted_green, tinted_blue);
                 if(y + 1 < sample_height) {
-                    fb_data removed = scratch_pixels[
+                    crazypod_pixel_t removed = scratch_pixels[
                         clamp_sample_coordinate(y - 2, sample_height) *
                             sample_width + x];
-                    fb_data added = scratch_pixels[
+                    crazypod_pixel_t added = scratch_pixels[
                         clamp_sample_coordinate(y + 3, sample_height) *
                             sample_width + x];
 
-                    red -= RGB_UNPACK_RED(removed);
-                    green -= RGB_UNPACK_GREEN(removed);
-                    blue -= RGB_UNPACK_BLUE(removed);
-                    red += RGB_UNPACK_RED(added);
-                    green += RGB_UNPACK_GREEN(added);
-                    blue += RGB_UNPACK_BLUE(added);
+                    red -= CRAZYPOD_PIXEL_RED(removed);
+                    green -= CRAZYPOD_PIXEL_GREEN(removed);
+                    blue -= CRAZYPOD_PIXEL_BLUE(removed);
+                    red += CRAZYPOD_PIXEL_RED(added);
+                    green += CRAZYPOD_PIXEL_GREEN(added);
+                    blue += CRAZYPOD_PIXEL_BLUE(added);
                 }
             }
         }

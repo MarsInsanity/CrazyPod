@@ -1,4 +1,5 @@
 #include "config.h"
+#include "crazypod_pixel.h"
 
 #ifdef HAVE_CRAZYPOD_UI
 
@@ -32,8 +33,8 @@ static bool path_has_extension(const char *path, const char *extension)
     return suffix != NULL && strcasecmp(suffix, extension) == 0;
 }
 
-static fb_data sample_pixel(
-    const fb_data *source, int width, int height, int stride,
+static crazypod_pixel_t sample_pixel(
+    const crazypod_pixel_t *source, int width, int height, int stride,
     int x_q8, int y_q8)
 {
     int x0 = x_q8 >> 8;
@@ -42,10 +43,10 @@ static fb_data sample_pixel(
     int y1;
     int fx;
     int fy;
-    fb_data p00;
-    fb_data p10;
-    fb_data p01;
-    fb_data p11;
+    crazypod_pixel_t p00;
+    crazypod_pixel_t p10;
+    crazypod_pixel_t p01;
+    crazypod_pixel_t p11;
     unsigned red0;
     unsigned red1;
     unsigned green0;
@@ -69,19 +70,19 @@ static fb_data sample_pixel(
     p10 = source[y0 * stride + x1];
     p01 = source[y1 * stride + x0];
     p11 = source[y1 * stride + x1];
-    red0 = RGB_UNPACK_RED(p00) * (256 - fx) +
-        RGB_UNPACK_RED(p10) * fx;
-    red1 = RGB_UNPACK_RED(p01) * (256 - fx) +
-        RGB_UNPACK_RED(p11) * fx;
-    green0 = RGB_UNPACK_GREEN(p00) * (256 - fx) +
-        RGB_UNPACK_GREEN(p10) * fx;
-    green1 = RGB_UNPACK_GREEN(p01) * (256 - fx) +
-        RGB_UNPACK_GREEN(p11) * fx;
-    blue0 = RGB_UNPACK_BLUE(p00) * (256 - fx) +
-        RGB_UNPACK_BLUE(p10) * fx;
-    blue1 = RGB_UNPACK_BLUE(p01) * (256 - fx) +
-        RGB_UNPACK_BLUE(p11) * fx;
-    return LCD_RGBPACK(
+    red0 = CRAZYPOD_PIXEL_RED(p00) * (256 - fx) +
+        CRAZYPOD_PIXEL_RED(p10) * fx;
+    red1 = CRAZYPOD_PIXEL_RED(p01) * (256 - fx) +
+        CRAZYPOD_PIXEL_RED(p11) * fx;
+    green0 = CRAZYPOD_PIXEL_GREEN(p00) * (256 - fx) +
+        CRAZYPOD_PIXEL_GREEN(p10) * fx;
+    green1 = CRAZYPOD_PIXEL_GREEN(p01) * (256 - fx) +
+        CRAZYPOD_PIXEL_GREEN(p11) * fx;
+    blue0 = CRAZYPOD_PIXEL_BLUE(p00) * (256 - fx) +
+        CRAZYPOD_PIXEL_BLUE(p10) * fx;
+    blue1 = CRAZYPOD_PIXEL_BLUE(p01) * (256 - fx) +
+        CRAZYPOD_PIXEL_BLUE(p11) * fx;
+    return CRAZYPOD_PIXEL_PACK(
         (red0 * (256 - fy) + red1 * fy) >> 16,
         (green0 * (256 - fy) + green1 * fy) >> 16,
         (blue0 * (256 - fy) + blue1 * fy) >> 16);
@@ -147,7 +148,7 @@ static enum crazypod_wallpaper_apply_result decode_source(
     struct bitmap *bitmap, int *decode_handle)
 {
     size_t decode_bytes;
-    fb_data *decode_buffer;
+    crazypod_pixel_t *decode_buffer;
     int format = FORMAT_NATIVE | FORMAT_RESIZE | FORMAT_KEEP_ASPECT;
     int required_bytes;
     int probe_handle = -1;
@@ -176,11 +177,11 @@ static enum crazypod_wallpaper_apply_result decode_source(
     if(jpeg)
         required_bytes = read_jpeg_file(
             path, bitmap, (int)JPEG_DECODE_OVERHEAD,
-            format | FORMAT_RETURN_SIZE, &format_native);
+            format | FORMAT_RETURN_SIZE, CRAZYPOD_BITMAP_FORMAT);
     else if(path_has_extension(path, ".bmp"))
         required_bytes = read_bmp_file(
             path, bitmap, 0, format | FORMAT_RETURN_SIZE,
-            &format_native);
+            CRAZYPOD_BITMAP_FORMAT);
     else
         required_bytes = -1;
     crazypod_image_decode_unlock();
@@ -203,10 +204,10 @@ static enum crazypod_wallpaper_apply_result decode_source(
     crazypod_image_decode_lock();
     if(jpeg)
         result = read_jpeg_file(
-            path, bitmap, (int)decode_bytes, format, &format_native);
+            path, bitmap, (int)decode_bytes, format, CRAZYPOD_BITMAP_FORMAT);
     else if(path_has_extension(path, ".bmp"))
         result = read_bmp_file(
-            path, bitmap, (int)decode_bytes, format, &format_native);
+            path, bitmap, (int)decode_bytes, format, CRAZYPOD_BITMAP_FORMAT);
     else
         result = -1;
     crazypod_image_decode_unlock();
@@ -223,12 +224,12 @@ enum crazypod_wallpaper_apply_result
 crazypod_wallpaper_crop_engine_render(
     const char *path, const lv_image_dsc_t *preview,
     int crop_x, int crop_y, int crop_width, int crop_height,
-    fb_data *destination,
+    crazypod_pixel_t *destination,
     crazypod_wallpaper_progress_cb progress_cb,
     void *progress_user_data)
 {
     struct bitmap bitmap;
-    const fb_data *source;
+    const crazypod_pixel_t *source;
     int preview_width;
     int preview_height;
     int maximum_scale;
@@ -299,7 +300,7 @@ crazypod_wallpaper_crop_engine_render(
         core_free(decode_handle);
         return CRAZYPOD_WALLPAPER_APPLY_DECODE_FAILED;
     }
-    source = (const fb_data *)bitmap.data;
+    source = (const crazypod_pixel_t *)bitmap.data;
     for(y = 0; y < TARGET_HEIGHT; ++y) {
         int source_y_q8 = high_y * 256 +
             y * (high_height - 1) * 256 / (TARGET_HEIGHT - 1);

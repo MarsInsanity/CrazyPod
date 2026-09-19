@@ -1,4 +1,5 @@
 #include "config.h"
+#include "crazypod_pixel.h"
 
 #include "crazypod_l10n.h"
 
@@ -39,7 +40,7 @@
  * and the menus succeeded. Reserve the scratch explicitly instead. */
 #define CRAZYPOD_DECODE_SCRATCH_SIZE (192 * 1024)
 #define CRAZYPOD_DECODE_BUFFER_SIZE \
-    (CRAZYPOD_ARTWORK_PIXELS * sizeof(fb_data) + CRAZYPOD_DECODE_SCRATCH_SIZE)
+    (CRAZYPOD_ARTWORK_PIXELS * sizeof(crazypod_pixel_t) + CRAZYPOD_DECODE_SCRATCH_SIZE)
 #define CRAZYPOD_ARTWORK_WAKE 1
 #define CRAZYPOD_ARTWORK_DEFAULT_PRIORITY 100
 #define CRAZYPOD_CACHE_MAGIC 0x43504632u
@@ -81,7 +82,7 @@
 #define CRAZYPOD_ARTWORK_SCOPE_PARENT 2
 
 struct artwork_slot {
-    fb_data *pixels[CRAZYPOD_ARTWORK_BANKS];
+    crazypod_pixel_t *pixels[CRAZYPOD_ARTWORK_BANKS];
     lv_image_dsc_t descriptor[CRAZYPOD_ARTWORK_BANKS];
     char requested_path[MAX_PATH];
     char requested_album[72];
@@ -199,23 +200,23 @@ enum artwork_cache_result {
 };
 
 static struct artwork_slot artwork_slots[CRAZYPOD_ARTWORK_SLOTS];
-static fb_data coverflow_pixels[CRAZYPOD_COVERFLOW_ARTWORK_SLOTS]
+static crazypod_pixel_t coverflow_pixels[CRAZYPOD_COVERFLOW_ARTWORK_SLOTS]
     [CRAZYPOD_ARTWORK_BANKS][CRAZYPOD_COVERFLOW_ARTWORK_SIZE *
                              CRAZYPOD_COVERFLOW_ARTWORK_SIZE]
     CACHEALIGN_AT_LEAST_ATTR(16);
-static fb_data preview_pixels[CRAZYPOD_ARTWORK_BANKS]
+static crazypod_pixel_t preview_pixels[CRAZYPOD_ARTWORK_BANKS]
     [CRAZYPOD_PREVIEW_ARTWORK_SIZE * CRAZYPOD_PREVIEW_ARTWORK_SIZE]
     CACHEALIGN_AT_LEAST_ATTR(16);
-static fb_data now_pixels[3][CRAZYPOD_ARTWORK_BANKS]
+static crazypod_pixel_t now_pixels[3][CRAZYPOD_ARTWORK_BANKS]
     [CRAZYPOD_NOW_ARTWORK_MAX_SIZE * CRAZYPOD_NOW_ARTWORK_MAX_SIZE]
     CACHEALIGN_AT_LEAST_ATTR(16);
-static fb_data capsule_pixels[CRAZYPOD_ARTWORK_BANKS]
+static crazypod_pixel_t capsule_pixels[CRAZYPOD_ARTWORK_BANKS]
     [CRAZYPOD_CAPSULE_ARTWORK_SIZE * CRAZYPOD_CAPSULE_ARTWORK_SIZE]
     CACHEALIGN_AT_LEAST_ATTR(16);
 static unsigned char decode_buffer[CRAZYPOD_DECODE_BUFFER_SIZE]
     CACHEALIGN_AT_LEAST_ATTR(16);
 /* Product surfaces scale from the canonical 128px disk entry here. */
-static fb_data canonical_scratch[
+static crazypod_pixel_t canonical_scratch[
     CRAZYPOD_ARTWORK_CACHE_SIZE * CRAZYPOD_ARTWORK_CACHE_SIZE]
     CACHEALIGN_AT_LEAST_ATTR(16);
 static struct mutex artwork_mutex;
@@ -823,7 +824,7 @@ static void resolve_artwork_source(
 static enum artwork_cache_result artwork_cache_load(
     const struct artwork_decode_request *request,
     const struct artwork_source *source, bool validate_source,
-    fb_data *pixels, lv_image_dsc_t *descriptor)
+    crazypod_pixel_t *pixels, lv_image_dsc_t *descriptor)
 {
     struct artwork_cache_header header;
     char path[MAX_PATH];
@@ -831,7 +832,7 @@ static enum artwork_cache_result artwork_cache_load(
     uint32_t key_b;
     uint32_t source_key_a = 0;
     uint32_t source_key_b = 0;
-    fb_data *source_pixels;
+    crazypod_pixel_t *source_pixels;
     int output_width;
     int output_height;
     int fd;
@@ -868,7 +869,7 @@ static enum artwork_cache_result artwork_cache_load(
     if(header.width > CRAZYPOD_ARTWORK_MAX_SIZE ||
        header.height > CRAZYPOD_ARTWORK_MAX_SIZE ||
        header.data_size !=
-           (uint32_t)header.width * header.height * sizeof(fb_data)) {
+           (uint32_t)header.width * header.height * sizeof(crazypod_pixel_t)) {
         close(fd);
         return ARTWORK_CACHE_MISS;
     }
@@ -979,11 +980,11 @@ static bool decode_artwork_at(const struct artwork_source *source,
         if((source->type & AA_CLEAR_FLAGS_MASK) == AA_TYPE_JPG)
             result = read_jpeg_file(source->path, &bitmap,
                                     sizeof(decode_buffer), format,
-                                    &format_native);
+                                    CRAZYPOD_BITMAP_FORMAT);
         else
             result = read_bmp_file(source->path, &bitmap,
                                    sizeof(decode_buffer), format,
-                                   &format_native);
+                                   CRAZYPOD_BITMAP_FORMAT);
         crazypod_image_decode_unlock();
     }
     else if(source->kind == CRAZYPOD_ARTWORK_SOURCE_EMBEDDED) {
@@ -995,11 +996,11 @@ static bool decode_artwork_at(const struct artwork_source *source,
             if((source->type & AA_CLEAR_FLAGS_MASK) == AA_TYPE_JPG)
                 result = clip_jpeg_fd(fd, source->type, source->size,
                                       &bitmap, sizeof(decode_buffer),
-                                      format, &format_native);
+                                      format, CRAZYPOD_BITMAP_FORMAT);
             else if((source->type & AA_CLEAR_FLAGS_MASK) == AA_TYPE_BMP)
                 result = read_bmp_fd(fd, &bitmap,
                                      sizeof(decode_buffer),
-                                     format, &format_native);
+                                     format, CRAZYPOD_BITMAP_FORMAT);
         }
         crazypod_image_decode_unlock();
         close(fd);
@@ -1018,7 +1019,7 @@ static bool decode_artwork_at(const struct artwork_source *source,
         return false;
     }
     return crazypod_image_configure_rgb565(
-        descriptor, (fb_data *)bitmap.data, bitmap.width, bitmap.height);
+        descriptor, (crazypod_pixel_t *)bitmap.data, bitmap.width, bitmap.height);
 }
 
 /* JPEG_ERROR_NOT_BASELINE: the loader's marker switch returns this for
@@ -1076,11 +1077,11 @@ static bool decode_artwork(const struct artwork_source *source,
 }
 
 static void copy_decoded_pixels(const lv_image_dsc_t *source,
-                                fb_data *destination,
+                                crazypod_pixel_t *destination,
                                 lv_image_dsc_t *destination_descriptor)
 {
-    const fb_data *source_pixels = (const fb_data *)source->data;
-    int source_stride = source->header.stride / sizeof(fb_data);
+    const crazypod_pixel_t *source_pixels = (const crazypod_pixel_t *)source->data;
+    int source_stride = source->header.stride / sizeof(crazypod_pixel_t);
     int width = source->header.w;
     int height = source->header.h;
     int row;
@@ -1088,7 +1089,7 @@ static void copy_decoded_pixels(const lv_image_dsc_t *source,
     for(row = 0; row < height; ++row) {
         memcpy(destination + row * width,
                source_pixels + row * source_stride,
-               (size_t)width * sizeof(fb_data));
+               (size_t)width * sizeof(crazypod_pixel_t));
     }
     crazypod_image_configure_rgb565(
         destination_descriptor, destination, width, height);
@@ -1096,10 +1097,10 @@ static void copy_decoded_pixels(const lv_image_dsc_t *source,
 
 static bool publish_decoded_pixels(
     const lv_image_dsc_t *source, int target_size,
-    fb_data *destination, lv_image_dsc_t *destination_descriptor)
+    crazypod_pixel_t *destination, lv_image_dsc_t *destination_descriptor)
 {
-    const fb_data *source_pixels = (const fb_data *)source->data;
-    int source_stride = source->header.stride / sizeof(fb_data);
+    const crazypod_pixel_t *source_pixels = (const crazypod_pixel_t *)source->data;
+    int source_stride = source->header.stride / sizeof(crazypod_pixel_t);
     int width = source->header.w;
     int height = source->header.h;
     int output_width = width;

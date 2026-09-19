@@ -1,4 +1,5 @@
 #include "config.h"
+#include "crazypod_pixel.h"
 
 #ifdef HAVE_CRAZYPOD_UI
 
@@ -227,8 +228,8 @@ static lv_obj_t *transform_target(
 static bool artwork_transform_apply(
     struct crazypod_miniapp_scene_node *node)
 {
-    const fb_data *source;
-    fb_data *output;
+    const crazypod_pixel_t *source;
+    crazypod_pixel_t *output;
     lv_obj_t *image;
     int width;
     int height;
@@ -270,7 +271,7 @@ static bool artwork_transform_apply(
     if(angle == 0 && scale_x == LV_SCALE_NONE &&
        scale_y == LV_SCALE_NONE) {
         memcpy(output, source,
-               (size_t)width * height * sizeof(fb_data));
+               (size_t)width * height * sizeof(crazypod_pixel_t));
     }
     else {
         int degrees = (angle + 5) / 10;
@@ -298,7 +299,7 @@ static bool artwork_transform_apply(
                     source_x >= 0 && source_x < width &&
                     source_y >= 0 && source_y < height
                     ? source[source_y * width + source_x]
-                    : LCD_RGBPACK(18, 18, 24);
+                    : CRAZYPOD_PIXEL_PACK(18, 18, 24);
             }
         }
     }
@@ -347,15 +348,15 @@ bool crazypod_miniapp_scene_now_playing_artwork_refresh_node(
     if(descriptor != NULL && descriptor->data != NULL &&
        descriptor->header.cf == LV_COLOR_FORMAT_RGB565 &&
        descriptor->header.w > 0 && descriptor->header.h > 0) {
-        const fb_data *source = (const fb_data *)descriptor->data;
+        const crazypod_pixel_t *source = (const crazypod_pixel_t *)descriptor->data;
         int source_stride =
-            descriptor->header.stride / sizeof(fb_data);
+            descriptor->header.stride / sizeof(crazypod_pixel_t);
         int crop_x = 0;
         int crop_y = 0;
         int crop_width = descriptor->header.w;
         int crop_height = descriptor->header.h;
         pixel_count = (size_t)width * (size_t)height;
-        byte_count = pixel_count * sizeof(fb_data);
+        byte_count = pixel_count * sizeof(crazypod_pixel_t);
 
         if((int64_t)crop_width * height >
            (int64_t)crop_height * width) {

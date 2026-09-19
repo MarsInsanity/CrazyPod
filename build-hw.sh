@@ -19,9 +19,12 @@ require_tools() {
     missing=0
     tools="make perl python3 gcc ${CROSS_COMPILE}gcc ${CROSS_COMPILE}objcopy ${CROSS_COMPILE}nm"
     if [ "$FIRMWARE_ONLY" -eq 0 ]; then
-        # Packaging needs the Mini App generator and the zip; the firmware
-        # itself needs neither.
-        tools="$tools zip node npm"
+        # Packaging needs the zip; the firmware itself does not.
+        tools="$tools zip"
+        # The Mini App generator is only needed where Mini Apps ship.
+        if [ "$MINIAPPS" -eq 1 ]; then
+            tools="$tools node npm"
+        fi
     fi
     for tool in $tools; do
         if ! command -v "$tool" >/dev/null 2>&1; then
@@ -42,9 +45,11 @@ prepare_generated_headers() {
         -j1 "$builddir_unix/apps/core_asmdefs.h"
     make EXTRA_DEFINES="$CRAZYPOD_BUILD_DEFINES" \
         -j1 "$builddir_unix/ram.link"
-    mkdir -p "$builddir_unix/miniapps"
-    make EXTRA_DEFINES="$CRAZYPOD_BUILD_DEFINES" \
-        -j1 "$builddir_unix/miniapps/miniapp.link"
+    if [ "$MINIAPPS" -eq 1 ]; then
+        mkdir -p "$builddir_unix/miniapps"
+        make EXTRA_DEFINES="$CRAZYPOD_BUILD_DEFINES" \
+            -j1 "$builddir_unix/miniapps/miniapp.link"
+    fi
 }
 
 # Every stack boundary the linker script exports must be 8-byte aligned.
@@ -84,7 +89,7 @@ verify_stack_alignment() {
 verify_removed_runtime_absent() {
     forbidden='quickjs|mquickjs|crazypod_js|crazypod_script|solid_renderer|ui_command_batch'
     binaries='rockbox.elf'
-    if [ "$FIRMWARE_ONLY" -eq 0 ]; then
+    if [ "$FIRMWARE_ONLY" -eq 0 ] && [ "$MINIAPPS" -eq 1 ]; then
         binaries="$binaries
 miniapps/apps/native-reference/app.arm
 miniapps/apps/capability-lab/app.arm
@@ -116,13 +121,16 @@ while [ $# -gt 0 ]; do
             ;;
         -h|--help)
             cat <<'EOF'
-Usage: build-hw.sh [-i|--incremental] [--target ipod6g|ipodvideo]
+Usage: build-hw.sh [-i|--incremental]
+                   [--target ipod6g|ipodvideo|ipodmini2g]
                    [--firmware-only]
 
 Builds CrazyPod for a Rockbox target that ships the product UI.
-Defaults to ipod6g. ipodvideo (iPod Classic 5G/5.5G "Video") is an
-unvalidated bring-up target: it compiles and packages, but has not been
-certified on hardware.
+Defaults to ipod6g. ipodvideo (iPod Classic 5G/5.5G "Video") and
+ipodmini2g (iPod Mini 2nd generation) are unvalidated bring-up targets:
+they compile and package, but have not been certified on hardware.
+ipodmini2g draws the monochrome build of the UI for its 138x110 4-shade
+panel.
 
 --firmware-only builds rockbox.ipod alone, skipping the codecs, Mini App
 payloads, AOT fonts and the packaged zip. Use it to iterate on firmware when
@@ -174,16 +182,28 @@ case "$CRAZYPOD_TARGET" in
     ipod6g)
         CRAZYPOD_TARGET_LABEL="iPod 6G"
         CRAZYPOD_PACKAGE_NAME="CrazyPod-6G"
+        MINIAPPS=1
         ;;
     ipodvideo)
         CRAZYPOD_TARGET_LABEL="iPod Video (5G)"
         CRAZYPOD_PACKAGE_NAME="CrazyPod-5G"
+        MINIAPPS=1
+        ;;
+    ipodmini2g)
+        CRAZYPOD_TARGET_LABEL="iPod Mini 2G"
+        CRAZYPOD_PACKAGE_NAME="CrazyPod-Mini2G"
+        # Mini App scenes and Now Playing themes are authored against a
+        # 320x240 colour canvas and validated against it at install time.
+        # The Mini's 138x110 monochrome panel cannot show them, and its
+        # firmware does not build the loader, so none are packaged.
+        MINIAPPS=0
         ;;
     *)
         echo "Error: unknown CrazyPod target '$CRAZYPOD_TARGET'." >&2
         exit 2
         ;;
 esac
+MINIAPPS="${MINIAPPS:-1}"
 CRAZYPOD_BUILD_DEFINES=""
 CRAZYPOD_BUILD_VARIANT="production"
 case "${CRAZYPOD_FIRMWARE_ONLY:-}" in
@@ -220,7 +240,7 @@ if [ "$repro_enabled" -eq 1 ]; then
 fi
 require_tools
 python3 tests/test-crazypod-lvgl-layer-budget.py
-if [ "$FIRMWARE_ONLY" -eq 0 ]; then
+if [ "$FIRMWARE_ONLY" -eq 0 ] && [ "$MINIAPPS" -eq 1 ]; then
 npm ci --ignore-scripts --no-audit --no-fund \
     --prefix tools/miniapp-builder
 node tools/miniapp-builder/src/cli.mjs generate \
@@ -298,47 +318,49 @@ if [ "$FIRMWARE_ONLY" -eq 1 ]; then
         "already has a full install."
     exit 0
 fi
-mkdir -p ../dist/miniapps
-find ../dist/miniapps -type f -name 'game2048-*.cpk' -delete
-find ../dist/miniapps -type f -name 'capability-lab-*.cpk' -delete
-find ../dist/miniapps -type f -name 'native-reference-*.cpk' -delete
-find ../dist/miniapps -type f -name 'now-playing-neon-*.cpk' -delete
-find ../dist/miniapps -type f -name 'now-playing-signal-*.cpk' -delete
-GAME2048_PACKAGE="game2048-$(node -p \
-    "require('../miniapps/apps/game2048/crazypod.config.json').manifest.version").cpk"
-CAPABILITY_LAB_PACKAGE="capability-lab-$(node -p \
-    "require('../miniapps/apps/capability-lab/crazypod.config.json').manifest.version").cpk"
-NATIVE_REFERENCE_PACKAGE="native-reference-$(node -p \
-    "require('../miniapps/apps/native-reference/crazypod.config.json').manifest.version").cpk"
-NOW_PLAYING_THEME_PACKAGE="now-playing-neon-$(node -p \
-    "require('../miniapps/themes/atelier-hifi/crazypod.config.json').manifest.version").cpk"
-SIGNAL_THEME_PACKAGE="now-playing-signal-$(node -p \
-    "require('../miniapps/themes/signal-one/crazypod.config.json').manifest.version").cpk"
-node ../tools/miniapp-builder/src/cli.mjs build \
-    ../miniapps/apps/game2048 \
-    --target "$CRAZYPOD_TARGET" \
-    --binary miniapps/apps/game2048/app.arm \
-    --out "../dist/miniapps/$GAME2048_PACKAGE"
-node ../tools/miniapp-builder/src/cli.mjs build \
-    ../miniapps/apps/capability-lab \
-    --target "$CRAZYPOD_TARGET" \
-    --binary miniapps/apps/capability-lab/app.arm \
-    --out "../dist/miniapps/$CAPABILITY_LAB_PACKAGE"
-node ../tools/miniapp-builder/src/cli.mjs build \
-    ../miniapps/apps/native-reference \
-    --target "$CRAZYPOD_TARGET" \
-    --binary miniapps/apps/native-reference/app.arm \
-    --out "../dist/miniapps/$NATIVE_REFERENCE_PACKAGE"
-node ../tools/miniapp-builder/src/cli.mjs build \
-    ../miniapps/themes/atelier-hifi \
-    --target "$CRAZYPOD_TARGET" \
-    --binary miniapps/themes/atelier-hifi/app.arm \
-    --out "../dist/miniapps/$NOW_PLAYING_THEME_PACKAGE"
-node ../tools/miniapp-builder/src/cli.mjs build \
-    ../miniapps/themes/signal-one \
-    --target "$CRAZYPOD_TARGET" \
-    --binary miniapps/themes/signal-one/app.arm \
-    --out "../dist/miniapps/$SIGNAL_THEME_PACKAGE"
+if [ "$MINIAPPS" -eq 1 ]; then
+    mkdir -p ../dist/miniapps
+    find ../dist/miniapps -type f -name 'game2048-*.cpk' -delete
+    find ../dist/miniapps -type f -name 'capability-lab-*.cpk' -delete
+    find ../dist/miniapps -type f -name 'native-reference-*.cpk' -delete
+    find ../dist/miniapps -type f -name 'now-playing-neon-*.cpk' -delete
+    find ../dist/miniapps -type f -name 'now-playing-signal-*.cpk' -delete
+    GAME2048_PACKAGE="game2048-$(node -p \
+        "require('../miniapps/apps/game2048/crazypod.config.json').manifest.version").cpk"
+    CAPABILITY_LAB_PACKAGE="capability-lab-$(node -p \
+        "require('../miniapps/apps/capability-lab/crazypod.config.json').manifest.version").cpk"
+    NATIVE_REFERENCE_PACKAGE="native-reference-$(node -p \
+        "require('../miniapps/apps/native-reference/crazypod.config.json').manifest.version").cpk"
+    NOW_PLAYING_THEME_PACKAGE="now-playing-neon-$(node -p \
+        "require('../miniapps/themes/atelier-hifi/crazypod.config.json').manifest.version").cpk"
+    SIGNAL_THEME_PACKAGE="now-playing-signal-$(node -p \
+        "require('../miniapps/themes/signal-one/crazypod.config.json').manifest.version").cpk"
+    node ../tools/miniapp-builder/src/cli.mjs build \
+        ../miniapps/apps/game2048 \
+        --target "$CRAZYPOD_TARGET" \
+        --binary miniapps/apps/game2048/app.arm \
+        --out "../dist/miniapps/$GAME2048_PACKAGE"
+    node ../tools/miniapp-builder/src/cli.mjs build \
+        ../miniapps/apps/capability-lab \
+        --target "$CRAZYPOD_TARGET" \
+        --binary miniapps/apps/capability-lab/app.arm \
+        --out "../dist/miniapps/$CAPABILITY_LAB_PACKAGE"
+    node ../tools/miniapp-builder/src/cli.mjs build \
+        ../miniapps/apps/native-reference \
+        --target "$CRAZYPOD_TARGET" \
+        --binary miniapps/apps/native-reference/app.arm \
+        --out "../dist/miniapps/$NATIVE_REFERENCE_PACKAGE"
+    node ../tools/miniapp-builder/src/cli.mjs build \
+        ../miniapps/themes/atelier-hifi \
+        --target "$CRAZYPOD_TARGET" \
+        --binary miniapps/themes/atelier-hifi/app.arm \
+        --out "../dist/miniapps/$NOW_PLAYING_THEME_PACKAGE"
+    node ../tools/miniapp-builder/src/cli.mjs build \
+        ../miniapps/themes/signal-one \
+        --target "$CRAZYPOD_TARGET" \
+        --binary miniapps/themes/signal-one/app.arm \
+        --out "../dist/miniapps/$SIGNAL_THEME_PACKAGE"
+fi
 
 PACKAGE_DIR="$(mktemp -d)"
 trap 'rm -rf "$PACKAGE_DIR"' EXIT HUP INT TERM
@@ -354,12 +376,21 @@ mkdir -p "$PACKAGE_DIR/.rockbox/codecs"
 mkdir -p "$PACKAGE_DIR/.rockbox/codepages"
 mkdir -p "$PACKAGE_DIR/.rockbox/fonts"
 mkdir -p "$PACKAGE_DIR/.rockbox/crazypod/icons"
-mkdir -p "$PACKAGE_DIR/.rockbox/crazypod/miniapps/packages"
-for content_directory in Music Podcasts Books Pictures Videos Contacts \
-    Calendars MiniApps MiniApps/Games/GB MiniApps/Games/GBC; do
+CONTENT_DIRECTORIES="Music Podcasts Books Pictures Videos Contacts Calendars"
+PACKAGE_TREES=".rockbox Music Podcasts Books Pictures Videos Contacts Calendars"
+if [ "$MINIAPPS" -eq 1 ]; then
+    mkdir -p "$PACKAGE_DIR/.rockbox/crazypod/miniapps/packages"
+    CONTENT_DIRECTORIES="$CONTENT_DIRECTORIES MiniApps \
+        MiniApps/Games/GB MiniApps/Games/GBC"
+    PACKAGE_TREES="$PACKAGE_TREES MiniApps"
+fi
+for content_directory in $CONTENT_DIRECTORIES; do
     mkdir -p "$PACKAGE_DIR/$content_directory"
 done
-cp ../packaging/gameboy/README.txt "$PACKAGE_DIR/MiniApps/Games/README.txt"
+if [ "$MINIAPPS" -eq 1 ]; then
+    cp ../packaging/gameboy/README.txt \
+        "$PACKAGE_DIR/MiniApps/Games/README.txt"
+fi
 CODEPAGE_TOOL="$(cd .. && pwd)/tools/codepages"
 CODEPAGE_BUILD_DIR="$PACKAGE_DIR/generated-codepages"
 if [ ! -x "$CODEPAGE_TOOL" ]; then
@@ -379,25 +410,25 @@ if [ ! -x "$RUNTIME_FONT_BUILDER" ]; then
     exit 1
 fi
 "$RUNTIME_FONT_BUILDER" "$PACKAGE_DIR/.rockbox/fonts"
-python3 ../tools/crazypod_runtime_font_audit.py \
-    --font-dir "$PACKAGE_DIR/.rockbox/fonts/crazypod-aot" \
-    ../dist/miniapps/*.cpk
+if [ "$MINIAPPS" -eq 1 ]; then
+    python3 ../tools/crazypod_runtime_font_audit.py \
+        --font-dir "$PACKAGE_DIR/.rockbox/fonts/crazypod-aot" \
+        ../dist/miniapps/*.cpk
+fi
 cp rockbox.ipod "$PACKAGE_DIR/.rockbox/rockbox.ipod"
 [ ! -f rockbox-info.txt ] || cp rockbox-info.txt "$PACKAGE_DIR/.rockbox/rockbox-info.txt"
 cp -R ../assets/crazypod-icons/. \
     "$PACKAGE_DIR/.rockbox/crazypod/icons/"
 cp ../assets/crazypod/default-home.bmp \
     "$PACKAGE_DIR/.rockbox/crazypod/default-home.bmp"
-cp "../dist/miniapps/$GAME2048_PACKAGE" \
-   "$PACKAGE_DIR/.rockbox/crazypod/miniapps/packages/"
-cp "../dist/miniapps/$CAPABILITY_LAB_PACKAGE" \
-   "$PACKAGE_DIR/.rockbox/crazypod/miniapps/packages/"
-cp "../dist/miniapps/$NATIVE_REFERENCE_PACKAGE" \
-   "$PACKAGE_DIR/.rockbox/crazypod/miniapps/packages/"
-cp "../dist/miniapps/$NOW_PLAYING_THEME_PACKAGE" \
-   "$PACKAGE_DIR/.rockbox/crazypod/miniapps/packages/"
-cp "../dist/miniapps/$SIGNAL_THEME_PACKAGE" \
-   "$PACKAGE_DIR/.rockbox/crazypod/miniapps/packages/"
+if [ "$MINIAPPS" -eq 1 ]; then
+    for package in "$GAME2048_PACKAGE" "$CAPABILITY_LAB_PACKAGE" \
+        "$NATIVE_REFERENCE_PACKAGE" "$NOW_PLAYING_THEME_PACKAGE" \
+        "$SIGNAL_THEME_PACKAGE"; do
+        cp "../dist/miniapps/$package" \
+           "$PACKAGE_DIR/.rockbox/crazypod/miniapps/packages/"
+    done
+fi
 for codec in lib/rbcodec/codecs/*.codec; do
     [ -f "$codec" ] || continue
     case "$codec" in
@@ -409,8 +440,7 @@ rm -f "$CRAZYPOD_PACKAGE_NAME.zip"
 (
     cd "$PACKAGE_DIR"
     zip -q -r "$PACKAGE_DIR/../$CRAZYPOD_PACKAGE_NAME.zip" \
-        .rockbox Music Podcasts Books Pictures Videos Contacts Calendars \
-        MiniApps
+        $PACKAGE_TREES
 )
 mv "$PACKAGE_DIR/../$CRAZYPOD_PACKAGE_NAME.zip" \
     "$CRAZYPOD_PACKAGE_NAME.zip"

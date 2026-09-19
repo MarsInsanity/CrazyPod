@@ -217,5 +217,9 @@ int read_bmp_fd(int fd,
 #if LCD_DEPTH > 1 && (defined(PLUGIN) || defined(HAVE_BMP_SCALING) || defined(HAVE_JPEG))
 void output_row_8_native(uint32_t row, void * row_in,
                          struct scaler_context *ctx);
+#ifdef HAVE_CRAZYPOD_MONO_UI
+void output_row_8_crazypod_gray(uint32_t row, void * row_in,
+                                struct scaler_context *ctx);
+#endif
 #endif
 #endif

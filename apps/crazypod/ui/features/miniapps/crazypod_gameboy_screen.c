@@ -1,4 +1,5 @@
 #include "config.h"
+#include "crazypod_pixel.h"
 #include <string.h>
 #include "audio.h"
 #include "backlight.h"
@@ -101,7 +102,7 @@ static bool frame_border_dirty = true;
 static void draw_frame(void)
 {
     const uint16_t *pixels = crazypod_gameboy_core_pixels();
-    fb_data *target = crazypod_platform_display_framebuffer();
+    crazypod_pixel_t *target = crazypod_platform_display_framebuffer();
     int group;
 
     if(frame_border_dirty) {
@@ -113,15 +114,15 @@ static void draw_frame(void)
 
     for(group = 0; group < 72; ++group) {
         const uint16_t *src = pixels + group * 2 * 160;
-        fb_data *row0 = target + (group * 3 + 12) * LCD_WIDTH + 40;
-        fb_data *row1 = row0 + LCD_WIDTH;
-        fb_data *row2 = row1 + LCD_WIDTH;
+        crazypod_pixel_t *row0 = target + (group * 3 + 12) * LCD_WIDTH + 40;
+        crazypod_pixel_t *row1 = row0 + LCD_WIDTH;
+        crazypod_pixel_t *row2 = row1 + LCD_WIDTH;
         const uint16_t *src1 = src + 160;
         int column;
 
         for(column = 0; column < 80; ++column) {
-            fb_data a = src[0];
-            fb_data b = src[1];
+            crazypod_pixel_t a = src[0];
+            crazypod_pixel_t b = src[1];
 
             row0[0] = a;
             row0[1] = a;
@@ -138,7 +139,7 @@ static void draw_frame(void)
             src += 2;
             src1 += 2;
         }
-        memcpy(row1, row0 - 240, 240 * sizeof(fb_data));
+        memcpy(row1, row0 - 240, 240 * sizeof(crazypod_pixel_t));
     }
     /* Full-width rect: on PortalPlayer a narrower one repeats the BCM
      * address setup for every scanline, so trimming columns costs more
@@ -172,7 +173,7 @@ static void draw_menu(int selected, bool save_failed)
     static const char *const items[] = {
         CP_TR("Resume"), "START", "SELECT", CP_TR("Exit")
     };
-    fb_data *target = crazypod_platform_display_framebuffer();
+    crazypod_pixel_t *target = crazypod_platform_display_framebuffer();
     int i;
 
     memset(target, 0, LCD_WIDTH * LCD_HEIGHT * sizeof(*target));

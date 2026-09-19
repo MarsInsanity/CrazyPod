@@ -1,4 +1,5 @@
 #include "config.h"
+#include "crazypod_pixel.h"
 
 #include "crazypod_l10n.h"
 
@@ -301,19 +302,19 @@ static void hide_video_controls(void)
 
 static void flash_video_frame(void)
 {
-    fb_data *pixel =
-        (fb_data *)crazypod_platform_display_framebuffer();
-    fb_data *end = pixel + LCD_WIDTH * LCD_HEIGHT;
+    crazypod_pixel_t *pixel =
+        (crazypod_pixel_t *)crazypod_platform_display_framebuffer();
+    crazypod_pixel_t *end = pixel + LCD_WIDTH * LCD_HEIGHT;
 
     while(pixel < end) {
-        *pixel ^= (fb_data)LCD_WHITE;
+        *pixel ^= (crazypod_pixel_t)LCD_WHITE;
         ++pixel;
     }
     lcd_update();
     sleep((HZ / 20) > 0 ? HZ / 20 : 1);
-    pixel = (fb_data *)crazypod_platform_display_framebuffer();
+    pixel = (crazypod_pixel_t *)crazypod_platform_display_framebuffer();
     while(pixel < end) {
-        *pixel ^= (fb_data)LCD_WHITE;
+        *pixel ^= (crazypod_pixel_t)LCD_WHITE;
         ++pixel;
     }
     lcd_update();

@@ -1,4 +1,5 @@
 #include "config.h"
+#include "crazypod_pixel.h"
 
 #ifdef HAVE_CRAZYPOD_UI
 
@@ -20,24 +21,24 @@
 #define INFO_TOAST_PIXELS (230 * 50)
 #define INFO_BAR_PIXELS (LCD_WIDTH * 34)
 
-static fb_data menu_topbar_pixels[MENU_TOPBAR_PIXELS]
+static crazypod_pixel_t menu_topbar_pixels[MENU_TOPBAR_PIXELS]
     CACHEALIGN_AT_LEAST_ATTR(16);
-static fb_data menu_panel_pixels[MENU_PANEL_PIXELS]
+static crazypod_pixel_t menu_panel_pixels[MENU_PANEL_PIXELS]
     CACHEALIGN_AT_LEAST_ATTR(16);
-static fb_data search_query_pixels[SEARCH_QUERY_PIXELS]
+static crazypod_pixel_t search_query_pixels[SEARCH_QUERY_PIXELS]
     CACHEALIGN_AT_LEAST_ATTR(16);
-static fb_data search_results_pixels[SEARCH_RESULTS_PIXELS]
+static crazypod_pixel_t search_results_pixels[SEARCH_RESULTS_PIXELS]
     CACHEALIGN_AT_LEAST_ATTR(16);
-static fb_data info_toast_pixels[INFO_TOAST_PIXELS]
+static crazypod_pixel_t info_toast_pixels[INFO_TOAST_PIXELS]
     CACHEALIGN_AT_LEAST_ATTR(16);
-static fb_data info_bar_pixels[INFO_BAR_PIXELS]
+static crazypod_pixel_t info_bar_pixels[INFO_BAR_PIXELS]
     CACHEALIGN_AT_LEAST_ATTR(16);
-static fb_data info_bar_alt_pixels[INFO_BAR_PIXELS]
+static crazypod_pixel_t info_bar_alt_pixels[INFO_BAR_PIXELS]
     CACHEALIGN_AT_LEAST_ATTR(16);
 static lv_image_dsc_t descriptors[7];
 static crazypod_glass_boost_callback boost_cpu;
 
-fb_data *crazypod_glass_slot_pixels(enum crazypod_glass_slot slot)
+crazypod_pixel_t *crazypod_glass_slot_pixels(enum crazypod_glass_slot slot)
 {
     switch(slot) {
     case CRAZYPOD_GLASS_SLOT_MENU_TOPBAR:
@@ -74,7 +75,7 @@ void crazypod_glass_slots_configure(
 
 static bool render_slot(
     enum crazypod_glass_slot slot,
-    const fb_data *source, int source_width, int source_height,
+    const crazypod_pixel_t *source, int source_width, int source_height,
     int source_stride, int x, int y, int width, int height,
     enum crazypod_glass_material material)
 {
@@ -94,8 +95,8 @@ bool crazypod_glass_slot_prepare_frame(
     int x, int y, int width, int height,
     enum crazypod_glass_material material)
 {
-    const fb_data *framebuffer =
-        (const fb_data *)crazypod_platform_display_framebuffer();
+    const crazypod_pixel_t *framebuffer =
+        (const crazypod_pixel_t *)crazypod_platform_display_framebuffer();
 
     lv_refr_now(NULL);
     return render_slot(
@@ -110,8 +111,8 @@ bool crazypod_glass_slot_prepare_menu(
 {
     const lv_image_dsc_t *wallpaper =
         crazypod_custom_menu_wallpaper();
-    fb_data solid_pixel;
-    const fb_data *source;
+    crazypod_pixel_t solid_pixel;
+    const crazypod_pixel_t *source;
     int source_width;
     int source_height;
     int source_stride;
@@ -119,17 +120,17 @@ bool crazypod_glass_slot_prepare_menu(
     if(wallpaper != NULL &&
        wallpaper->header.cf == LV_COLOR_FORMAT_RGB565 &&
        wallpaper->data != NULL &&
-       wallpaper->header.stride % sizeof(fb_data) == 0) {
-        source = (const fb_data *)wallpaper->data;
+       wallpaper->header.stride % sizeof(crazypod_pixel_t) == 0) {
+        source = (const crazypod_pixel_t *)wallpaper->data;
         source_width = wallpaper->header.w;
         source_height = wallpaper->header.h;
         source_stride =
-            wallpaper->header.stride / sizeof(fb_data);
+            wallpaper->header.stride / sizeof(crazypod_pixel_t);
     }
     else {
         uint32_t color = crazypod_appearance_menu_color();
 
-        solid_pixel = LCD_RGBPACK(
+        solid_pixel = CRAZYPOD_PIXEL_PACK(
             (color >> 16) & 0xff,
             (color >> 8) & 0xff,
             color & 0xff);

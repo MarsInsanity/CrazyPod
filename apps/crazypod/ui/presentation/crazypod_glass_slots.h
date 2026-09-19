@@ -1,6 +1,7 @@
 #ifndef CRAZYPOD_GLASS_SLOTS_H
 #define CRAZYPOD_GLASS_SLOTS_H
 
+#include "crazypod_pixel.h"
 #include "lcd.h"
 #include "lvgl.h"
 
@@ -16,7 +17,7 @@ enum crazypod_glass_slot {
     CRAZYPOD_GLASS_SLOT_INFO_BAR_ALT,
 };
 
-fb_data *crazypod_glass_slot_pixels(enum crazypod_glass_slot slot);
+crazypod_pixel_t *crazypod_glass_slot_pixels(enum crazypod_glass_slot slot);
 lv_image_dsc_t *crazypod_glass_slot_descriptor(
     enum crazypod_glass_slot slot);
 void crazypod_glass_slots_configure(

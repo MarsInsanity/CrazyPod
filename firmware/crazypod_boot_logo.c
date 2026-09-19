@@ -75,11 +75,11 @@ static const unsigned char boot_logo_alpha[
     0x00, 0x27, 0xce, 0xd9, 0x20, 0x00, 0x00, 0x00,
 };
 
-static fb_data boot_logo_pixels[
+static crazypod_pixel_t boot_logo_pixels[
     CRAZYPOD_BOOT_LOGO_WIDTH * CRAZYPOD_BOOT_LOGO_HEIGHT];
 static bool boot_logo_ready;
 
-const fb_data *crazypod_boot_logo_pixels(void)
+const crazypod_pixel_t *crazypod_boot_logo_pixels(void)
 {
     int y;
 
@@ -98,19 +98,19 @@ const fb_data *crazypod_boot_logo_pixels(void)
             unsigned channel = alpha * 17;
 
             boot_logo_pixels[y * CRAZYPOD_BOOT_LOGO_WIDTH + x] =
-                LCD_RGBPACK(channel, channel, channel);
+                CRAZYPOD_PIXEL_PACK(channel, channel, channel);
         }
     }
     boot_logo_ready = true;
     return boot_logo_pixels;
 }
 
-void crazypod_boot_logo_draw(fb_data *framebuffer,
+void crazypod_boot_logo_draw(crazypod_pixel_t *framebuffer,
                              int framebuffer_width,
                              int framebuffer_height,
                              int framebuffer_stride)
 {
-    const fb_data *source = crazypod_boot_logo_pixels();
+    const crazypod_pixel_t *source = crazypod_boot_logo_pixels();
     int destination_x =
         (framebuffer_width - CRAZYPOD_BOOT_LOGO_WIDTH) / 2;
     int destination_y =
@@ -128,7 +128,7 @@ void crazypod_boot_logo_draw(fb_data *framebuffer,
                    (destination_y + row) * framebuffer_stride +
                    destination_x,
                source + row * CRAZYPOD_BOOT_LOGO_WIDTH,
-               CRAZYPOD_BOOT_LOGO_WIDTH * sizeof(fb_data));
+               CRAZYPOD_BOOT_LOGO_WIDTH * sizeof(crazypod_pixel_t));
     }
 }
 

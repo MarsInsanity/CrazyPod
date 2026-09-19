@@ -1,4 +1,5 @@
 #include "config.h"
+#include "crazypod_pixel.h"
 
 #ifdef HAVE_CRAZYPOD_UI
 
@@ -22,7 +23,7 @@
 #define POSTER_WAKE 1
 
 struct poster_slot {
-    fb_data pixels[2][CRAZYPOD_VIDEO_POSTER_WIDTH *
+    crazypod_pixel_t pixels[2][CRAZYPOD_VIDEO_POSTER_WIDTH *
                       CRAZYPOD_VIDEO_POSTER_HEIGHT]
         CACHEALIGN_AT_LEAST_ATTR(16);
     lv_image_dsc_t descriptor[2];
@@ -47,15 +48,15 @@ static unsigned generation;
 
 static bool decode_poster(const char *path,
                           lv_image_dsc_t *descriptor,
-                          fb_data *destination)
+                          crazypod_pixel_t *destination)
 {
     struct bitmap bitmap;
     size_t pixel_bytes =
         (size_t)CRAZYPOD_VIDEO_POSTER_WIDTH *
-        CRAZYPOD_VIDEO_POSTER_HEIGHT * sizeof(fb_data);
+        CRAZYPOD_VIDEO_POSTER_HEIGHT * sizeof(crazypod_pixel_t);
     size_t decode_bytes = pixel_bytes + POSTER_DECODE_EXTRA;
     int handle;
-    fb_data *decode_buffer;
+    crazypod_pixel_t *decode_buffer;
     int result;
     int row;
 
@@ -73,7 +74,7 @@ static bool decode_poster(const char *path,
     result = read_bmp_file(
         path, &bitmap, decode_bytes,
         FORMAT_NATIVE | FORMAT_RESIZE | FORMAT_KEEP_ASPECT,
-        &format_native);
+        CRAZYPOD_BITMAP_FORMAT);
     crazypod_image_decode_unlock();
     if(result < 0 || bitmap.width <= 0 || bitmap.height <= 0 ||
        bitmap.width > CRAZYPOD_VIDEO_POSTER_WIDTH ||
@@ -84,8 +85,8 @@ static bool decode_poster(const char *path,
     }
     for(row = 0; row < bitmap.height; ++row) {
         memcpy(destination + row * bitmap.width,
-               (fb_data *)bitmap.data + row * bitmap.width,
-               (size_t)bitmap.width * sizeof(fb_data));
+               (crazypod_pixel_t *)bitmap.data + row * bitmap.width,
+               (size_t)bitmap.width * sizeof(crazypod_pixel_t));
     }
     core_free(handle);
     return crazypod_image_configure_rgb565(

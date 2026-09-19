@@ -1,4 +1,5 @@
 #include "config.h"
+#include "crazypod_pixel.h"
 
 #ifdef HAVE_CRAZYPOD_UI
 
@@ -511,12 +512,12 @@ crazypod_screen_recording_toggle(long now)
 
 static void copy_frame(uint8_t *destination)
 {
-    const fb_data *framebuffer =
+    const crazypod_pixel_t *framebuffer =
         crazypod_platform_display_framebuffer();
     int row;
 
     for(row = LCD_HEIGHT - 1; row >= 0; --row) {
-        const fb_data *source = framebuffer + row * LCD_WIDTH;
+        const crazypod_pixel_t *source = framebuffer + row * LCD_WIDTH;
         int column;
 
         for(column = 0; column < LCD_WIDTH; ++column) {

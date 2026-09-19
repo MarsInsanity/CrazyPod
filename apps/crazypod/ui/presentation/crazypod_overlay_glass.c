@@ -1,4 +1,5 @@
 #include "config.h"
+#include "crazypod_pixel.h"
 
 #ifdef HAVE_CRAZYPOD_UI
 
@@ -29,11 +30,11 @@
      CRAZYPOD_IMAGE_GLASS_SAMPLE_SCALE)
 
 static void (*boost_cpu)(int ticks);
-static fb_data sample_pixels[SAMPLE_WIDTH * SAMPLE_HEIGHT]
+static crazypod_pixel_t sample_pixels[SAMPLE_WIDTH * SAMPLE_HEIGHT]
     CACHEALIGN_AT_LEAST_ATTR(16);
-static fb_data sample_scratch[SAMPLE_WIDTH * SAMPLE_HEIGHT]
+static crazypod_pixel_t sample_scratch[SAMPLE_WIDTH * SAMPLE_HEIGHT]
     CACHEALIGN_AT_LEAST_ATTR(16);
-static fb_data render_pixels[POPUP_MAX_WIDTH * POPUP_MAX_HEIGHT]
+static crazypod_pixel_t render_pixels[POPUP_MAX_WIDTH * POPUP_MAX_HEIGHT]
     CACHEALIGN_AT_LEAST_ATTR(16);
 static lv_image_dsc_t descriptor;
 static bool valid;
@@ -62,8 +63,8 @@ void crazypod_overlay_glass_prepare(bool refresh)
 static void prepare_panel_descriptor(
     int x, int y, int width, int height, lv_opa_t tint_opacity)
 {
-    const fb_data *framebuffer =
-        (const fb_data *)crazypod_platform_display_framebuffer();
+    const crazypod_pixel_t *framebuffer =
+        (const crazypod_pixel_t *)crazypod_platform_display_framebuffer();
 
     /*
      * A panel under Reduce Effects is a flat rounded box: the sampled

@@ -1,4 +1,5 @@
 #include "config.h"
+#include "crazypod_pixel.h"
 
 #ifdef HAVE_CRAZYPOD_UI
 
@@ -21,10 +22,10 @@
 #define GLASS_BORDER_OPA 38
 #define GLASS_SHADOW_OPA 92
 
-static fb_data sample_pixels[
+static crazypod_pixel_t sample_pixels[
     GLASS_SAMPLE_WIDTH * GLASS_SAMPLE_HEIGHT]
     CACHEALIGN_AT_LEAST_ATTR(16);
-static fb_data sample_scratch[
+static crazypod_pixel_t sample_scratch[
     GLASS_SAMPLE_WIDTH * GLASS_SAMPLE_HEIGHT]
     CACHEALIGN_AT_LEAST_ATTR(16);
 
@@ -62,10 +63,10 @@ lv_opa_t crazypod_glass_material_shadow_opa(
 }
 
 bool crazypod_glass_render_descriptor(
-    const fb_data *source, int source_width, int source_height,
+    const crazypod_pixel_t *source, int source_width, int source_height,
     int source_stride, int source_x, int source_y,
     int width, int height, enum crazypod_glass_material material,
-    fb_data *render_pixels, lv_image_dsc_t *descriptor,
+    crazypod_pixel_t *render_pixels, lv_image_dsc_t *descriptor,
     crazypod_glass_boost_callback boost)
 {
     lv_opa_t tint_opacity =
