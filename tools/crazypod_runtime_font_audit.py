@@ -11,21 +11,36 @@ import zipfile
 ROOT = Path(__file__).resolve().parents[1]
 DEFAULT_SPEC_FILE = ROOT / "tools/crazypod-runtime-font-specs.txt"
 LOCALES = ("jp", "kr", "sc", "tc")
-SPEC_PATTERN = re.compile(r"(system|serif|mono):(\d{3}):(\d{1,2})")
+SPEC_PATTERN = re.compile(
+    r"(system|serif|mono):(\d{3}):(\d{1,2})(?::(full|compact))?")
+CANVASES = ("full", "compact")
 
 
-def load_specs(path):
+def load_specs(path, canvas):
+    """The tuples one canvas ships.
+
+    A line may name the canvas it is for; without one it is for both. The
+    two do not overlap much: the Mini resolves the product UI's type a size
+    down, so it carries the small end of the pack and the colour iPods carry
+    the large end.
+    """
+    if canvas not in CANVASES:
+        raise ValueError(f"unknown canvas: {canvas}")
     specs = set()
     for line_number, raw_line in enumerate(
             path.read_text(encoding="ascii").splitlines(), 1):
         line = raw_line.strip()
         if not line or line.startswith("#"):
             continue
-        if SPEC_PATTERN.fullmatch(line) is None:
+        match = SPEC_PATTERN.fullmatch(line)
+        if match is None:
             raise ValueError(f"invalid spec at {path}:{line_number}: {line}")
-        if line in specs:
+        spec = ":".join(match.group(1, 2, 3))
+        if match.group(4) is not None and match.group(4) != canvas:
+            continue
+        if spec in specs:
             raise ValueError(f"duplicate spec at {path}:{line_number}: {line}")
-        specs.add(line)
+        specs.add(spec)
     if not specs:
         raise ValueError(f"runtime font spec is empty: {path}")
     return specs
@@ -91,10 +106,14 @@ def main():
         "--font-dir", type=Path, required=True,
         help="generated crazypod-aot font directory",
     )
+    parser.add_argument(
+        "--canvas", choices=CANVASES, default="full",
+        help="which panel's font set the directory was built for",
+    )
     parser.add_argument("packages", nargs="+", type=Path)
     args = parser.parse_args()
 
-    specs = load_specs(args.spec_file)
+    specs = load_specs(args.spec_file, args.canvas)
     audit_font_directory(args.font_dir, specs)
     requirements = set()
     for package in args.packages:

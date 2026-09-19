@@ -5,6 +5,7 @@
 #include "crazypod_marquee.h"
 #include "crazypod_preview_primitives.h"
 #include "crazypod_ui_widgets.h"
+#include "crazypod_ui_color.h"
 
 #define COLOR_WHITE 0xFFFFFF
 #define TEXT_PANEL_WIDTH 140
@@ -48,7 +49,7 @@ void crazypod_preview_add_fastener(
 
     lv_obj_set_style_border_width(fastener, 1, 0);
     lv_obj_set_style_border_color(
-        fastener, lv_color_hex(0x1C2022), 0);
+        fastener, crazypod_ui_color(0x1C2022), 0);
     lv_obj_set_style_border_opa(fastener, 125, 0);
     crazypod_ui_widget_box(
         fastener, 1, 2, 3, 1, 0, 0x303538, 185);
@@ -63,7 +64,7 @@ lv_obj_t *crazypod_preview_make_plinth(
 
     lv_obj_set_style_border_width(plinth, 1, 0);
     lv_obj_set_style_border_color(
-        plinth, lv_color_hex(0x0B0D0E), 0);
+        plinth, crazypod_ui_color(0x0B0D0E), 0);
     lv_obj_set_style_border_opa(plinth, 185, 0);
     crazypod_ui_widget_box(
         plinth, 4, 1, width - 8, 2, 1, top, 205);
@@ -99,11 +100,11 @@ lv_obj_t *crazypod_preview_make_text_panel(
         parent, 170, y, TEXT_PANEL_WIDTH, height,
         9, 0x11171A, 242);
     lv_obj_set_style_bg_grad_color(
-        panel, lv_color_hex(0x060809), 0);
+        panel, crazypod_ui_color(0x060809), 0);
     lv_obj_set_style_bg_grad_dir(panel, LV_GRAD_DIR_VER, 0);
     lv_obj_set_style_border_width(panel, 1, 0);
     lv_obj_set_style_border_color(
-        panel, lv_color_hex(0x89959A), 0);
+        panel, crazypod_ui_color(0x89959A), 0);
     lv_obj_set_style_border_opa(panel, 72, 0);
     crazypod_preview_add_bevel(
         panel, TEXT_PANEL_WIDTH, height, 0xEEF5F7, 0x000000);

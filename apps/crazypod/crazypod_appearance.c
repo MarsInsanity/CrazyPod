@@ -420,8 +420,21 @@ const char *crazypod_appearance_color_name(int color)
 
 uint32_t crazypod_appearance_color(int color)
 {
+#ifdef HAVE_CRAZYPOD_MONO_UI
+    /*
+     * Six of the eight accents quantise to the same grey on a four-shade
+     * panel, so the choice is not offered there and this returns one fixed
+     * accent instead. It is a mid grey rather than black: the accent is
+     * mostly a fill with white type on it, and the design map turns that
+     * type into ink. Black type on a black fill says nothing.
+     */
+    (void)color;
+    (void)colors;
+    return 0x808080;
+#else
     return color >= 0 && color < CRAZYPOD_APPEARANCE_COLOR_COUNT
         ? colors[color] : 0x141419;
+#endif
 }
 
 uint32_t crazypod_appearance_home_color(void)

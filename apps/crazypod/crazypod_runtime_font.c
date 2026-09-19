@@ -488,6 +488,38 @@ static const lv_font_t *fallback_font_resolve(
     return &available->lv_font;
 }
 
+#ifdef HAVE_CRAZYPOD_COMPACT_UI
+/*
+ * The type sizes the product UI asks for were chosen for a 320x240 panel.
+ * The Mini's is 138x110 at about the same pixel pitch, so the same request
+ * has to come back smaller or a list row holds three words.
+ *
+ * This is not a scale factor. Below about eight pixels a face stops being
+ * read and starts being guessed at, so the small end compresses barely at
+ * all and the display sizes -- which have room to lose -- take most of the
+ * reduction. Every size it can return is one the font pack actually builds;
+ * see tools/crazypod-runtime-font-specs.txt.
+ */
+static unsigned compact_size(unsigned size)
+{
+    static const struct {
+        unsigned short requested;
+        unsigned short compact;
+    } ladder[] = {
+        {  6,  6 }, {  7,  7 }, {  8,  8 }, { 11,  8 }, { 12,  9 },
+        { 16, 10 }, { 18, 11 }, { 20, 11 }, { 22, 12 }, { 24, 14 },
+        { 28, 15 }, { 32, 16 },
+    };
+    unsigned index;
+
+    for(index = 0; index < sizeof(ladder) / sizeof(ladder[0]); ++index) {
+        if(size <= ladder[index].requested)
+            return ladder[index].compact;
+    }
+    return 18;
+}
+#endif
+
 static const lv_font_t *semantic_font_resolve(
     enum crazypod_font_family family, unsigned size, unsigned weight,
     enum crazypod_font_style style, unsigned line_height, bool persistent)
@@ -500,6 +532,11 @@ static const lv_font_t *semantic_font_resolve(
     unsigned index;
     int count;
 
+#ifdef HAVE_CRAZYPOD_COMPACT_UI
+    size = compact_size(size);
+    /* The caller's line box was measured against the size it asked for. */
+    line_height = 0;
+#endif
     if(family_value == NULL || size < CRAZYPOD_FONT_MIN_SIZE ||
        size > CRAZYPOD_FONT_MAX_SIZE || weight_name(weight) == NULL ||
        style != CRAZYPOD_FONT_STYLE_NORMAL ||

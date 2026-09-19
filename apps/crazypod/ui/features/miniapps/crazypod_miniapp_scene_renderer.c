@@ -22,6 +22,7 @@
 #include "../../features/now_playing/crazypod_now_playing_feature.h"
 #include "../../presentation/crazypod_marquee.h"
 #include "crazypod_miniapp_scene_internal.h"
+#include "../../presentation/crazypod_ui_color.h"
 
 #define ADAPTIVE_LYRICS_INSET 2
 #define ADAPTIVE_LYRICS_CURRENT_LINE_SPACE 4
@@ -451,7 +452,7 @@ bool crazypod_miniapp_scene_now_playing_artwork_refresh_node(
             core_free(old_secondary_handle);
         lv_obj_set_style_bg_opa(node->object, LV_OPA_COVER, 0);
         lv_obj_set_style_bg_color(
-            node->object, lv_color_hex(0x121218), 0);
+            node->object, crazypod_ui_color(0x121218), 0);
         lv_obj_set_style_clip_corner(node->object, true, 0);
         lv_obj_invalidate(node->object);
         return true;
@@ -852,7 +853,7 @@ static bool apply_chart_data(
     if(node->chart_series == NULL) {
         node->chart_series = lv_chart_add_series(
             node->object,
-            lv_color_hex(0xff9f43),
+            crazypod_ui_color(0xff9f43),
             LV_CHART_AXIS_PRIMARY_Y);
         if(node->chart_series == NULL)
             return false;
@@ -1415,7 +1416,7 @@ static bool canvas_draw_text(
     descriptor.text_length = command->payload_size;
     descriptor.font = font;
     descriptor.color =
-        lv_color_hex(command->color & 0xffffffu);
+        crazypod_ui_color(command->color & 0xffffffu);
     descriptor.opa = command->opacity;
     coordinates.x1 = command->x;
     coordinates.y1 = command->y;
@@ -1557,7 +1558,7 @@ bool crazypod_miniapp_scene_canvas_commit(
            (command.flags != 0 || command.payload_size != 0))
             return false;
         color = lv_color_to_u16(
-            lv_color_hex(command.color & 0xffffffu));
+            crazypod_ui_color(command.color & 0xffffffu));
         if(command.opcode == CP_CANVAS_CLEAR) {
             for(y = clip_top; y < clip_bottom; ++y)
                 for(x = clip_left; x < clip_right; ++x)
@@ -1788,13 +1789,13 @@ void crazypod_miniapp_scene_property_apply(
         lv_obj_set_style_margin_bottom(object, value, 0);
         break;
     case CP_UI_PROP_BACKGROUND_COLOR:
-        lv_obj_set_style_bg_color(object, lv_color_hex(value), 0);
+        lv_obj_set_style_bg_color(object, crazypod_ui_color(value), 0);
         break;
     case CP_UI_PROP_BACKGROUND_OPACITY:
         lv_obj_set_style_bg_opa(object, value, 0);
         break;
     case CP_UI_PROP_BORDER_COLOR:
-        lv_obj_set_style_border_color(object, lv_color_hex(value), 0);
+        lv_obj_set_style_border_color(object, crazypod_ui_color(value), 0);
         break;
     case CP_UI_PROP_BORDER_WIDTH:
         lv_obj_set_style_border_width(object, value, 0);
@@ -1809,7 +1810,7 @@ void crazypod_miniapp_scene_property_apply(
         lv_obj_set_style_opa(object, value, 0);
         break;
     case CP_UI_PROP_SHADOW_COLOR:
-        lv_obj_set_style_shadow_color(object, lv_color_hex(value), 0);
+        lv_obj_set_style_shadow_color(object, crazypod_ui_color(value), 0);
         break;
     case CP_UI_PROP_SHADOW_WIDTH:
         lv_obj_set_style_shadow_width(object, value, 0);
@@ -1821,7 +1822,7 @@ void crazypod_miniapp_scene_property_apply(
         apply_text(node);
         break;
     case CP_UI_PROP_TEXT_COLOR:
-        lv_obj_set_style_text_color(object, lv_color_hex(value), 0);
+        lv_obj_set_style_text_color(object, crazypod_ui_color(value), 0);
         break;
     case CP_UI_PROP_TEXT_ALIGN:
         lv_obj_set_style_text_align(
@@ -2009,11 +2010,11 @@ static lv_obj_t *create_progress_bar(lv_obj_t *parent)
     /* CrazyPod disables the stock LVGL themes, so a bare bar otherwise has
        a transparent indicator even when its value is non-zero. */
     lv_obj_set_style_bg_color(
-        object, lv_color_hex(0x30343b), LV_PART_MAIN);
+        object, crazypod_ui_color(0x30343b), LV_PART_MAIN);
     lv_obj_set_style_bg_opa(object, LV_OPA_COVER, LV_PART_MAIN);
     lv_obj_set_style_radius(object, LV_RADIUS_CIRCLE, LV_PART_MAIN);
     lv_obj_set_style_bg_color(
-        object, lv_color_hex(0x5b9cff), LV_PART_INDICATOR);
+        object, crazypod_ui_color(0x5b9cff), LV_PART_INDICATOR);
     lv_obj_set_style_bg_opa(object, LV_OPA_COVER, LV_PART_INDICATOR);
     lv_obj_set_style_radius(
         object, LV_RADIUS_CIRCLE, LV_PART_INDICATOR);

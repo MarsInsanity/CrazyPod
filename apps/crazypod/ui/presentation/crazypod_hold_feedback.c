@@ -6,6 +6,7 @@
 
 #include "crazypod_hold_feedback.h"
 #include "crazypod_ui_widgets.h"
+#include "crazypod_ui_color.h"
 
 #define COLOR_WHITE 0xFFFFFF
 #define COLOR_PROGRESS 0x47E69A
@@ -74,7 +75,7 @@ static void begin_hold_feedback(
     lv_obj_remove_flag(feedback->root, LV_OBJ_FLAG_CLICKABLE);
     lv_obj_set_style_border_width(feedback->root, 1, 0);
     lv_obj_set_style_border_color(
-        feedback->root, lv_color_hex(COLOR_WHITE), 0);
+        feedback->root, crazypod_ui_color(COLOR_WHITE), 0);
     lv_obj_set_style_border_opa(feedback->root, 45, 0);
     feedback->fill = crazypod_ui_widget_box(
         feedback->root,

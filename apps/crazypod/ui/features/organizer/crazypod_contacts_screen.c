@@ -11,6 +11,7 @@
 #include "../../presentation/crazypod_ui_widgets.h"
 #include "../../../crazypod_state.h"
 #include "crazypod_contacts_screen.h"
+#include "../../presentation/crazypod_ui_color.h"
 
 #define CRAZYPOD_CONTACT_FONT (&lv_font_source_han_sans_sc_14_cjk)
 #define CRAZYPOD_CONTACT_WHITE 0xFFFFFF
@@ -43,19 +44,19 @@ void crazypod_contacts_screen_render(lv_obj_t *content, int contact_index)
     card = crazypod_ui_widget_box(content, 70, 42, 180, 184, 18,
                     0x242A31, 238);
     lv_obj_set_style_border_width(card, 1, 0);
-    lv_obj_set_style_border_color(card, lv_color_hex(CRAZYPOD_CONTACT_WHITE), 0);
+    lv_obj_set_style_border_color(card, crazypod_ui_color(CRAZYPOD_CONTACT_WHITE), 0);
     lv_obj_set_style_border_opa(card, 42, 0);
     if(!crazypod_state_reduce_effects()) {
         lv_obj_set_style_shadow_width(card, 18, 0);
         lv_obj_set_style_shadow_offset_y(card, 10, 0);
-        lv_obj_set_style_shadow_color(card, lv_color_hex(0x000000), 0);
+        lv_obj_set_style_shadow_color(card, crazypod_ui_color(0x000000), 0);
         lv_obj_set_style_shadow_opa(card, 95, 0);
     }
 
     avatar = crazypod_ui_widget_box(card, 63, 14, 54, 54,
                       LV_RADIUS_CIRCLE, 0x59B89E, LV_OPA_COVER);
     lv_obj_set_style_bg_grad_color(
-        avatar, lv_color_hex(0x2E4857), 0);
+        avatar, crazypod_ui_color(0x2E4857), 0);
     lv_obj_set_style_bg_grad_dir(avatar, LV_GRAD_DIR_VER, 0);
     label = crazypod_ui_widget_label(avatar, initials,
                        CRAZYPOD_CONTACT_FONT,
@@ -73,7 +74,7 @@ void crazypod_contacts_screen_render(lv_obj_t *content, int contact_index)
     row = crazypod_ui_widget_box(card, 12, 103, 156, 30, 8,
                    CRAZYPOD_CONTACT_WHITE, 28);
     lv_obj_set_style_border_width(row, 1, 0);
-    lv_obj_set_style_border_color(row, lv_color_hex(CRAZYPOD_CONTACT_WHITE), 0);
+    lv_obj_set_style_border_color(row, crazypod_ui_color(CRAZYPOD_CONTACT_WHITE), 0);
     lv_obj_set_style_border_opa(row, 32, 0);
     label = crazypod_ui_widget_label(row, LV_SYMBOL_CALL,
                        &lv_font_montserrat_10,
@@ -94,7 +95,7 @@ void crazypod_contacts_screen_render(lv_obj_t *content, int contact_index)
     row = crazypod_ui_widget_box(card, 12, 140, 156, 30, 8,
                    CRAZYPOD_CONTACT_WHITE, 16);
     lv_obj_set_style_border_width(row, 1, 0);
-    lv_obj_set_style_border_color(row, lv_color_hex(CRAZYPOD_CONTACT_WHITE), 0);
+    lv_obj_set_style_border_color(row, crazypod_ui_color(CRAZYPOD_CONTACT_WHITE), 0);
     lv_obj_set_style_border_opa(row, 22, 0);
     label = crazypod_ui_widget_label(row, LV_SYMBOL_ENVELOPE,
                        &lv_font_montserrat_10,

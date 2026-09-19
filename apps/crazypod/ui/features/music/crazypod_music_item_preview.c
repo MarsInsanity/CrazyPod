@@ -15,6 +15,7 @@
 #include "../../presentation/crazypod_preview_primitives.h"
 #include "../../../crazypod_state.h"
 #include "crazypod_music_item_preview.h"
+#include "../../presentation/crazypod_ui_color.h"
 
 #define COLOR_CYAN 0x55D6E7
 #define COLOR_WHITE 0xFFFFFF
@@ -80,11 +81,11 @@ static lv_obj_t *make_music_preview_icon(
         parent, x, y, 96, 96, 24, 0x102A38, 188);
 
     lv_obj_set_style_bg_grad_color(
-        stage, lv_color_hex(0x07131B), 0);
+        stage, crazypod_ui_color(0x07131B), 0);
     lv_obj_set_style_bg_grad_dir(stage, LV_GRAD_DIR_VER, 0);
     lv_obj_set_style_border_width(stage, 1, 0);
     lv_obj_set_style_border_color(
-        stage, lv_color_hex(COLOR_CYAN), 0);
+        stage, crazypod_ui_color(COLOR_CYAN), 0);
     lv_obj_set_style_border_opa(stage, 58, 0);
     if(icon == CRAZYPOD_PREVIEW_ICON_ARTIST) {
         make_preview_icon_part(
@@ -121,13 +122,13 @@ static void create_artwork(
 
     lv_obj_set_style_bg_grad_color(
         card,
-        lv_color_hex(artwork_color(
+        crazypod_ui_color(artwork_color(
             track != NULL ? track->artist : "", 1)), 0);
     lv_obj_set_style_bg_grad_dir(card, LV_GRAD_DIR_VER, 0);
     if(!crazypod_state_reduce_effects()) {
         lv_obj_set_style_shadow_width(card, 5, 0);
         lv_obj_set_style_shadow_offset_y(card, 2, 0);
-        lv_obj_set_style_shadow_color(card, lv_color_hex(0x000000), 0);
+        lv_obj_set_style_shadow_color(card, crazypod_ui_color(0x000000), 0);
         lv_obj_set_style_shadow_opa(card, 55, 0);
         lv_obj_set_style_clip_corner(card, true, 0);
     }

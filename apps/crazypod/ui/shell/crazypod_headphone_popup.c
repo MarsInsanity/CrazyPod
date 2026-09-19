@@ -14,6 +14,7 @@
 #include "../presentation/crazypod_ui_widgets.h"
 #include "crazypod_desktop_native.h"
 #include "crazypod_headphone_popup.h"
+#include "../presentation/crazypod_ui_color.h"
 
 #define COLOR_WHITE 0xFFFFFF
 #define COLOR_CERAMIC_TOP 0xFAFAFB
@@ -151,20 +152,20 @@ static void draw_rect(
     lv_draw_rect_dsc_init(&rectangle);
     rectangle.base.layer = layer;
     rectangle.radius = radius;
-    rectangle.bg_color = lv_color_hex(top);
+    rectangle.bg_color = crazypod_ui_color(top);
     rectangle.bg_opa = opacity;
     if(top != bottom) {
         rectangle.bg_grad.dir = LV_GRAD_DIR_VER;
-        rectangle.bg_grad.stops[0].color = lv_color_hex(top);
+        rectangle.bg_grad.stops[0].color = crazypod_ui_color(top);
         rectangle.bg_grad.stops[0].opa = opacity;
         rectangle.bg_grad.stops[0].frac = 0;
-        rectangle.bg_grad.stops[1].color = lv_color_hex(bottom);
+        rectangle.bg_grad.stops[1].color = crazypod_ui_color(bottom);
         rectangle.bg_grad.stops[1].opa = opacity;
         rectangle.bg_grad.stops[1].frac = 255;
         rectangle.bg_grad.stops_count = 2;
     }
     rectangle.border_width = border_width;
-    rectangle.border_color = lv_color_hex(border);
+    rectangle.border_color = crazypod_ui_color(border);
     rectangle.border_opa = border_opacity;
     area.x1 = x;
     area.y1 = y;
@@ -188,7 +189,7 @@ static void draw_line(
     line.p2.x = x2;
     line.p2.y = y2;
     line.width = width;
-    line.color = lv_color_hex(color);
+    line.color = crazypod_ui_color(color);
     line.opa = opacity;
     line.round_start = 1;
     line.round_end = 1;
@@ -211,7 +212,7 @@ static void draw_arc(
     arc.radius = radius;
     arc.width = width;
     arc.rounded = 1;
-    arc.color = lv_color_hex(color);
+    arc.color = crazypod_ui_color(color);
     arc.opa = opacity;
     arc.start_angle = start;
     arc.end_angle = end;
@@ -656,7 +657,7 @@ static void update_copy(bool connected)
         connected ? CP_TR("Connected") : CP_TR("Connecting..."));
     lv_obj_set_style_text_color(
         popup.status,
-        lv_color_hex(connected ? COLOR_GREEN : COLOR_WHITE), 0);
+        crazypod_ui_color(connected ? COLOR_GREEN : COLOR_WHITE), 0);
 }
 
 static void apply_timeline(int timeline_ms)

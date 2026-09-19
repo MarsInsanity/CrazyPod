@@ -47,7 +47,11 @@ static const int display_items[] = {
     SETTINGS_ITEM_LCD_INVERT,
 #endif
     SETTINGS_ITEM_REDUCE_MOTION,
+#ifndef HAVE_CRAZYPOD_MONO_UI
+    /* The monochrome build has no glass to reduce; see
+     * crazypod_state_reduce_effects_level(). */
     SETTINGS_ITEM_REDUCE_EFFECTS,
+#endif
 };
 
 static const int playback_items[] = {

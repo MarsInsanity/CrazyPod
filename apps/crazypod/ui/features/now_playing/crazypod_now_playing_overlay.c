@@ -25,6 +25,7 @@
 #include "../../presentation/crazypod_popup_motion.h"
 #include "../../presentation/crazypod_ui_widgets.h"
 #include "crazypod_now_playing_feature.h"
+#include "../../presentation/crazypod_ui_color.h"
 
 #define COLOR_DETAIL 0x08080D
 #define COLOR_WHITE 0xFFFFFF
@@ -257,11 +258,11 @@ static void create_now_volume_hud(void)
         now_volume_view.root, LV_OBJ_FLAG_CLICKABLE);
     lv_obj_set_style_border_width(now_volume_view.root, 1, 0);
     lv_obj_set_style_border_color(
-        now_volume_view.root, lv_color_hex(COLOR_WHITE), 0);
+        now_volume_view.root, crazypod_ui_color(COLOR_WHITE), 0);
     lv_obj_set_style_border_opa(now_volume_view.root, 42, 0);
     lv_obj_set_style_shadow_width(now_volume_view.root, 10, 0);
     lv_obj_set_style_shadow_color(
-        now_volume_view.root, lv_color_hex(0x000000), 0);
+        now_volume_view.root, crazypod_ui_color(0x000000), 0);
     lv_obj_set_style_shadow_opa(now_volume_view.root, 96, 0);
     track = crazypod_ui_widget_box(
         now_volume_view.root,
@@ -285,7 +286,7 @@ static void create_now_volume_hud(void)
         now_volume_view.thumb, LV_OBJ_FLAG_CLICKABLE);
     lv_obj_set_style_shadow_width(now_volume_view.thumb, 6, 0);
     lv_obj_set_style_shadow_color(
-        now_volume_view.thumb, lv_color_hex(COLOR_CYAN), 0);
+        now_volume_view.thumb, crazypod_ui_color(COLOR_CYAN), 0);
     lv_obj_set_style_shadow_opa(now_volume_view.thumb, 92, 0);
     animate_now_volume_hud_in();
 }
@@ -615,22 +616,22 @@ static void refresh_now_actions_popup(void)
 
     lv_obj_set_style_bg_color(
         now_actions_view.queue_row,
-        lv_color_hex(queue_selected ? 0xDBD1BD : COLOR_WHITE), 0);
+        crazypod_ui_color(queue_selected ? 0xDBD1BD : COLOR_WHITE), 0);
     lv_obj_set_style_bg_opa(
         now_actions_view.queue_row, queue_selected ? 31 : 7, 0);
     lv_obj_set_style_border_width(now_actions_view.queue_row, 1, 0);
     lv_obj_set_style_border_color(
         now_actions_view.queue_row,
-        lv_color_hex(queue_selected ? 0xDBD1BD : COLOR_WHITE), 0);
+        crazypod_ui_color(queue_selected ? 0xDBD1BD : COLOR_WHITE), 0);
     lv_obj_set_style_border_opa(
         now_actions_view.queue_row, queue_selected ? 148 : 23, 0);
     lv_obj_set_style_bg_color(
         now_actions_view.queue_icon,
-        lv_color_hex(queue_selected ? 0xDBD1BD : COLOR_WHITE), 0);
+        crazypod_ui_color(queue_selected ? 0xDBD1BD : COLOR_WHITE), 0);
     lv_obj_set_style_bg_opa(
         now_actions_view.queue_icon, queue_selected ? 224 : 20, 0);
     lv_obj_set_style_text_color(
-        now_actions_view.queue_label, lv_color_hex(COLOR_WHITE), 0);
+        now_actions_view.queue_label, crazypod_ui_color(COLOR_WHITE), 0);
     lv_obj_set_style_text_opa(
         now_actions_view.queue_label, queue_selected ? 250 : 215, 0);
 
@@ -639,13 +640,13 @@ static void refresh_now_actions_popup(void)
 
         lv_obj_set_style_bg_color(
             now_actions_view.cells[i],
-            lv_color_hex(selected ? 0xDBD1BD : COLOR_WHITE), 0);
+            crazypod_ui_color(selected ? 0xDBD1BD : COLOR_WHITE), 0);
         lv_obj_set_style_bg_opa(
             now_actions_view.cells[i], selected ? 38 : 10, 0);
         lv_obj_set_style_border_width(now_actions_view.cells[i], 1, 0);
         lv_obj_set_style_border_color(
             now_actions_view.cells[i],
-            lv_color_hex(selected ? 0xDBD1BD : COLOR_WHITE), 0);
+            crazypod_ui_color(selected ? 0xDBD1BD : COLOR_WHITE), 0);
         lv_obj_set_style_border_opa(
             now_actions_view.cells[i], selected ? 163 : 31, 0);
         if(i == 0)
@@ -887,7 +888,7 @@ static void refresh_now_playback_popup(void)
 
         lv_obj_set_style_bg_color(
             now_playback_view.rows[mode],
-            lv_color_hex(selected ? 0xDBD1BD : COLOR_WHITE), 0);
+            crazypod_ui_color(selected ? 0xDBD1BD : COLOR_WHITE), 0);
         lv_obj_set_style_bg_opa(
             now_playback_view.rows[mode],
             selected ? 38 : LV_OPA_TRANSP, 0);
@@ -895,7 +896,7 @@ static void refresh_now_playback_popup(void)
             now_playback_view.rows[mode], 1, 0);
         lv_obj_set_style_border_color(
             now_playback_view.rows[mode],
-            lv_color_hex(selected ? 0xDBD1BD : COLOR_WHITE), 0);
+            crazypod_ui_color(selected ? 0xDBD1BD : COLOR_WHITE), 0);
         lv_obj_set_style_border_opa(
             now_playback_view.rows[mode], selected ? 154 : 20, 0);
         crazypod_ui_widget_icon_set_color(
@@ -1144,11 +1145,11 @@ static void refresh_now_queue_popup(void)
                 : LV_SYMBOL_BULLET);
         lv_obj_set_style_text_color(
             now_queue_view.icons[row],
-            lv_color_hex(current_row ? COLOR_CYAN : COLOR_WHITE), 0);
+            crazypod_ui_color(current_row ? COLOR_CYAN : COLOR_WHITE), 0);
         lv_obj_set_style_text_opa(
             now_queue_view.icons[row], current_row ? 245 : 75, 0);
         lv_obj_set_style_bg_color(
-            now_queue_view.rows[row], lv_color_hex(COLOR_WHITE), 0);
+            now_queue_view.rows[row], crazypod_ui_color(COLOR_WHITE), 0);
         lv_obj_set_style_bg_opa(
             now_queue_view.rows[row], selected ? 41 : LV_OPA_TRANSP, 0);
         lv_obj_set_style_text_opa(
@@ -1410,7 +1411,7 @@ static void show_now_progress_popup(bool begin_session)
         LV_RADIUS_CIRCLE, COLOR_WHITE, 48);
     lv_obj_set_style_border_width(track, 1, 0);
     lv_obj_set_style_border_color(
-        track, lv_color_hex(COLOR_CYAN), 0);
+        track, crazypod_ui_color(COLOR_CYAN), 0);
     lv_obj_set_style_border_opa(track, 190, 0);
     now_progress_view.fill = crazypod_ui_widget_box(
         track, 1, 1, 2, 8, LV_RADIUS_CIRCLE,

@@ -1,8 +1,31 @@
 #!/bin/sh
 set -eu
 
+canvas=both
+while [ "$#" -gt 1 ]; do
+    case "$1" in
+        --canvas)
+            canvas=$2
+            shift 2
+            ;;
+        --canvas=*)
+            canvas=${1#--canvas=}
+            shift
+            ;;
+        *)
+            break
+            ;;
+    esac
+done
+case "$canvas" in
+    full|compact) ;;
+    *)
+        echo "Usage: $0 [--canvas full|compact] OUTPUT_FONT_DIR" >&2
+        exit 2
+        ;;
+esac
 if [ "$#" -ne 1 ]; then
-    echo "Usage: $0 OUTPUT_FONT_DIR" >&2
+    echo "Usage: $0 [--canvas full|compact] OUTPUT_FONT_DIR" >&2
     exit 2
 fi
 
@@ -153,7 +176,7 @@ build_one()
 
 # This file is also consumed by the runtime-font tests and release audit. It is
 # the only source of truth for the base firmware font set.
-while IFS=: read -r family weight size; do
+while IFS=: read -r family weight size spec_canvas; do
     case "$family" in
         ''|'#'*) continue ;;
     esac
@@ -161,6 +184,19 @@ while IFS=: read -r family weight size; do
         echo "Error: invalid runtime font specification: $family:$weight:$size" >&2
         exit 1
     fi
+    # A face marked for one canvas is of no use to the other: nothing on that
+    # device can ask for it, and a CJK face is around a megabyte per locale.
+    case "${spec_canvas:-both}" in
+        both) ;;
+        full|compact)
+            [ "$spec_canvas" = "$canvas" ] || continue
+            ;;
+        *)
+            echo "Error: unknown canvas '$spec_canvas' for" \
+                "$family:$weight:$size" >&2
+            exit 1
+            ;;
+    esac
     for locale in jp kr sc tc; do
         build_one "$locale" "$family" "$weight" "$size"
     done

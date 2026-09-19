@@ -34,6 +34,7 @@
 #include "../presentation/crazypod_panel_geometry.h"
 #include "../presentation/crazypod_ui_widgets.h"
 #include "crazypod_lock_screen.h"
+#include "../presentation/crazypod_ui_color.h"
 
 #define COLOR_WHITE 0xFFFFFF
 #define COLOR_CYAN 0x26CFF5
@@ -318,7 +319,7 @@ static void refresh_media_material(void)
             set_hidden(lock_state.media_glass[index], true);
             lv_obj_set_style_bg_color(
                 lock_state.media_material[index],
-                lv_color_hex(MEDIA_PANEL_FLAT_COLOR), 0);
+                crazypod_ui_color(MEDIA_PANEL_FLAT_COLOR), 0);
             lv_obj_set_style_bg_opa(
                 lock_state.media_material[index],
                 MEDIA_PANEL_FLAT_OPA, 0);
@@ -335,7 +336,7 @@ static void refresh_media_material(void)
 static void add_text_outline(lv_obj_t *label, lv_opa_t opacity)
 {
     lv_obj_set_style_text_outline_stroke_color(
-        label, lv_color_hex(0x000000), 0);
+        label, crazypod_ui_color(0x000000), 0);
     lv_obj_set_style_text_outline_stroke_width(label, 1, 0);
     lv_obj_set_style_text_outline_stroke_opa(label, opacity, 0);
 }
@@ -693,7 +694,7 @@ void crazypod_lock_screen_refresh_appearance(void)
         color = crazypod_appearance_lock_color();
     }
     lv_obj_set_style_bg_color(
-        lock_state.root, lv_color_hex(color), 0);
+        lock_state.root, crazypod_ui_color(color), 0);
     if(wallpaper != NULL) {
         lv_image_set_src(lock_state.wallpaper, wallpaper);
         lv_obj_remove_flag(lock_state.wallpaper, LV_OBJ_FLAG_HIDDEN);
@@ -1112,7 +1113,7 @@ lv_obj_t *crazypod_lock_screen_create(
             lock_state.media_border[index], LV_BORDER_SIDE_FULL, 0);
         lv_obj_set_style_border_color(
             lock_state.media_border[index],
-            lv_color_hex(COLOR_WHITE), 0);
+            crazypod_ui_color(COLOR_WHITE), 0);
         lv_obj_set_style_border_opa(
             lock_state.media_border[index], 38, 0);
         lv_obj_remove_flag(
@@ -1124,7 +1125,7 @@ lv_obj_t *crazypod_lock_screen_create(
         MEDIA_ARTWORK_SIZE, MEDIA_ARTWORK_SIZE, 10,
         0x25485A, LV_OPA_COVER);
     lv_obj_set_style_bg_grad_color(
-        lock_state.media_artwork, lv_color_hex(0x0D1623), 0);
+        lock_state.media_artwork, crazypod_ui_color(0x0D1623), 0);
     lv_obj_set_style_bg_grad_dir(
         lock_state.media_artwork, LV_GRAD_DIR_VER, 0);
     lv_obj_set_style_clip_corner(
@@ -1134,7 +1135,7 @@ lv_obj_t *crazypod_lock_screen_create(
     lv_obj_set_style_shadow_offset_y(
         lock_state.media_artwork, 3, 0);
     lv_obj_set_style_shadow_color(
-        lock_state.media_artwork, lv_color_hex(0x000000), 0);
+        lock_state.media_artwork, crazypod_ui_color(0x000000), 0);
     lv_obj_set_style_shadow_opa(
         lock_state.media_artwork, 88, 0);
     lock_state.media_artwork_image =
@@ -1234,7 +1235,7 @@ lv_obj_t *crazypod_lock_screen_create(
         lock_state.icon_shackle,
         LV_BORDER_SIDE_TOP | LV_BORDER_SIDE_LEFT | LV_BORDER_SIDE_RIGHT, 0);
     lv_obj_set_style_border_color(
-        lock_state.icon_shackle, lv_color_hex(COLOR_WHITE), 0);
+        lock_state.icon_shackle, crazypod_ui_color(COLOR_WHITE), 0);
     lv_obj_set_style_border_opa(
         lock_state.icon_shackle, LV_OPA_COVER, 0);
     body = make_box(
@@ -1252,7 +1253,7 @@ lv_obj_t *crazypod_lock_screen_create(
     lv_obj_set_style_border_width(
         lock_state.hint_progress, 1, 0);
     lv_obj_set_style_border_color(
-        lock_state.hint_progress, lv_color_hex(COLOR_WHITE), 0);
+        lock_state.hint_progress, crazypod_ui_color(COLOR_WHITE), 0);
     lv_obj_set_style_border_opa(
         lock_state.hint_progress, 45, 0);
     lock_state.hint_progress_fill = make_box(

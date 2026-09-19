@@ -22,6 +22,7 @@
 #include "../presentation/crazypod_panel_geometry.h"
 #include "../presentation/crazypod_ui_widgets.h"
 #include "crazypod_now_capsule.h"
+#include "../presentation/crazypod_ui_color.h"
 
 #define COLOR_WHITE 0xFFFFFF
 #define COLOR_CYAN 0x26CFF5
@@ -268,7 +269,7 @@ void crazypod_now_capsule_refresh_material(void)
                     capsule.glass[index], LV_OBJ_FLAG_HIDDEN);
             lv_obj_set_style_bg_color(
                 capsule.material[index],
-                lv_color_hex(
+                crazypod_ui_color(
                     flat ? CAPSULE_FLAT_COLOR : COLOR_WHITE), 0);
             lv_obj_set_style_bg_opa(
                 capsule.material[index],
@@ -293,17 +294,17 @@ void crazypod_now_capsule_refresh_appearance(void)
             crazypod_state_reduce_effects() ? 0 : playing ? 10 : 4, 0);
         lv_obj_set_style_shadow_color(
             capsule.wave_ball,
-            lv_color_hex(capsule.wave_palette.primary), 0);
+            crazypod_ui_color(capsule.wave_palette.primary), 0);
         lv_obj_set_style_shadow_opa(
             capsule.wave_ball, playing ? 112 : 34, 0);
     }
     if(capsule.wave_glow != NULL) {
         lv_obj_set_style_bg_color(
             capsule.wave_glow,
-            lv_color_hex(capsule.wave_palette.primary), 0);
+            crazypod_ui_color(capsule.wave_palette.primary), 0);
         lv_obj_set_style_bg_grad_color(
             capsule.wave_glow,
-            lv_color_hex(capsule.wave_palette.secondary), 0);
+            crazypod_ui_color(capsule.wave_palette.secondary), 0);
         lv_obj_set_style_bg_grad_dir(
             capsule.wave_glow, LV_GRAD_DIR_HOR, 0);
         lv_obj_set_style_bg_opa(
@@ -372,7 +373,7 @@ void crazypod_now_capsule_create(
         8 + CAPSULE_CONTENT_Y_OFFSET,
         42, 42, 9, 0x941FFC, LV_OPA_COVER);
     lv_obj_set_style_bg_grad_color(
-        capsule.artwork, lv_color_hex(0x2E5CFA), 0);
+        capsule.artwork, crazypod_ui_color(0x2E5CFA), 0);
     lv_obj_set_style_bg_grad_dir(
         capsule.artwork, LV_GRAD_DIR_VER, 0);
     lv_obj_set_style_clip_corner(
@@ -419,7 +420,7 @@ void crazypod_now_capsule_create(
         progress_track, 0, 0, 6, 3, LV_RADIUS_CIRCLE,
         0x2ECC71, LV_OPA_COVER);
     lv_obj_set_style_bg_grad_color(
-        capsule.progress, lv_color_hex(COLOR_CYAN), 0);
+        capsule.progress, crazypod_ui_color(COLOR_CYAN), 0);
     lv_obj_set_style_bg_grad_dir(
         capsule.progress, LV_GRAD_DIR_HOR, 0);
 
@@ -430,14 +431,14 @@ void crazypod_now_capsule_create(
         42, 42,
         LV_RADIUS_CIRCLE, 0x080A14, LV_OPA_COVER);
     lv_obj_set_style_bg_grad_color(
-        capsule.wave_ball, lv_color_hex(0x1A1F38), 0);
+        capsule.wave_ball, crazypod_ui_color(0x1A1F38), 0);
     lv_obj_set_style_bg_grad_dir(
         capsule.wave_ball, LV_GRAD_DIR_VER, 0);
     lv_obj_set_style_clip_corner(
         capsule.wave_ball, !crazypod_state_reduce_effects(), 0);
     lv_obj_set_style_border_width(capsule.wave_ball, 1, 0);
     lv_obj_set_style_border_color(
-        capsule.wave_ball, lv_color_hex(COLOR_WHITE), 0);
+        capsule.wave_ball, crazypod_ui_color(COLOR_WHITE), 0);
     lv_obj_set_style_border_opa(capsule.wave_ball, 66, 0);
     capsule.wave_glow = crazypod_ui_widget_box(
         capsule.wave_ball, 0, 0, 32, 32,
@@ -464,7 +465,7 @@ void crazypod_now_capsule_create(
             capsule.glass_border[index], LV_BORDER_SIDE_FULL, 0);
         lv_obj_set_style_border_color(
             capsule.glass_border[index],
-            lv_color_hex(COLOR_WHITE), 0);
+            crazypod_ui_color(COLOR_WHITE), 0);
         lv_obj_set_style_border_opa(
             capsule.glass_border[index], border_opacity, 0);
         lv_obj_remove_flag(
@@ -502,10 +503,10 @@ void crazypod_now_capsule_update_artwork(
                      sizeof(capsule.artwork_path), "%s", track->path);
             lv_obj_set_style_bg_color(
                 capsule.artwork,
-                lv_color_hex(artwork_color(track->album, 0)), 0);
+                crazypod_ui_color(artwork_color(track->album, 0)), 0);
             lv_obj_set_style_bg_grad_color(
                 capsule.artwork,
-                lv_color_hex(artwork_color(track->artist, 1)), 0);
+                crazypod_ui_color(artwork_color(track->artist, 1)), 0);
         }
     }
     else {
@@ -516,9 +517,9 @@ void crazypod_now_capsule_update_artwork(
         use_fallback_wave_palette();
         palette_changed = true;
         lv_obj_set_style_bg_color(
-            capsule.artwork, lv_color_hex(0x941FFC), 0);
+            capsule.artwork, crazypod_ui_color(0x941FFC), 0);
         lv_obj_set_style_bg_grad_color(
-            capsule.artwork, lv_color_hex(0x2E5CFA), 0);
+            capsule.artwork, crazypod_ui_color(0x2E5CFA), 0);
     }
     if(descriptor != NULL) {
         if(palette_changed) {

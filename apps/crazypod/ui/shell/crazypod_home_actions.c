@@ -23,6 +23,7 @@
 #include "../presentation/crazypod_ui_widgets.h"
 #include "crazypod_desktop_native.h"
 #include "crazypod_home_actions.h"
+#include "../presentation/crazypod_ui_color.h"
 
 #define COLOR_WHITE 0xFFFFFF
 #define COLOR_ACCENT 0xDBD1BD
@@ -180,13 +181,13 @@ static void refresh_action_selection(void)
 
         lv_obj_set_style_bg_color(
             actions.cells[index],
-            lv_color_hex(selected ? COLOR_ACCENT : COLOR_WHITE), 0);
+            crazypod_ui_color(selected ? COLOR_ACCENT : COLOR_WHITE), 0);
         lv_obj_set_style_bg_opa(
             actions.cells[index], selected ? 38 : 9, 0);
         lv_obj_set_style_border_width(actions.cells[index], 1, 0);
         lv_obj_set_style_border_color(
             actions.cells[index],
-            lv_color_hex(selected ? COLOR_ACCENT : COLOR_WHITE), 0);
+            crazypod_ui_color(selected ? COLOR_ACCENT : COLOR_WHITE), 0);
         lv_obj_set_style_border_opa(
             actions.cells[index], selected ? 160 : 28, 0);
         lv_obj_set_style_opa(
@@ -241,7 +242,7 @@ static void show_action_list(void)
             actions.icons[index],
             HOME_ACTION_ICON_SIZE * LV_SCALE_NONE / asset->header.w);
         lv_obj_set_style_image_recolor(
-            actions.icons[index], lv_color_hex(COLOR_WHITE), 0);
+            actions.icons[index], crazypod_ui_color(COLOR_WHITE), 0);
         lv_obj_set_style_image_recolor_opa(
             actions.icons[index], LV_OPA_COVER, 0);
         lv_obj_center(actions.icons[index]);
@@ -311,11 +312,11 @@ static void show_adjustment(void)
     lv_obj_remove_flag(actions.level_arc, LV_OBJ_FLAG_CLICKABLE);
     lv_obj_set_style_arc_width(actions.level_arc, 8, LV_PART_MAIN);
     lv_obj_set_style_arc_color(
-        actions.level_arc, lv_color_hex(COLOR_WHITE), LV_PART_MAIN);
+        actions.level_arc, crazypod_ui_color(COLOR_WHITE), LV_PART_MAIN);
     lv_obj_set_style_arc_opa(actions.level_arc, 28, LV_PART_MAIN);
     lv_obj_set_style_arc_width(actions.level_arc, 8, LV_PART_INDICATOR);
     lv_obj_set_style_arc_color(
-        actions.level_arc, lv_color_hex(COLOR_ACCENT),
+        actions.level_arc, crazypod_ui_color(COLOR_ACCENT),
         LV_PART_INDICATOR);
     lv_obj_set_style_arc_rounded(
         actions.level_arc, true, LV_PART_INDICATOR);
@@ -326,7 +327,7 @@ static void show_adjustment(void)
         icon = lv_image_create(actions.panel);
         lv_image_set_src(icon, asset);
         lv_obj_set_style_image_recolor(
-            icon, lv_color_hex(COLOR_WHITE), 0);
+            icon, crazypod_ui_color(COLOR_WHITE), 0);
         lv_obj_set_style_image_recolor_opa(icon, LV_OPA_COVER, 0);
         lv_obj_set_style_opa(icon, 220, 0);
         lv_obj_align(icon, LV_ALIGN_CENTER, 0, -14);

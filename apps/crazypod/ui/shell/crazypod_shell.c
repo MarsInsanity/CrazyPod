@@ -11,6 +11,7 @@
 #include "../presentation/crazypod_ui_widgets.h"
 #include "crazypod_shell.h"
 #include "crazypod_status_bar.h"
+#include "../presentation/crazypod_ui_color.h"
 
 #define COLOR_DETAIL 0x08080D
 
@@ -28,7 +29,7 @@ void crazypod_shell_create(
     lv_obj_set_pos(shell.screen, 0, 0);
     lv_obj_set_size(shell.screen, LCD_WIDTH, LCD_HEIGHT);
     lv_obj_set_style_bg_color(
-        shell.screen, lv_color_hex(COLOR_DETAIL), 0);
+        shell.screen, crazypod_ui_color(COLOR_DETAIL), 0);
     lv_obj_set_style_bg_opa(
         shell.screen, LV_OPA_COVER, 0);
 

@@ -18,6 +18,7 @@
 #include "../presentation/crazypod_scene_motion.h"
 #include "../presentation/crazypod_ui_widgets.h"
 #include "crazypod_scene_transition.h"
+#include "../presentation/crazypod_ui_color.h"
 
 #define FRAME_PIXELS (LCD_WIDTH * LCD_HEIGHT)
 #define EDGE_SHADOW_WIDTH 28
@@ -77,7 +78,7 @@ static lv_obj_t *create_page(
     crazypod_ui_widget_make_plain(page);
     lv_obj_set_pos(page, 0, 0);
     lv_obj_set_size(page, LCD_WIDTH, LCD_HEIGHT);
-    lv_obj_set_style_bg_color(page, lv_color_hex(0x000000), 0);
+    lv_obj_set_style_bg_color(page, crazypod_ui_color(0x000000), 0);
     lv_obj_set_style_bg_opa(page, LV_OPA_COVER, 0);
     lv_obj_remove_flag(page, LV_OBJ_FLAG_CLICKABLE);
 
@@ -94,7 +95,7 @@ static void configure_edge_shadow(lv_obj_t *page)
     lv_obj_set_style_shadow_offset_x(page, 0, 0);
     lv_obj_set_style_shadow_offset_y(page, EDGE_SHADOW_OFFSET_Y, 0);
     lv_obj_set_style_shadow_spread(page, 0, 0);
-    lv_obj_set_style_shadow_color(page, lv_color_hex(0x000000), 0);
+    lv_obj_set_style_shadow_color(page, crazypod_ui_color(0x000000), 0);
 }
 
 static void apply_layout(int progress)

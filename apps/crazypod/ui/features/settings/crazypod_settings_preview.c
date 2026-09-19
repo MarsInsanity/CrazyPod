@@ -16,6 +16,7 @@
 #include "crazypod_settings_feature.h"
 #include "crazypod_settings_model.h"
 #include "crazypod_settings_catalog.h"
+#include "../../presentation/crazypod_ui_color.h"
 
 #define COLOR_WHITE 0xFFFFFF
 
@@ -136,7 +137,7 @@ void crazypod_settings_feature_render_preview(
         model.swatch_color, LV_OPA_COVER);
     if(crazypod_appearance_get()->highlight_style != 0) {
         lv_obj_set_style_bg_grad_color(
-            swatch, lv_color_hex(secondary_color), 0);
+            swatch, crazypod_ui_color(secondary_color), 0);
         lv_obj_set_style_bg_grad_dir(swatch, LV_GRAD_DIR_HOR, 0);
     }
     label = crazypod_ui_widget_label(

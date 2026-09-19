@@ -4,6 +4,7 @@
 
 #include "../../crazypod_l10n.h"
 #include "../../crazypod_runtime_font.h"
+#include "crazypod_ui_color.h"
 
 static bool text_is_symbol(const char *text)
 {
@@ -101,7 +102,7 @@ lv_obj_t *crazypod_ui_widget_label(lv_obj_t *parent, const char *text,
     lv_label_set_text(label, resolved);
     font = crazypod_ui_widget_resolve_font(text, font);
     lv_obj_set_style_text_font(label, font, 0);
-    lv_obj_set_style_text_color(label, lv_color_hex(color), 0);
+    lv_obj_set_style_text_color(label, crazypod_ui_color(color), 0);
     lv_obj_set_style_text_opa(label, opacity, 0);
     return label;
 }
@@ -150,7 +151,7 @@ lv_obj_t *crazypod_ui_widget_box(lv_obj_t *parent, int x, int y,
     lv_obj_set_pos(box, x, y);
     lv_obj_set_size(box, width, height);
     lv_obj_set_style_radius(box, radius, 0);
-    lv_obj_set_style_bg_color(box, lv_color_hex(color), 0);
+    lv_obj_set_style_bg_color(box, crazypod_ui_color(color), 0);
     lv_obj_set_style_bg_opa(box, opacity, 0);
     return box;
 }
@@ -274,7 +275,7 @@ lv_obj_t *crazypod_ui_widget_icon(lv_obj_t *parent, int x, int y,
     lv_obj_t *obj = crazypod_ui_widget_box(
         parent, x, y, 16, 16, 0, color, LV_OPA_TRANSP);
 
-    lv_obj_set_style_text_color(obj, lv_color_hex(color), 0);
+    lv_obj_set_style_text_color(obj, crazypod_ui_color(color), 0);
     lv_obj_set_style_opa(obj, opacity, 0);
     lv_obj_remove_flag(obj, LV_OBJ_FLAG_CLICKABLE);
     crazypod_ui_widget_icon_set(obj, icon);
@@ -288,12 +289,12 @@ void crazypod_ui_widget_icon_set_color(lv_obj_t *obj, uint32_t color)
 
     if(obj == NULL)
         return;
-    lv_obj_set_style_text_color(obj, lv_color_hex(color), 0);
+    lv_obj_set_style_text_color(obj, crazypod_ui_color(color), 0);
     child_count = lv_obj_get_child_count(obj);
     for(child_index = 0; child_index < child_count; ++child_index) {
         lv_obj_t *child = lv_obj_get_child(obj, (int32_t)child_index);
 
-        lv_obj_set_style_bg_color(child, lv_color_hex(color), 0);
-        lv_obj_set_style_text_color(child, lv_color_hex(color), 0);
+        lv_obj_set_style_bg_color(child, crazypod_ui_color(color), 0);
+        lv_obj_set_style_text_color(child, crazypod_ui_color(color), 0);
     }
 }

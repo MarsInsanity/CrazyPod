@@ -11,6 +11,7 @@
 #include "../../presentation/crazypod_ui_widgets.h"
 #include "crazypod_book_session.h"
 #include "crazypod_books_workflow.h"
+#include "../../presentation/crazypod_ui_color.h"
 
 static struct crazypod_books_workflow_host workflow_host;
 static bool metadata_ready;
@@ -51,7 +52,7 @@ static void render_loading(
 
     lv_obj_clean(workflow_host.parent);
     lv_obj_set_style_bg_color(
-        workflow_host.parent, lv_color_hex(page_color), 0);
+        workflow_host.parent, crazypod_ui_color(page_color), 0);
     lv_obj_set_style_bg_opa(
         workflow_host.parent, LV_OPA_COVER, 0);
     crazypod_ui_widget_box(

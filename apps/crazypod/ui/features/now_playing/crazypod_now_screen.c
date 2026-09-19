@@ -21,6 +21,7 @@
 #include "../../presentation/crazypod_ui_widgets.h"
 #include "crazypod_now_presentation.h"
 #include "crazypod_now_screen.h"
+#include "../../presentation/crazypod_ui_color.h"
 
 #define COLOR_CYAN 0x55D6E7
 #define COLOR_FAVORITE 0xFF375F
@@ -319,7 +320,7 @@ void crazypod_now_screen_render(
             LV_OPA_COVER);
         lv_obj_set_style_bg_grad_color(
             backdrop,
-            lv_color_hex(
+            crazypod_ui_color(
                 artwork_color(track != NULL ? track->artist : "", 1)),
             0);
         lv_obj_set_style_bg_grad_dir(
@@ -506,7 +507,7 @@ void crazypod_now_screen_render(
         LV_RADIUS_CIRCLE, COLOR_WHITE, LV_OPA_COVER);
     lv_obj_set_style_shadow_width(view->progress_marker, 6, 0);
     lv_obj_set_style_shadow_color(
-        view->progress_marker, lv_color_hex(context->primary_color), 0);
+        view->progress_marker, crazypod_ui_color(context->primary_color), 0);
     lv_obj_set_style_shadow_opa(view->progress_marker, 190, 0);
     lv_obj_remove_flag(view->progress_marker, LV_OBJ_FLAG_CLICKABLE);
     view->elapsed = make_label(context->parent, "0:00",

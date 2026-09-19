@@ -15,6 +15,7 @@
 #include "../../presentation/crazypod_preview_primitives.h"
 #include "crazypod_notes_feature.h"
 #include "crazypod_notes_preview.h"
+#include "../../presentation/crazypod_ui_color.h"
 
 #define COLOR_CYAN 0x55D6E7
 #define COLOR_WHITE 0xFFFFFF
@@ -113,12 +114,12 @@ void crazypod_notes_preview_render(
         binder = make_box(parent, 190, 52, 92, 104, 6,
                           0x6B4B32, LV_OPA_COVER);
         lv_obj_set_style_bg_grad_color(
-            binder, lv_color_hex(0x392517), 0);
+            binder, crazypod_ui_color(0x392517), 0);
         lv_obj_set_style_bg_grad_dir(
             binder, LV_GRAD_DIR_VER, 0);
         lv_obj_set_style_border_width(binder, 1, 0);
         lv_obj_set_style_border_color(
-            binder, lv_color_hex(0xA68159), 0);
+            binder, crazypod_ui_color(0xA68159), 0);
         lv_obj_set_style_border_opa(binder, 145, 0);
         crazypod_preview_add_bevel(
             binder, 92, 104, 0xB4936C, 0x1D120B);
@@ -126,7 +127,7 @@ void crazypod_notes_preview_render(
                          0xF4E9CF, LV_OPA_COVER);
         lv_obj_set_style_border_width(paper, 1, 0);
         lv_obj_set_style_border_color(
-            paper, lv_color_hex(0xD5C49F), 0);
+            paper, crazypod_ui_color(0xD5C49F), 0);
         lv_obj_set_style_border_opa(paper, 165, 0);
         crazypod_preview_add_bevel(
             paper, 78, 87, 0xFFFFFF, 0xA8987C);
@@ -158,11 +159,11 @@ void crazypod_notes_preview_render(
         binder = make_box(parent, 194, 58, 92, 98, 8,
                           0x75492D, LV_OPA_COVER);
         lv_obj_set_style_bg_grad_color(
-            binder, lv_color_hex(0x3B2519), 0);
+            binder, crazypod_ui_color(0x3B2519), 0);
         lv_obj_set_style_bg_grad_dir(binder, LV_GRAD_DIR_VER, 0);
         lv_obj_set_style_border_width(binder, 1, 0);
         lv_obj_set_style_border_color(
-            binder, lv_color_hex(0xB0835D), 0);
+            binder, crazypod_ui_color(0xB0835D), 0);
         lv_obj_set_style_border_opa(binder, 145, 0);
         crazypod_preview_add_bevel(
             binder, 92, 98, 0xC29B73, 0x21150E);
@@ -191,7 +192,7 @@ void crazypod_notes_preview_render(
                          0xF4E9CF, LV_OPA_COVER);
         lv_obj_set_style_border_width(paper, 1, 0);
         lv_obj_set_style_border_color(
-            paper, lv_color_hex(0xC9B99A), 0);
+            paper, crazypod_ui_color(0xC9B99A), 0);
         lv_obj_set_style_border_opa(paper, 135, 0);
         crazypod_preview_add_bevel(
             paper, 83, 91, 0xFFFFFF, 0x998970);
@@ -203,14 +204,14 @@ void crazypod_notes_preview_render(
                         LV_RADIUS_CIRCLE, COLOR_CYAN, LV_OPA_TRANSP);
         lv_obj_set_style_border_width(part, 7, 0);
         lv_obj_set_style_border_color(
-            part, lv_color_hex(COLOR_CYAN), 0);
+            part, crazypod_ui_color(COLOR_CYAN), 0);
         lv_obj_set_style_border_opa(part, 230, 0);
         binder = make_box(
             part, 6, 6, 32, 32, LV_RADIUS_CIRCLE,
             0xDAF6FA, LV_OPA_TRANSP);
         lv_obj_set_style_border_width(binder, 1, 0);
         lv_obj_set_style_border_color(
-            binder, lv_color_hex(0xF1FCFE), 0);
+            binder, crazypod_ui_color(0xF1FCFE), 0);
         lv_obj_set_style_border_opa(binder, 105, 0);
         binder = make_box(parent, 266, 103, 8, 37, 4,
                           0x76858C, 245);
@@ -229,12 +230,12 @@ void crazypod_notes_preview_render(
         binder = make_box(parent, 205, 94, 72, 61, 7,
                           0x6D7377, LV_OPA_COVER);
         lv_obj_set_style_bg_grad_color(
-            binder, lv_color_hex(0x303639), 0);
+            binder, crazypod_ui_color(0x303639), 0);
         lv_obj_set_style_bg_grad_dir(
             binder, LV_GRAD_DIR_VER, 0);
         lv_obj_set_style_border_width(binder, 2, 0);
         lv_obj_set_style_border_color(
-            binder, lv_color_hex(0xB9C0C4), 0);
+            binder, crazypod_ui_color(0xB9C0C4), 0);
         lv_obj_set_style_border_opa(binder, 150, 0);
         crazypod_preview_add_bevel(
             binder, 72, 61, 0xD6DCDE, 0x16191A);
@@ -269,11 +270,11 @@ void crazypod_notes_preview_render(
         binder = make_box(parent, 195, 60, 92, 96, 8,
                           0x5C2D23, LV_OPA_COVER);
         lv_obj_set_style_bg_grad_color(
-            binder, lv_color_hex(0x2B1514), 0);
+            binder, crazypod_ui_color(0x2B1514), 0);
         lv_obj_set_style_bg_grad_dir(binder, LV_GRAD_DIR_VER, 0);
         lv_obj_set_style_border_width(binder, 2, 0);
         lv_obj_set_style_border_color(
-            binder, lv_color_hex(0xB06A4A), 0);
+            binder, crazypod_ui_color(0xB06A4A), 0);
         lv_obj_set_style_border_opa(binder, 145, 0);
         crazypod_preview_add_bevel(
             binder, 92, 96, 0xC17B5C, 0x1B0D0C);

@@ -20,6 +20,7 @@
 #include "../presentation/crazypod_ui_widgets.h"
 #include "crazypod_desktop_native.h"
 #include "crazypod_usb_prompt.h"
+#include "../presentation/crazypod_ui_color.h"
 
 #define COLOR_WHITE 0xFFFFFF
 #define COLOR_PANEL 0x1B1B22
@@ -98,13 +99,13 @@ static void refresh_prompt(void)
 
         lv_obj_set_style_bg_color(
             prompt.rows[index],
-            lv_color_hex(selected ? COLOR_WHITE : COLOR_PANEL), 0);
+            crazypod_ui_color(selected ? COLOR_WHITE : COLOR_PANEL), 0);
         lv_obj_set_style_bg_opa(
             prompt.rows[index], selected ? 34 : LV_OPA_TRANSP, 0);
         lv_obj_set_style_border_width(
             prompt.rows[index], selected ? 1 : 0, 0);
         lv_obj_set_style_border_color(
-            prompt.rows[index], lv_color_hex(COLOR_WHITE), 0);
+            prompt.rows[index], crazypod_ui_color(COLOR_WHITE), 0);
         lv_obj_set_style_border_opa(
             prompt.rows[index], selected ? 72 : 0, 0);
         CP_LV_LABEL_SET_TEXT(
@@ -345,7 +346,7 @@ static void show_data_blocker(void)
     memset(prompt.markers, 0, sizeof(prompt.markers));
     prompt.data_blocking = true;
 
-    lv_obj_set_style_bg_color(prompt.root, lv_color_hex(0x000000), 0);
+    lv_obj_set_style_bg_color(prompt.root, crazypod_ui_color(0x000000), 0);
     lv_obj_set_style_bg_opa(prompt.root, LV_OPA_COVER, 0);
     lv_obj_move_foreground(prompt.root);
 

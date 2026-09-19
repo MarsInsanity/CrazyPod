@@ -22,6 +22,7 @@
 #include "crazypod_desktop_native.h"
 #include "crazypod_now_capsule.h"
 #include "crazypod_status_bar.h"
+#include "../presentation/crazypod_ui_color.h"
 
 #define COLOR_WHITE 0xFFFFFF
 #define HOME_POSITION_ONE (1L << 16)
@@ -284,7 +285,7 @@ lv_obj_t *crazypod_desktop_create(
     screen = lv_obj_create(NULL);
     crazypod_ui_widget_make_plain(screen);
     lv_obj_set_style_bg_color(
-        screen, lv_color_hex(crazypod_appearance_home_color()), 0);
+        screen, crazypod_ui_color(crazypod_appearance_home_color()), 0);
     lv_obj_set_style_bg_opa(screen, LV_OPA_COVER, 0);
     if(image == NULL &&
        crazypod_appearance_get()->home_wallpaper[0] == '\0' &&
@@ -491,7 +492,7 @@ void crazypod_desktop_refresh_appearance(void)
         lv_image_set_src(wallpaper, custom);
         lv_obj_remove_flag(wallpaper, LV_OBJ_FLAG_HIDDEN);
         lv_obj_set_style_bg_color(
-            screen, lv_color_hex(0x141419), 0);
+            screen, crazypod_ui_color(0x141419), 0);
     }
     else if(crazypod_appearance_get()->home_wallpaper[0] == '\0' &&
             crazypod_appearance_get()->home_background == 0 &&
@@ -499,12 +500,12 @@ void crazypod_desktop_refresh_appearance(void)
         lv_image_set_src(wallpaper, crazypod_default_wallpaper());
         lv_obj_remove_flag(wallpaper, LV_OBJ_FLAG_HIDDEN);
         lv_obj_set_style_bg_color(
-            screen, lv_color_hex(0x141419), 0);
+            screen, crazypod_ui_color(0x141419), 0);
     }
     else {
         lv_obj_add_flag(wallpaper, LV_OBJ_FLAG_HIDDEN);
         lv_obj_set_style_bg_color(
-            screen, lv_color_hex(crazypod_appearance_home_color()), 0);
+            screen, crazypod_ui_color(crazypod_appearance_home_color()), 0);
     }
     crazypod_icons_load_theme(crazypod_appearance_get()->icon_theme);
     crazypod_desktop_native_invalidate_icons();

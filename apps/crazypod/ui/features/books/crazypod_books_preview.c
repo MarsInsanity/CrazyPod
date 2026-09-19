@@ -18,6 +18,7 @@
 #include "../../presentation/crazypod_preview_primitives.h"
 #include "crazypod_books_feature.h"
 #include "crazypod_books_preview.h"
+#include "../../presentation/crazypod_ui_color.h"
 
 #define COLOR_WHITE 0xFFFFFF
 
@@ -120,7 +121,7 @@ static void render_books_menu_stage(
                          0x5B3A25, LV_OPA_COVER);
         lv_obj_set_style_border_width(stage, 1, 0);
         lv_obj_set_style_border_color(
-            stage, lv_color_hex(0x9A744C), 0);
+            stage, crazypod_ui_color(0x9A744C), 0);
         lv_obj_set_style_border_opa(stage, 140, 0);
         crazypod_preview_add_bevel(
             stage, 110, 77, 0xB58B5F, 0x21140C);
@@ -229,7 +230,7 @@ static void render_books_menu_stage(
                              LV_RADIUS_CIRCLE, 0x6D1526, 240);
             lv_obj_set_style_border_width(stage, 1, 0);
             lv_obj_set_style_border_color(
-                stage, lv_color_hex(0xD7B06A), 0);
+                stage, crazypod_ui_color(0xD7B06A), 0);
             lv_obj_set_style_border_opa(stage, 155, 0);
             crazypod_preview_add_bevel(
                 stage, 26, 26, 0xF0CE86, 0x2D0710);
@@ -246,12 +247,12 @@ static void render_books_menu_stage(
             stage = make_box(parent, 184, 70, 112, 84, 9,
                              0x5B0F19, LV_OPA_COVER);
             lv_obj_set_style_bg_grad_color(
-                stage, lv_color_hex(0x250408), 0);
+                stage, crazypod_ui_color(0x250408), 0);
             lv_obj_set_style_bg_grad_dir(
                 stage, LV_GRAD_DIR_VER, 0);
             lv_obj_set_style_border_width(stage, 1, 0);
             lv_obj_set_style_border_color(
-                stage, lv_color_hex(0xE8C875), 0);
+                stage, crazypod_ui_color(0xE8C875), 0);
             lv_obj_set_style_border_opa(stage, 48, 0);
             crazypod_preview_add_bevel(
                 stage, 112, 84, 0xA84854, 0x120103);
@@ -286,7 +287,7 @@ static void render_books_menu_stage(
                          0x2B2118, LV_OPA_COVER);
         lv_obj_set_style_border_width(stage, 1, 0);
         lv_obj_set_style_border_color(
-            stage, lv_color_hex(0xC9A467), 0);
+            stage, crazypod_ui_color(0xC9A467), 0);
         lv_obj_set_style_border_opa(stage, 120, 0);
         crazypod_preview_add_bevel(
             stage, 110, 84, 0x6E5A3E, 0x110B06);
@@ -295,7 +296,7 @@ static void render_books_menu_stage(
                             LV_RADIUS_CIRCLE, 0x1A1410, LV_OPA_COVER);
             lv_obj_set_style_border_width(disc, 2, 0);
             lv_obj_set_style_border_color(
-                disc, lv_color_hex(0xD4B46A), 0);
+                disc, crazypod_ui_color(0xD4B46A), 0);
             lv_obj_set_style_border_opa(disc, 200, 0);
             make_box(disc, 11, 11, 10, 10, LV_RADIUS_CIRCLE,
                      0xD4B46A, 230);
@@ -322,7 +323,7 @@ static void render_books_menu_stage(
                          0x15110C, 232);
         lv_obj_set_style_border_width(stage, 1, 0);
         lv_obj_set_style_border_color(
-            stage, lv_color_hex(0xD4B46A), 0);
+            stage, crazypod_ui_color(0xD4B46A), 0);
         lv_obj_set_style_border_opa(stage, 82, 0);
         crazypod_preview_add_bevel(
             stage, 112, 94, 0xA58D5B, 0x000000);
@@ -382,7 +383,7 @@ static void render_books_menu_stage(
                      0xF4E9CF, LV_OPA_COVER);
     lv_obj_set_style_border_width(stage, 1, 0);
     lv_obj_set_style_border_color(
-        stage, lv_color_hex(0xD5BB84), 0);
+        stage, crazypod_ui_color(0xD5BB84), 0);
     lv_obj_set_style_border_opa(stage, 150, 0);
     crazypod_preview_add_bevel(
         stage, 94, 101, 0xFFFFFF, 0x95815F);
@@ -406,7 +407,7 @@ static void render_books_menu_stage(
             if(i == crazypod_books_theme()) {
                 lv_obj_set_style_border_width(swatch, 2, 0);
                 lv_obj_set_style_border_color(
-                    swatch, lv_color_hex(0x9A6A2C), 0);
+                    swatch, crazypod_ui_color(0x9A6A2C), 0);
                 lv_obj_set_style_border_opa(
                     swatch, LV_OPA_COVER, 0);
             }
@@ -436,7 +437,7 @@ static void render_books_settings_stage(
                         page_colors[theme], LV_OPA_COVER);
         lv_obj_set_style_border_width(page, 1, 0);
         lv_obj_set_style_border_color(
-            page, lv_color_hex(0xD5BB84), 0);
+            page, crazypod_ui_color(0xD5BB84), 0);
         lv_obj_set_style_border_opa(page, 135, 0);
         label = make_label(
             page, CP_TR("Aa"),
@@ -490,13 +491,13 @@ static void render_audiobook_preview(
                      0x2B2118, LV_OPA_COVER);
     lv_obj_set_style_border_width(stage, 1, 0);
     lv_obj_set_style_border_color(
-        stage, lv_color_hex(0xC9A467), 0);
+        stage, crazypod_ui_color(0xC9A467), 0);
     lv_obj_set_style_border_opa(stage, 120, 0);
     crazypod_preview_add_bevel(stage, 88, 88, 0x6E5A3E, 0x110B06);
     disc = make_box(stage, 22, 14, 44, 44, LV_RADIUS_CIRCLE,
                     0x1A1410, LV_OPA_COVER);
     lv_obj_set_style_border_width(disc, 2, 0);
-    lv_obj_set_style_border_color(disc, lv_color_hex(0xD4B46A), 0);
+    lv_obj_set_style_border_color(disc, crazypod_ui_color(0xD4B46A), 0);
     lv_obj_set_style_border_opa(disc, 200, 0);
     make_box(disc, 16, 16, 12, 12, LV_RADIUS_CIRCLE, 0xD4B46A, 230);
     make_box(stage, 12, 68, 64, 4, 2, 0xD4B46A, 80);

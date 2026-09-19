@@ -16,13 +16,17 @@ SCENE_RENDERER = ROOT / (
     "crazypod_miniapp_scene_renderer.c"
 )
 
+# This checks a font directory built for the 320x240 canvas, which is what
+# the packaging step produces for the colour iPods; the Mini's small end of
+# the pack is marked `compact` and is not in that directory.
 SPECS = set()
 for line_number, raw_line in enumerate(
         SPEC_FILE.read_text(encoding="ascii").splitlines(), 1):
     line = raw_line.strip()
     if not line or line.startswith("#"):
         continue
-    match = re.fullmatch(r"(system|serif|mono):(\d{3}):(\d{1,2})", line)
+    match = re.fullmatch(
+        r"(system|serif|mono):(\d{3}):(\d{1,2})(?::(full|compact))?", line)
     if match is None:
         raise SystemExit(
             f"invalid runtime font spec at {SPEC_FILE}:{line_number}: {line}"
@@ -30,6 +34,8 @@ for line_number, raw_line in enumerate(
     spec = (match.group(1), int(match.group(2)), int(match.group(3)))
     if spec in SPECS:
         raise SystemExit(f"duplicate runtime font spec: {line}")
+    if match.group(4) == "compact":
+        continue
     SPECS.add(spec)
 LOCALES = ("jp", "kr", "sc", "tc")
 CJK_ADVANCE_SAMPLES = {

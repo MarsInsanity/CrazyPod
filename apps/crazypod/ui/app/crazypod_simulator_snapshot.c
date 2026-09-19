@@ -41,6 +41,7 @@
 #include "crazypod_app_input.h"
 #include "crazypod_choice_coordinator.h"
 #include "crazypod_simulator_snapshot.h"
+#include "../presentation/crazypod_ui_color.h"
 
 long crazypod_simulator_snapshot_settle_ticks(void)
 {
@@ -77,7 +78,7 @@ static void add_runtime_font_probe_label(
     lv_obj_set_pos(label, x, y);
     lv_obj_set_size(label, width, height);
     lv_obj_set_style_text_font(label, font, 0);
-    lv_obj_set_style_text_color(label, lv_color_hex(color), 0);
+    lv_obj_set_style_text_color(label, crazypod_ui_color(color), 0);
     lv_obj_set_style_bg_opa(label, LV_OPA_TRANSP, 0);
 }
 
@@ -131,7 +132,7 @@ static bool open_runtime_font_catalog(void)
     lv_obj_remove_style_all(catalog);
     lv_obj_set_pos(catalog, 0, 0);
     lv_obj_set_size(catalog, 320, 240);
-    lv_obj_set_style_bg_color(catalog, lv_color_hex(0x101114), 0);
+    lv_obj_set_style_bg_color(catalog, crazypod_ui_color(0x101114), 0);
     lv_obj_set_style_bg_opa(catalog, LV_OPA_COVER, 0);
     lv_screen_load(catalog);
     add_runtime_font_probe_label(

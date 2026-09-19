@@ -17,6 +17,7 @@
 #include "../../crazypod_screen_recording.h"
 #include "../presentation/crazypod_ui_widgets.h"
 #include "crazypod_status_bar.h"
+#include "../presentation/crazypod_ui_color.h"
 
 #define STATUS_WHITE 0xFFFFFF
 #define STATUS_DARK 0x08080D
@@ -177,17 +178,17 @@ void crazypod_status_bar_set_palette(
     if(bar == NULL || bar->time == NULL)
         return;
     lv_obj_set_style_text_color(
-        bar->time, lv_color_hex(foreground), 0);
+        bar->time, crazypod_ui_color(foreground), 0);
     lv_obj_set_style_text_color(
-        bar->playing, lv_color_hex(foreground), 0);
+        bar->playing, crazypod_ui_color(foreground), 0);
     lv_obj_set_style_bg_color(
-        bar->battery, lv_color_hex(foreground), 0);
+        bar->battery, crazypod_ui_color(foreground), 0);
     lv_obj_set_style_bg_color(
-        bar->battery_fill, lv_color_hex(foreground), 0);
+        bar->battery_fill, crazypod_ui_color(foreground), 0);
     lv_obj_set_style_bg_color(
-        bar->battery_cap, lv_color_hex(foreground), 0);
+        bar->battery_cap, crazypod_ui_color(foreground), 0);
     lv_obj_set_style_text_color(
-        bar->charge, lv_color_hex(background), 0);
+        bar->charge, crazypod_ui_color(background), 0);
 }
 
 void crazypod_status_bar_foreground(int index)

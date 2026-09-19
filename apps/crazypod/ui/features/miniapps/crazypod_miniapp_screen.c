@@ -12,6 +12,7 @@
 #include "crazypod_miniapp_scene.h"
 #include "crazypod_miniapp_screen.h"
 #include "../../../miniapps/runtime/crazypod_miniapp_text_prompt_service.h"
+#include "../../presentation/crazypod_ui_color.h"
 
 #define COLOR_DETAIL 0x08080D
 #define COLOR_WHITE 0xFFFFFF
@@ -194,7 +195,7 @@ static void render_error(void)
     lv_obj_t *label;
 
     lv_obj_set_style_bg_color(
-        screen_parent, lv_color_hex(COLOR_DETAIL), 0);
+        screen_parent, crazypod_ui_color(COLOR_DETAIL), 0);
     label = crazypod_ui_widget_label(
         screen_parent, CP_TR("APP RENDER ERROR"),
         &lv_font_montserrat_12, 0xFF453A, LV_OPA_COVER);

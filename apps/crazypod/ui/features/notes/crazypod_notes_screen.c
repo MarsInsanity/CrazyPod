@@ -9,6 +9,7 @@
 #include "../../presentation/crazypod_ui_text.h"
 #include "../../presentation/crazypod_ui_widgets.h"
 #include "crazypod_notes_screen.h"
+#include "../../presentation/crazypod_ui_color.h"
 
 #define CRAZYPOD_NOTES_FONT (&lv_font_source_han_sans_sc_14_cjk)
 #define CRAZYPOD_NOTES_WHITE 0xFFFFFF
@@ -28,10 +29,10 @@ void crazypod_notes_screen_render_composer(
     paper = crazypod_ui_widget_box(content, 10, 38, 300, 190, 12,
                      0xFAEFCB, LV_OPA_COVER);
     lv_obj_set_style_bg_grad_color(
-        paper, lv_color_hex(0xE8D5A4), 0);
+        paper, crazypod_ui_color(0xE8D5A4), 0);
     lv_obj_set_style_bg_grad_dir(paper, LV_GRAD_DIR_HOR, 0);
     lv_obj_set_style_border_width(paper, 1, 0);
-    lv_obj_set_style_border_color(paper, lv_color_hex(0xB79F70), 0);
+    lv_obj_set_style_border_color(paper, crazypod_ui_color(0xB79F70), 0);
     lv_obj_set_style_border_opa(paper, 100, 0);
     crazypod_ui_widget_box(paper, 36, 12, 1, 166, 0, 0xB82E26, 140);
     for(line = 0; line < 6; ++line)
@@ -43,7 +44,7 @@ void crazypod_notes_screen_render_composer(
             LV_RADIUS_CIRCLE, 0x5A4A34, 45);
         lv_obj_set_style_border_width(hole, 1, 0);
         lv_obj_set_style_border_color(
-            hole, lv_color_hex(CRAZYPOD_NOTES_WHITE), 0);
+            hole, crazypod_ui_color(CRAZYPOD_NOTES_WHITE), 0);
         lv_obj_set_style_border_opa(hole, 110, 0);
     }
 
@@ -102,7 +103,7 @@ void crazypod_notes_screen_render_composer(
     key = crazypod_ui_widget_box(paper, 48, 138, 232, 50, 7,
                    0x74422F, LV_OPA_COVER);
     lv_obj_set_style_border_width(key, 1, 0);
-    lv_obj_set_style_border_color(key, lv_color_hex(CRAZYPOD_NOTES_WHITE), 0);
+    lv_obj_set_style_border_color(key, crazypod_ui_color(CRAZYPOD_NOTES_WHITE), 0);
     lv_obj_set_style_border_opa(key, 75, 0);
     label = crazypod_ui_widget_label(
         key, selection != NULL ? selection : "",
@@ -153,7 +154,7 @@ void crazypod_notes_screen_render_reader(
     paper = crazypod_ui_widget_box(content, 10, 64, 300, 145, 6,
                      0xF5EEDC, LV_OPA_COVER);
     lv_obj_set_style_border_width(paper, 1, 0);
-    lv_obj_set_style_border_color(paper, lv_color_hex(0xB7A98E), 0);
+    lv_obj_set_style_border_color(paper, crazypod_ui_color(0xB7A98E), 0);
     lv_obj_set_style_border_opa(paper, 180, 0);
     crazypod_ui_text_note_window(body, first,
                             window, sizeof(window));

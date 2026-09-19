@@ -13,6 +13,7 @@
 #include "../../presentation/crazypod_ui_text.h"
 #include "../../presentation/crazypod_ui_widgets.h"
 #include "crazypod_clock_screen.h"
+#include "../../presentation/crazypod_ui_color.h"
 
 #define COLOR_WHITE 0xFFFFFF
 
@@ -102,7 +103,7 @@ static lv_obj_t *make_analog_clock(
     int tick;
 
     lv_obj_set_style_border_width(dial, 2, 0);
-    lv_obj_set_style_border_color(dial, lv_color_hex(ink_color), 0);
+    lv_obj_set_style_border_color(dial, crazypod_ui_color(ink_color), 0);
     lv_obj_set_style_border_opa(dial, 220, 0);
     for(tick = 0; tick < 12; ++tick) {
         int width = tick % 3 == 0 ? 2 : 1;
@@ -157,7 +158,7 @@ void crazypod_clock_screen_render(
     panel = crazypod_ui_widget_box(
         content, 10, 40, 300, 188, 12, 0xFFFFFF, LV_OPA_COVER);
     lv_obj_set_style_border_width(panel, 1, 0);
-    lv_obj_set_style_border_color(panel, lv_color_hex(0x000000), 0);
+    lv_obj_set_style_border_color(panel, crazypod_ui_color(0x000000), 0);
     lv_obj_set_style_border_opa(panel, 34, 0);
     make_analog_clock(
         panel, 14, 23, 140, time->hour, time->minute,
@@ -283,7 +284,7 @@ void crazypod_stopwatch_screen_render(
     panel = crazypod_ui_widget_box(
         content, 10, 40, 300, 188, 12, 0xFFFFFF, LV_OPA_COVER);
     lv_obj_set_style_border_width(panel, 1, 0);
-    lv_obj_set_style_border_color(panel, lv_color_hex(0x000000), 0);
+    lv_obj_set_style_border_color(panel, crazypod_ui_color(0x000000), 0);
     lv_obj_set_style_border_opa(panel, 34, 0);
     make_analog_clock(
         panel, 8, 23, 140, (int)(minutes / 60),

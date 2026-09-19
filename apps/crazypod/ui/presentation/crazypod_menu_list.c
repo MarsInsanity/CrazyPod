@@ -10,6 +10,7 @@
 #include "crazypod_menu_icon_assets.h"
 #include "../../crazypod_state.h"
 #include "crazypod_menu_list.h"
+#include "crazypod_ui_color.h"
 
 #define CRAZYPOD_MENU_LIST_ROWS 6
 
@@ -99,13 +100,13 @@ void crazypod_menu_list_refresh_row(
         lv_obj_set_style_text_opa(view.labels[row], label_opa, 0);
     }
     lv_obj_set_style_bg_color(
-        box, lv_color_hex(selected ? primary_color : panel_color), 0);
+        box, crazypod_ui_color(selected ? primary_color : panel_color), 0);
     lv_obj_set_style_bg_opa(
         box, selected ? 220 : LV_OPA_TRANSP, 0);
     lv_obj_set_style_border_width(box, selected ? 1 : 0, 0);
     if(selected && gradient && !crazypod_state_reduce_effects()) {
         lv_obj_set_style_bg_grad_color(
-            box, lv_color_hex(secondary_color), 0);
+            box, crazypod_ui_color(secondary_color), 0);
         lv_obj_set_style_bg_grad_dir(box, LV_GRAD_DIR_HOR, 0);
     }
     else

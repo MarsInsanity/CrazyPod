@@ -18,6 +18,7 @@
 #include "../presentation/crazypod_ui_widgets.h"
 #include "crazypod_desktop_native.h"
 #include "crazypod_power_prompt.h"
+#include "../presentation/crazypod_ui_color.h"
 
 #define COLOR_WHITE 0xFFFFFF
 #define COLOR_PANEL 0x1B1B22
@@ -120,14 +121,14 @@ static void refresh_prompt(void)
 
         lv_obj_set_style_bg_color(
             prompt.rows[index],
-            lv_color_hex(selected ? COLOR_WHITE : COLOR_PANEL), 0);
+            crazypod_ui_color(selected ? COLOR_WHITE : COLOR_PANEL), 0);
         lv_obj_set_style_bg_opa(
             prompt.rows[index],
             selected ? 34 : LV_OPA_TRANSP, 0);
         lv_obj_set_style_border_width(
             prompt.rows[index], selected ? 1 : 0, 0);
         lv_obj_set_style_border_color(
-            prompt.rows[index], lv_color_hex(COLOR_WHITE), 0);
+            prompt.rows[index], crazypod_ui_color(COLOR_WHITE), 0);
         lv_obj_set_style_border_opa(
             prompt.rows[index], selected ? 72 : 0, 0);
         CP_LV_LABEL_SET_TEXT(

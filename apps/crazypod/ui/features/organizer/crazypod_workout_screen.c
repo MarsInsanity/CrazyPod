@@ -10,6 +10,7 @@
 #include "../../../crazypod_workouts.h"
 #include "../../presentation/crazypod_ui_widgets.h"
 #include "crazypod_workout_screen.h"
+#include "../../presentation/crazypod_ui_color.h"
 
 #define CRAZYPOD_WORKOUT_FONT (&lv_font_source_han_sans_sc_14_cjk)
 #define CRAZYPOD_WORKOUT_WHITE 0xFFFFFF
@@ -64,13 +65,13 @@ static void set_running_look(bool running)
     uint32_t color = running
         ? CRAZYPOD_WORKOUT_RUNNING : CRAZYPOD_WORKOUT_PAUSED;
 
-    lv_obj_set_style_border_color(face.ring, lv_color_hex(color), 0);
+    lv_obj_set_style_border_color(face.ring, crazypod_ui_color(color), 0);
     CP_LV_LABEL_SET_TEXT(
         face.ring_icon, running ? LV_SYMBOL_PLAY : CP_TR("II"));
-    lv_obj_set_style_text_color(face.ring_icon, lv_color_hex(color), 0);
+    lv_obj_set_style_text_color(face.ring_icon, crazypod_ui_color(color), 0);
     CP_LV_LABEL_SET_TEXT(
         face.status, running ? CP_TR("RUNNING") : CP_TR("PAUSED"));
-    lv_obj_set_style_text_color(face.status, lv_color_hex(color), 0);
+    lv_obj_set_style_text_color(face.status, crazypod_ui_color(color), 0);
 }
 
 bool crazypod_workout_screen_refresh_active(
@@ -103,7 +104,7 @@ void crazypod_workout_screen_render_ready(
     panel = crazypod_ui_widget_box(
         content, 18, 48, 284, 166, 18, 0x111512, LV_OPA_COVER);
     lv_obj_set_style_border_width(panel, 1, 0);
-    lv_obj_set_style_border_color(panel, lv_color_hex(0xA8F12D), 0);
+    lv_obj_set_style_border_color(panel, crazypod_ui_color(0xA8F12D), 0);
     lv_obj_set_style_border_opa(panel, 100, 0);
     label = crazypod_ui_widget_label(
         panel, crazypod_workout_activity_title(activity),

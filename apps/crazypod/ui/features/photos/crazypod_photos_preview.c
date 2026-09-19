@@ -15,6 +15,7 @@
 #include "../../presentation/crazypod_preview_motion.h"
 #include "../../presentation/crazypod_preview_primitives.h"
 #include "crazypod_photos_preview.h"
+#include "../../presentation/crazypod_ui_color.h"
 
 #define COLOR_WHITE 0xFFFFFF
 
@@ -82,11 +83,11 @@ static lv_obj_t *render_memory_aperture(
     int i;
 
     lv_obj_set_style_bg_grad_color(
-        lens, lv_color_hex(surface_deep), 0);
+        lens, crazypod_ui_color(surface_deep), 0);
     lv_obj_set_style_bg_grad_dir(lens, LV_GRAD_DIR_VER, 0);
     lv_obj_set_style_border_width(lens, 2, 0);
     lv_obj_set_style_border_color(
-        lens, lv_color_hex(primary), 0);
+        lens, crazypod_ui_color(primary), 0);
     lv_obj_set_style_border_opa(lens, 150, 0);
     crazypod_preview_add_bevel(
         lens, 92, 92, secondary, surface_deep);
@@ -158,7 +159,7 @@ static lv_obj_t *render_video_card(
 
     lv_obj_set_style_border_width(card, 2, 0);
     lv_obj_set_style_border_color(
-        card, lv_color_hex(0xAEB7C7), 0);
+        card, crazypod_ui_color(0xAEB7C7), 0);
     lv_obj_set_style_border_opa(card, 120, 0);
     if(video_index >= 0) {
         poster = crazypod_video_poster(video_index);
@@ -269,12 +270,12 @@ void crazypod_photos_preview_render(
             parent, 195, 64, 90, 90, 18,
             0x5A1417, LV_OPA_COVER);
         lv_obj_set_style_bg_grad_color(
-            preview, lv_color_hex(0x18090A), 0);
+            preview, crazypod_ui_color(0x18090A), 0);
         lv_obj_set_style_bg_grad_dir(
             preview, LV_GRAD_DIR_VER, 0);
         lv_obj_set_style_border_width(preview, 2, 0);
         lv_obj_set_style_border_color(
-            preview, lv_color_hex(0xFF6B63), 0);
+            preview, crazypod_ui_color(0xFF6B63), 0);
         lv_obj_set_style_border_opa(preview, 160, 0);
         label = make_label(
             preview, LV_SYMBOL_TRASH,

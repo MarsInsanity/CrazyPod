@@ -1,5 +1,16 @@
-# Canonical semantic runtime font set shipped in CrazyPod-6G.zip.
-# Keep one family:weight:size tuple per line.
+# Canonical semantic runtime font set shipped with CrazyPod.
+# Keep one family:weight:size[:canvas] tuple per line.
+#
+# The canvas field says which panels need the face, and defaults to `both`.
+# The product UI asks for its type in the sizes it was drawn at, on a 320x240
+# canvas; on the Mini's 138x110 panel compact_size() in
+# apps/crazypod/crazypod_runtime_font.c rewrites each of those requests to a
+# smaller size before it is resolved. Both ends of that mapping have to be
+# built, but neither package needs the other's end -- a CJK face is around a
+# megabyte, so shipping the whole union to both would cost tens of megabytes
+# for faces nothing on that device can ask for.
+#
+# tests/test-crazypod-compact-font-ladder.py checks the two stay in step.
 system:400:6
 system:400:7
 system:400:8
@@ -11,39 +22,51 @@ system:400:14
 system:400:15
 system:400:16
 system:400:18
-system:400:22
-system:400:24
-system:400:28
-system:400:32
-system:400:40
-system:500:32
+system:400:22:full
+system:400:24:full
+system:400:28:full
+system:400:32:full
+system:400:40:full
+system:500:16:compact
+system:500:32:full
 system:700:8
 system:700:10
+system:700:11:compact
 system:700:16
-system:700:18
-system:700:32
-system:900:32
+system:700:18:full
+system:700:32:full
+system:900:16:compact
+system:900:32:full
+serif:400:8:compact
+serif:400:9:compact
+serif:400:10:compact
 serif:400:11
-serif:400:12
-serif:400:14
-serif:400:16
-serif:400:20
-serif:400:28
-serif:700:14
-serif:700:16
-serif:700:28
-serif:900:22
+serif:400:12:full
+serif:400:14:full
+serif:400:15:compact
+serif:400:16:full
+serif:400:20:full
+serif:400:28:full
+serif:700:10:compact
+serif:700:14:full
+serif:700:15:compact
+serif:700:16:full
+serif:700:28:full
+serif:900:12:compact
+serif:900:22:full
 mono:400:7
 mono:400:8
 mono:400:9
 mono:400:10
-mono:400:11
-mono:400:12
-mono:400:16
+mono:400:11:full
+mono:400:12:full
+mono:400:16:full
 mono:700:8
-mono:700:11
+mono:700:9:compact
+mono:700:10:compact
+mono:700:11:full
 mono:700:12
-mono:700:14
-mono:700:15
-mono:700:16
-mono:700:22
+mono:700:14:full
+mono:700:15:full
+mono:700:16:full
+mono:700:22:full

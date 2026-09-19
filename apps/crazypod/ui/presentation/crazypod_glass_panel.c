@@ -7,6 +7,7 @@
 #include "../../crazypod_state.h"
 #include "crazypod_ui_widgets.h"
 #include "crazypod_glass_panel.h"
+#include "crazypod_ui_color.h"
 
 #define COLOR_PANEL 0x1B1B22
 #define COLOR_WHITE 0xFFFFFF
@@ -42,7 +43,7 @@ lv_obj_t *crazypod_glass_panel_create(
         lv_obj_set_style_shadow_width(panel, 12, 0);
         lv_obj_set_style_shadow_offset_y(panel, 6, 0);
         lv_obj_set_style_shadow_color(
-            panel, lv_color_hex(0x000000), 0);
+            panel, crazypod_ui_color(0x000000), 0);
         lv_obj_set_style_shadow_opa(panel, shadow_opa, 0);
     }
     if(descriptor != NULL &&
@@ -66,7 +67,7 @@ lv_obj_t *crazypod_glass_panel_create(
         COLOR_WHITE, LV_OPA_TRANSP);
     lv_obj_set_style_border_width(border, 1, 0);
     lv_obj_set_style_border_color(
-        border, lv_color_hex(COLOR_WHITE), 0);
+        border, crazypod_ui_color(COLOR_WHITE), 0);
     lv_obj_set_style_border_opa(
         border, crazypod_glass_material_border_opa(material), 0);
     lv_obj_remove_flag(border, LV_OBJ_FLAG_CLICKABLE);

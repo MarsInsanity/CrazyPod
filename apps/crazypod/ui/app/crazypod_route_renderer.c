@@ -33,6 +33,7 @@
 #include "crazypod_menu_preview.h"
 #include "../../crazypod_perf_log.h"
 #include "crazypod_route_renderer.h"
+#include "../presentation/crazypod_ui_color.h"
 
 #define STATUS_BAR_HEIGHT 32
 #define MENU_PANEL_Y STATUS_BAR_HEIGHT
@@ -139,13 +140,13 @@ static void create_panel_backgrounds(void)
     lv_obj_set_style_border_side(
         top, LV_BORDER_SIDE_BOTTOM, 0);
     lv_obj_set_style_border_color(
-        top, lv_color_hex(COLOR_WHITE), 0);
+        top, crazypod_ui_color(COLOR_WHITE), 0);
     lv_obj_set_style_border_opa(top, 22, 0);
     lv_obj_set_style_border_width(left, 1, 0);
     lv_obj_set_style_border_side(
         left, LV_BORDER_SIDE_RIGHT, 0);
     lv_obj_set_style_border_color(
-        left, lv_color_hex(COLOR_WHITE), 0);
+        left, crazypod_ui_color(COLOR_WHITE), 0);
     lv_obj_set_style_border_opa(left, 22, 0);
 }
 
@@ -405,7 +406,7 @@ void crazypod_route_renderer_render(
     lv_obj_set_pos(content, 0, 0);
     lv_obj_set_style_bg_color(
         content,
-        lv_color_hex(background), 0);
+        crazypod_ui_color(background), 0);
     lv_obj_set_style_bg_opa(
         content, LV_OPA_COVER, 0);
     crazypod_ui_widget_box(
@@ -450,7 +451,7 @@ void crazypod_route_renderer_prepare_loading(void)
         1, COLOR_WHITE, COLOR_DETAIL);
     lv_obj_set_style_bg_color(
         crazypod_shell_product_content(),
-        lv_color_hex(COLOR_DETAIL), 0);
+        crazypod_ui_color(COLOR_DETAIL), 0);
     lv_obj_set_style_bg_opa(
         crazypod_shell_product_content(), LV_OPA_COVER, 0);
 }

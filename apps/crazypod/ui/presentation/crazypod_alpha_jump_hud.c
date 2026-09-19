@@ -7,6 +7,7 @@
 #include "../../crazypod_state.h"
 #include "crazypod_alpha_jump_hud.h"
 #include "crazypod_ui_widgets.h"
+#include "crazypod_ui_color.h"
 
 #define COLOR_WHITE 0xFFFFFF
 #define HUD_BACKGROUND 0x080A10
@@ -47,12 +48,12 @@ static void create_hud(void)
         HUD_BACKGROUND, 232);
     lv_obj_set_style_border_width(hud.root, 1, 0);
     lv_obj_set_style_border_color(
-        hud.root, lv_color_hex(COLOR_WHITE), 0);
+        hud.root, crazypod_ui_color(COLOR_WHITE), 0);
     lv_obj_set_style_border_opa(hud.root, 62, 0);
     if(!crazypod_state_reduce_effects()) {
         lv_obj_set_style_shadow_width(hud.root, 18, 0);
         lv_obj_set_style_shadow_color(
-            hud.root, lv_color_hex(0x000000), 0);
+            hud.root, crazypod_ui_color(0x000000), 0);
         lv_obj_set_style_shadow_opa(hud.root, 115, 0);
     }
     lv_obj_remove_flag(hud.root, LV_OBJ_FLAG_CLICKABLE);

@@ -18,6 +18,7 @@
 #include "crazypod_customize_catalog.h"
 #include "crazypod_customize_feature.h"
 #include "../now_playing/crazypod_now_playing_feature.h"
+#include "../../presentation/crazypod_ui_color.h"
 
 #define COLOR_WHITE 0xFFFFFF
 
@@ -242,7 +243,7 @@ static void render_editor(
     lv_obj_t *label;
 
     lv_obj_set_style_bg_grad_color(
-        card, lv_color_hex(secondary_color), 0);
+        card, crazypod_ui_color(secondary_color), 0);
     lv_obj_set_style_bg_grad_dir(card, LV_GRAD_DIR_HOR, 0);
     label = crazypod_ui_widget_label(
         card, LV_SYMBOL_KEYBOARD, &lv_font_montserrat_16,
@@ -284,7 +285,7 @@ void crazypod_customize_feature_render_preview(
         model.swatch_color, LV_OPA_COVER);
     if(model.gradient) {
         lv_obj_set_style_bg_grad_color(
-            swatch, lv_color_hex(secondary_color), 0);
+            swatch, crazypod_ui_color(secondary_color), 0);
         lv_obj_set_style_bg_grad_dir(swatch, LV_GRAD_DIR_HOR, 0);
     }
     label = crazypod_ui_widget_label(

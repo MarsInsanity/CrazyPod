@@ -13,6 +13,7 @@
 #include "../../presentation/crazypod_ui_widgets.h"
 #include "../../presentation/crazypod_preview_primitives.h"
 #include "crazypod_book_preview_cover.h"
+#include "../../presentation/crazypod_ui_color.h"
 
 static lv_obj_t *make_box(
     lv_obj_t *parent, int x, int y, int width, int height,
@@ -77,11 +78,11 @@ lv_obj_t *crazypod_book_preview_cover_create(
     lv_obj_t *label;
 
     lv_obj_set_style_bg_grad_color(
-        cover, lv_color_hex((color & 0xFEFEFEu) >> 1), 0);
+        cover, crazypod_ui_color((color & 0xFEFEFEu) >> 1), 0);
     lv_obj_set_style_bg_grad_dir(cover, LV_GRAD_DIR_HOR, 0);
     lv_obj_set_style_border_width(cover, 1, 0);
     lv_obj_set_style_border_color(
-        cover, lv_color_hex(0xE0C48D), 0);
+        cover, crazypod_ui_color(0xE0C48D), 0);
     lv_obj_set_style_border_opa(cover, 125, 0);
     crazypod_preview_add_bevel(
         cover, width, height, 0xF6E5BC, 0x160C08);

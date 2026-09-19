@@ -11,6 +11,7 @@
 #include "../../../crazypod_miniapps.h"
 #include "crazypod_miniapp_scene.h"
 #include "crazypod_miniapp_scene_internal.h"
+#include "../../presentation/crazypod_ui_color.h"
 
 #define SCENE_ANIMATION_MAX 64u
 
@@ -361,7 +362,7 @@ static void materialize_node(
             node->object, LV_OBJ_FLAG_SCROLLABLE);
     if(node->type == CP_UI_OBJECT_BUTTON) {
         lv_obj_set_style_outline_color(
-            node->object, lv_color_hex(scene.accent),
+            node->object, crazypod_ui_color(scene.accent),
             LV_PART_MAIN | LV_STATE_FOCUSED);
         lv_obj_set_style_outline_width(
             node->object, 2,

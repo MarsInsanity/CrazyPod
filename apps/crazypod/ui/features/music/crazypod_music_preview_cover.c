@@ -12,6 +12,7 @@
 #include "../../presentation/crazypod_ui_widgets.h"
 #include "../../presentation/crazypod_preview_primitives.h"
 #include "crazypod_music_preview_cover.h"
+#include "../../presentation/crazypod_ui_color.h"
 
 #define COLOR_WHITE 0xFFFFFF
 #define CRAZYPOD_MENU_ARTWORK_PRIORITY 20
@@ -95,13 +96,13 @@ lv_obj_t *crazypod_music_preview_sleeve_create(
     }
 
     lv_obj_set_style_bg_grad_color(
-        sleeve, lv_color_hex(secondary), 0);
+        sleeve, crazypod_ui_color(secondary), 0);
     lv_obj_set_style_bg_grad_dir(
         sleeve, seed % 2 == 0
             ? LV_GRAD_DIR_HOR : LV_GRAD_DIR_VER, 0);
     lv_obj_set_style_border_width(sleeve, 1, 0);
     lv_obj_set_style_border_color(
-        sleeve, lv_color_hex(0xF3F5F6), 0);
+        sleeve, crazypod_ui_color(0xF3F5F6), 0);
     lv_obj_set_style_border_opa(sleeve, 62, 0);
     crazypod_preview_add_bevel(
         sleeve, size, size, 0xFFFFFF, 0x111315);
@@ -198,13 +199,13 @@ lv_obj_t *crazypod_music_preview_initial_cover_create(
 
     music_preview_title_initial(track, initial);
     lv_obj_set_style_bg_grad_color(
-        cover, lv_color_hex(secondary), 0);
+        cover, crazypod_ui_color(secondary), 0);
     lv_obj_set_style_bg_grad_dir(
         cover, seed % 2 == 0
             ? LV_GRAD_DIR_VER : LV_GRAD_DIR_HOR, 0);
     lv_obj_set_style_border_width(cover, 1, 0);
     lv_obj_set_style_border_color(
-        cover, lv_color_hex(0xF2F5F6), 0);
+        cover, crazypod_ui_color(0xF2F5F6), 0);
     lv_obj_set_style_border_opa(cover, 62, 0);
     crazypod_preview_add_bevel(
         cover, size, size, 0xF7FBFC, 0x101315);

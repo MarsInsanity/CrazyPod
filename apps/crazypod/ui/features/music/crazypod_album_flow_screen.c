@@ -13,6 +13,7 @@
 #include "../../presentation/crazypod_empty_state.h"
 #include "../../presentation/crazypod_ui_widgets.h"
 #include "crazypod_album_flow_screen.h"
+#include "../../presentation/crazypod_ui_color.h"
 
 #define COLOR_WHITE 0xFFFFFF
 
@@ -59,7 +60,7 @@ void crazypod_album_flow_screen_render(
 {
     int count = crazypod_music_album_count();
 
-    lv_obj_set_style_bg_color(parent, lv_color_hex(0x000000), 0);
+    lv_obj_set_style_bg_color(parent, crazypod_ui_color(0x000000), 0);
     lv_obj_set_style_bg_opa(parent, LV_OPA_COVER, 0);
     if(count <= 0) {
         crazypod_empty_state_render(

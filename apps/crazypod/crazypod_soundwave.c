@@ -11,6 +11,7 @@
 
 #include "crazypod_state.h"
 #include "crazypod_soundwave.h"
+#include "ui/presentation/crazypod_ui_color.h"
 
 #define SOUND_WAVE_POINT_SLOTS 6
 #define SOUND_WAVE_MAX_POINTS 148
@@ -100,7 +101,7 @@ static void draw_rect(lv_layer_t *layer, int x, int y,
         return;
     lv_draw_rect_dsc_init(&rectangle);
     rectangle.base.layer = layer;
-    rectangle.bg_color = lv_color_hex(color);
+    rectangle.bg_color = crazypod_ui_color(color);
     rectangle.bg_opa = opacity;
     rectangle.radius = radius;
     rectangle_area.x1 = x;
@@ -135,7 +136,7 @@ static void draw_line_segment(lv_layer_t *layer,
     line.p2.x = x2;
     line.p2.y = y2;
     line.width = width;
-    line.color = lv_color_hex(color);
+    line.color = crazypod_ui_color(color);
     line.opa = opacity;
     line.round_start = rounded;
     line.round_end = rounded;
@@ -155,7 +156,7 @@ static void draw_polyline(lv_layer_t *layer, int slot, int point_count,
     line.points = sound_wave_points[slot];
     line.point_cnt = point_count;
     line.width = width;
-    line.color = lv_color_hex(color);
+    line.color = crazypod_ui_color(color);
     line.opa = opacity;
     line.round_start = 1;
     line.round_end = 1;
@@ -620,7 +621,7 @@ static void draw_vinyl_groove_ball(
         arc.end_angle = start + 310 - ring * 22;
         arc.width = ring == 1 ? 2 : 1;
         arc.rounded = 0;
-        arc.color = lv_color_hex(
+        arc.color = crazypod_ui_color(
             ring % 2 == 0 ? primary : secondary);
         arc.opa = playing ? 122 : 61;
         lv_draw_arc(layer, &arc);
@@ -638,7 +639,7 @@ static void draw_vinyl_groove_ball(
         glint.end_angle = start + 26;
         glint.width = 2;
         glint.rounded = 1;
-        glint.color = lv_color_hex(highlight);
+        glint.color = crazypod_ui_color(highlight);
         glint.opa = playing ? 107 : 36;
         lv_draw_arc(layer, &glint);
     }

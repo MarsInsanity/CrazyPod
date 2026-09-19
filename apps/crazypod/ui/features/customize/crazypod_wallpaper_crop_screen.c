@@ -12,6 +12,7 @@
 #include "../../presentation/crazypod_ui_widgets.h"
 #include "crazypod_wallpaper_crop_controller.h"
 #include "crazypod_wallpaper_crop_screen.h"
+#include "../../presentation/crazypod_ui_color.h"
 
 static struct crazypod_wallpaper_crop_view crop_view;
 
@@ -194,7 +195,7 @@ void crazypod_wallpaper_crop_screen_render(
             2, white_color, LV_OPA_TRANSP);
         lv_obj_set_style_border_width(ring, 2, 0);
         lv_obj_set_style_border_color(
-            ring, lv_color_hex(white_color), 0);
+            ring, crazypod_ui_color(white_color), 0);
         lv_obj_set_style_border_opa(ring, 220, 0);
         if(model->phase == CRAZYPOD_WALLPAPER_CROP_APPLYING) {
             progress = model->apply_progress;
@@ -287,7 +288,7 @@ void crazypod_wallpaper_crop_screen_set_progress_error(bool error)
         return;
     lv_obj_set_style_bg_color(
         crop_view.progress_fill,
-        lv_color_hex(error ? 0xFF453A : 0x26CFF5), 0);
+        crazypod_ui_color(error ? 0xFF453A : 0x26CFF5), 0);
 }
 
 #endif

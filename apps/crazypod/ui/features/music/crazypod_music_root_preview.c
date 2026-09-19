@@ -15,6 +15,7 @@
 #include "../../presentation/crazypod_preview_primitives.h"
 #include "../../presentation/crazypod_ui_widgets.h"
 #include "crazypod_music_root_preview.h"
+#include "../../presentation/crazypod_ui_color.h"
 
 #define COLOR_WHITE 0xFFFFFF
 #define COLOR_CYAN 0x26CFF5
@@ -105,13 +106,13 @@ static lv_obj_t *make_procedural_record_sleeve(
     }
 
     lv_obj_set_style_bg_grad_color(
-        sleeve, lv_color_hex(secondary), 0);
+        sleeve, crazypod_ui_color(secondary), 0);
     lv_obj_set_style_bg_grad_dir(
         sleeve, seed % 2 == 0
             ? LV_GRAD_DIR_HOR : LV_GRAD_DIR_VER, 0);
     lv_obj_set_style_border_width(sleeve, 1, 0);
     lv_obj_set_style_border_color(
-        sleeve, lv_color_hex(0xF3F5F6), 0);
+        sleeve, crazypod_ui_color(0xF3F5F6), 0);
     lv_obj_set_style_border_opa(sleeve, 62, 0);
     crazypod_preview_add_bevel(
         sleeve, size, size, 0xFFFFFF, 0x111315);
@@ -205,13 +206,13 @@ static lv_obj_t *make_music_initial_cover(
 
     music_preview_title_initial(track, initial);
     lv_obj_set_style_bg_grad_color(
-        cover, lv_color_hex(secondary), 0);
+        cover, crazypod_ui_color(secondary), 0);
     lv_obj_set_style_bg_grad_dir(
         cover, seed % 2 == 0
             ? LV_GRAD_DIR_VER : LV_GRAD_DIR_HOR, 0);
     lv_obj_set_style_border_width(cover, 1, 0);
     lv_obj_set_style_border_color(
-        cover, lv_color_hex(0xF2F5F6), 0);
+        cover, crazypod_ui_color(0xF2F5F6), 0);
     lv_obj_set_style_border_opa(cover, 62, 0);
     crazypod_preview_add_bevel(
         cover, size, size, 0xF7FBFC, 0x101315);
@@ -258,14 +259,14 @@ void crazypod_music_root_preview_render(
             LV_RADIUS_CIRCLE, 0xC7D1D8, 235);
         lv_obj_set_style_border_width(disc, 2, 0);
         lv_obj_set_style_border_color(
-            disc, lv_color_hex(0xF8FFFF), 0);
+            disc, crazypod_ui_color(0xF8FFFF), 0);
         lv_obj_set_style_border_opa(disc, 105, 0);
         part = crazypod_ui_widget_box(
             disc, 4, 4, 51, 51, LV_RADIUS_CIRCLE,
             0xD9E4E8, LV_OPA_TRANSP);
         lv_obj_set_style_border_width(part, 1, 0);
         lv_obj_set_style_border_color(
-            part, lv_color_hex(0xF7FCFF), 0);
+            part, crazypod_ui_color(0xF7FCFF), 0);
         lv_obj_set_style_border_opa(part, 96, 0);
         crazypod_ui_widget_box(disc, 9, 9, 41, 41, LV_RADIUS_CIRCLE,
                  0x627582, 215);
@@ -274,7 +275,7 @@ void crazypod_music_root_preview_render(
             0x738693, LV_OPA_TRANSP);
         lv_obj_set_style_border_width(part, 1, 0);
         lv_obj_set_style_border_color(
-            part, lv_color_hex(0xD7E5EA), 0);
+            part, crazypod_ui_color(0xD7E5EA), 0);
         lv_obj_set_style_border_opa(part, 65, 0);
         crazypod_ui_widget_box(disc, 23, 23, 13, 13, LV_RADIUS_CIRCLE,
                  0x101820, LV_OPA_COVER);
@@ -286,7 +287,7 @@ void crazypod_music_root_preview_render(
                          0xD9E4E8, 58);
         lv_obj_set_style_border_width(stage, 2, 0);
         lv_obj_set_style_border_color(
-            stage, lv_color_hex(0xEAFBFF), 0);
+            stage, crazypod_ui_color(0xEAFBFF), 0);
         lv_obj_set_style_border_opa(stage, 145, 0);
         crazypod_preview_add_bevel(
             stage, 82, 91, 0xF4FBFD, 0x182025);
@@ -343,7 +344,7 @@ void crazypod_music_root_preview_render(
                         LV_RADIUS_CIRCLE, 0xD7E2E8, 205);
         lv_obj_set_style_border_width(part, 1, 0);
         lv_obj_set_style_border_color(
-            part, lv_color_hex(0xF4FBFD), 0);
+            part, crazypod_ui_color(0xF4FBFD), 0);
         lv_obj_set_style_border_opa(part, 115, 0);
         crazypod_ui_widget_box(part, 5, 5, 24, 24,
                  LV_RADIUS_CIRCLE, 0xAAB7BD, 85);
@@ -369,11 +370,11 @@ void crazypod_music_root_preview_render(
         stage = crazypod_ui_widget_box(parent, 176, 47, 128, 106, 8,
                          0x394247, LV_OPA_COVER);
         lv_obj_set_style_bg_grad_color(
-            stage, lv_color_hex(0x171C1F), 0);
+            stage, crazypod_ui_color(0x171C1F), 0);
         lv_obj_set_style_bg_grad_dir(stage, LV_GRAD_DIR_VER, 0);
         lv_obj_set_style_border_width(stage, 2, 0);
         lv_obj_set_style_border_color(
-            stage, lv_color_hex(0xAAB5BA), 0);
+            stage, crazypod_ui_color(0xAAB5BA), 0);
         lv_obj_set_style_border_opa(stage, 135, 0);
         crazypod_preview_add_bevel(
             stage, 128, 106, 0xECF3F5, 0x080A0B);
@@ -393,7 +394,7 @@ void crazypod_music_root_preview_render(
             0x07090A, 238);
         lv_obj_set_style_border_width(cavity, 1, 0);
         lv_obj_set_style_border_color(
-            cavity, lv_color_hex(0x7E8A8F), 0);
+            cavity, crazypod_ui_color(0x7E8A8F), 0);
         lv_obj_set_style_border_opa(cavity, 82, 0);
         crazypod_ui_widget_box(cavity, 4, 4, 110, 2, 1,
                  0xB9C4C8, 35);
@@ -423,11 +424,11 @@ void crazypod_music_root_preview_render(
         rail = crazypod_ui_widget_box(stage, 5, 78, 118, 20, 4,
                         0x2C3438, LV_OPA_COVER);
         lv_obj_set_style_bg_grad_color(
-            rail, lv_color_hex(0x111619), 0);
+            rail, crazypod_ui_color(0x111619), 0);
         lv_obj_set_style_bg_grad_dir(rail, LV_GRAD_DIR_VER, 0);
         lv_obj_set_style_border_width(rail, 1, 0);
         lv_obj_set_style_border_color(
-            rail, lv_color_hex(0x9DA8AD), 0);
+            rail, crazypod_ui_color(0x9DA8AD), 0);
         lv_obj_set_style_border_opa(rail, 112, 0);
         crazypod_preview_add_bevel(
             rail, 118, 20, 0xE1E8EA, 0x050708);
@@ -447,11 +448,11 @@ void crazypod_music_root_preview_render(
         stage = crazypod_ui_widget_box(parent, 184, 60, 112, 84, 9,
                          0xB7A986, LV_OPA_COVER);
         lv_obj_set_style_bg_grad_color(
-            stage, lv_color_hex(0x544936), 0);
+            stage, crazypod_ui_color(0x544936), 0);
         lv_obj_set_style_bg_grad_dir(stage, LV_GRAD_DIR_VER, 0);
         lv_obj_set_style_border_width(stage, 2, 0);
         lv_obj_set_style_border_color(
-            stage, lv_color_hex(0xD8C99F), 0);
+            stage, crazypod_ui_color(0xD8C99F), 0);
         lv_obj_set_style_border_opa(stage, 125, 0);
         crazypod_preview_add_bevel(
             stage, 112, 84, 0xE8D9B4, 0x20170F);
@@ -466,7 +467,7 @@ void crazypod_music_root_preview_render(
                         0x24211D, 235);
         lv_obj_set_style_border_width(part, 1, 0);
         lv_obj_set_style_border_color(
-            part, lv_color_hex(0xB7A986), 0);
+            part, crazypod_ui_color(0xB7A986), 0);
         lv_obj_set_style_border_opa(part, 72, 0);
         for(i = 0; i < 2; ++i) {
             lv_obj_t *reel = crazypod_ui_widget_box(
@@ -503,12 +504,12 @@ void crazypod_music_root_preview_render(
             0xC7D0D4, LV_OPA_TRANSP);
         lv_obj_set_style_border_width(stage, 2, 0);
         lv_obj_set_style_border_color(
-            stage, lv_color_hex(0x818B90), 0);
+            stage, crazypod_ui_color(0x818B90), 0);
         lv_obj_set_style_border_opa(stage, 165, 0);
         part = crazypod_ui_widget_box(parent, 218, 53, 44, 58, 21,
                         0xB8C1C6, 245);
         lv_obj_set_style_bg_grad_color(
-            part, lv_color_hex(0x3A4146), 0);
+            part, crazypod_ui_color(0x3A4146), 0);
         lv_obj_set_style_bg_grad_dir(part, LV_GRAD_DIR_HOR, 0);
         for(i = 0; i < 5; ++i)
             crazypod_ui_widget_box(part, 8, 10 + i * 8, 28, 2,
@@ -542,11 +543,11 @@ void crazypod_music_root_preview_render(
         stage = crazypod_ui_widget_box(parent, 178, 62, 124, 83, 8,
                          0x50463B, LV_OPA_COVER);
         lv_obj_set_style_bg_grad_color(
-            stage, lv_color_hex(0x201C18), 0);
+            stage, crazypod_ui_color(0x201C18), 0);
         lv_obj_set_style_bg_grad_dir(stage, LV_GRAD_DIR_VER, 0);
         lv_obj_set_style_border_width(stage, 1, 0);
         lv_obj_set_style_border_color(
-            stage, lv_color_hex(0x8D785F), 0);
+            stage, crazypod_ui_color(0x8D785F), 0);
         lv_obj_set_style_border_opa(stage, 135, 0);
         crazypod_preview_add_bevel(
             stage, 124, 83, 0xAE9471, 0x120D09);
@@ -590,11 +591,11 @@ void crazypod_music_root_preview_render(
         stage = crazypod_ui_widget_box(parent, 181, 61, 118, 84, 7,
                          0x78634D, LV_OPA_COVER);
         lv_obj_set_style_bg_grad_color(
-            stage, lv_color_hex(0x3B2D23), 0);
+            stage, crazypod_ui_color(0x3B2D23), 0);
         lv_obj_set_style_bg_grad_dir(stage, LV_GRAD_DIR_VER, 0);
         lv_obj_set_style_border_width(stage, 1, 0);
         lv_obj_set_style_border_color(
-            stage, lv_color_hex(0xB99A74), 0);
+            stage, crazypod_ui_color(0xB99A74), 0);
         lv_obj_set_style_border_opa(stage, 120, 0);
         crazypod_preview_add_bevel(
             stage, 118, 84, 0xC7AB87, 0x1B120D);
@@ -609,7 +610,7 @@ void crazypod_music_root_preview_render(
                             82, 29, 3, 0xF1E4C9, LV_OPA_COVER);
             lv_obj_set_style_border_width(part, 1, 0);
             lv_obj_set_style_border_color(
-                part, lv_color_hex(0xC8B997), 0);
+                part, crazypod_ui_color(0xC8B997), 0);
             lv_obj_set_style_border_opa(part, 105, 0);
             crazypod_ui_widget_box(part, 58, 2, 16, 4, 1,
                      0xD6C39F, 165);
@@ -633,7 +634,7 @@ void crazypod_music_root_preview_render(
                          0xF0E6D2, LV_OPA_COVER);
         lv_obj_set_style_border_width(stage, 1, 0);
         lv_obj_set_style_border_color(
-            stage, lv_color_hex(0xC7B99C), 0);
+            stage, crazypod_ui_color(0xC7B99C), 0);
         lv_obj_set_style_border_opa(stage, 135, 0);
         crazypod_preview_add_bevel(
             stage, 99, 91, 0xFFFFFF, 0x8D806D);
@@ -647,14 +648,14 @@ void crazypod_music_root_preview_render(
                         LV_RADIUS_CIRCLE, 0x8DD9EA, LV_OPA_TRANSP);
         lv_obj_set_style_border_width(part, 7, 0);
         lv_obj_set_style_border_color(
-            part, lv_color_hex(COLOR_CYAN), 0);
+            part, crazypod_ui_color(COLOR_CYAN), 0);
         lv_obj_set_style_border_opa(part, 235, 0);
         title = crazypod_ui_widget_box(
             part, 6, 6, 33, 33, LV_RADIUS_CIRCLE,
             0xD7F5FA, LV_OPA_TRANSP);
         lv_obj_set_style_border_width(title, 1, 0);
         lv_obj_set_style_border_color(
-            title, lv_color_hex(0xE9FCFF), 0);
+            title, crazypod_ui_color(0xE9FCFF), 0);
         lv_obj_set_style_border_opa(title, 115, 0);
         title = crazypod_ui_widget_box(parent, 258, 107, 8, 34, 4,
                          0x76858C, 245);

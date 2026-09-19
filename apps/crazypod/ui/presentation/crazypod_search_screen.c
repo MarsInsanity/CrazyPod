@@ -12,6 +12,7 @@
 #include "crazypod_ui_widgets.h"
 #include "crazypod_menu_list.h"
 #include "crazypod_search_screen.h"
+#include "crazypod_ui_color.h"
 
 #define COLOR_WHITE 0xFFFFFF
 #define CRAZYPOD_VISIBLE_ROWS 6
@@ -75,7 +76,7 @@ void crazypod_search_screen_render(
 
         if(context->gradient_highlight) {
             lv_obj_set_style_bg_grad_color(
-                active, lv_color_hex(context->secondary_color), 0);
+                active, crazypod_ui_color(context->secondary_color), 0);
             lv_obj_set_style_bg_grad_dir(active, LV_GRAD_DIR_HOR, 0);
         }
         lv_obj_remove_flag(active, LV_OBJ_FLAG_CLICKABLE);
@@ -118,12 +119,12 @@ void crazypod_search_screen_render(
         if(selected) {
             if(context->gradient_highlight) {
                 lv_obj_set_style_bg_grad_color(
-                    row_box, lv_color_hex(context->secondary_color), 0);
+                    row_box, crazypod_ui_color(context->secondary_color), 0);
                 lv_obj_set_style_bg_grad_dir(row_box, LV_GRAD_DIR_HOR, 0);
             }
             lv_obj_set_style_border_width(row_box, 1, 0);
             lv_obj_set_style_border_color(row_box,
-                                           lv_color_hex(COLOR_WHITE), 0);
+                                           crazypod_ui_color(COLOR_WHITE), 0);
             lv_obj_set_style_border_opa(row_box, 90, 0);
         }
 

@@ -10,6 +10,7 @@
 #include "crazypod_choice_overlay.h"
 #include "crazypod_popup_layout.h"
 #include "crazypod_ui_widgets.h"
+#include "crazypod_ui_color.h"
 
 #define CHOICE_ROWS 4
 #define COLOR_PANEL 0x1B1B22
@@ -224,13 +225,13 @@ static void refresh(void)
             selected ? LV_SYMBOL_PLAY : LV_SYMBOL_BULLET);
         lv_obj_set_style_bg_color(
             view.rows[row],
-            lv_color_hex(selected ? COLOR_WHITE : COLOR_PANEL), 0);
+            crazypod_ui_color(selected ? COLOR_WHITE : COLOR_PANEL), 0);
         lv_obj_set_style_bg_opa(
             view.rows[row], selected ? 32 : LV_OPA_TRANSP, 0);
         lv_obj_set_style_border_width(
             view.rows[row], selected ? 1 : 0, 0);
         lv_obj_set_style_border_color(
-            view.rows[row], lv_color_hex(COLOR_WHITE), 0);
+            view.rows[row], crazypod_ui_color(COLOR_WHITE), 0);
         lv_obj_set_style_border_opa(
             view.rows[row], selected ? 72 : 0, 0);
         lv_obj_set_style_text_opa(
@@ -245,7 +246,7 @@ static void refresh(void)
             view.callbacks.context);
         lv_obj_set_style_bg_color(
             view.swatches[row],
-            lv_color_hex(has_color ? swatch_color : COLOR_WHITE), 0);
+            crazypod_ui_color(has_color ? swatch_color : COLOR_WHITE), 0);
         lv_obj_set_style_bg_opa(
             view.swatches[row],
             has_color ? LV_OPA_COVER : selected ? 72 : 28, 0);
@@ -520,7 +521,7 @@ void crazypod_choice_overlay_show_receipt(
         color, 24);
     lv_obj_set_style_border_width(view.receipt_ring, 2, 0);
     lv_obj_set_style_border_color(
-        view.receipt_ring, lv_color_hex(color), 0);
+        view.receipt_ring, crazypod_ui_color(color), 0);
     lv_obj_set_style_border_opa(view.receipt_ring, 220, 0);
     view.receipt_symbol = crazypod_ui_widget_label(
         view.receipt_ring, symbol,

@@ -3,13 +3,27 @@
 
 #include <stdint.h>
 
+/* The counts below depend on the panel, so the target configuration has to
+ * be in scope wherever this header is read, not only in its own source. */
+#include "config.h"
+
 #include "../../../crazypod_appearance.h"
 #include "../../../crazypod_wallpaper.h"
 
 #define CRAZYPOD_CUSTOMIZE_MENU_COUNT 7
 #define CRAZYPOD_CUSTOMIZE_PRESET_ACTION_COUNT 3
 #define CRAZYPOD_CUSTOMIZE_PRESET_EDIT_COUNT 3
+/*
+ * Glow, Highlight, Primary and Secondary all choose between things a
+ * four-shade panel cannot tell apart: a glow, a gradient and six accent
+ * hues that all quantise to the same grey. The monochrome build leaves them
+ * out rather than offering a choice that changes nothing.
+ */
+#ifdef HAVE_CRAZYPOD_MONO_UI
+#define CRAZYPOD_CUSTOMIZE_DETAIL_COUNT 2
+#else
 #define CRAZYPOD_CUSTOMIZE_DETAIL_COUNT 6
+#endif
 #define CRAZYPOD_CUSTOMIZE_LAYOUT_COUNT 2
 #define CRAZYPOD_CUSTOMIZE_RADIUS_COUNT 8
 #define CRAZYPOD_CUSTOMIZE_BACKGROUND_COUNT 3

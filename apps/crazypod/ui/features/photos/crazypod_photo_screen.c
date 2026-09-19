@@ -16,6 +16,7 @@
 #include "../../presentation/crazypod_ui_widgets.h"
 #include "crazypod_photo_controller.h"
 #include "crazypod_photo_screen.h"
+#include "../../presentation/crazypod_ui_color.h"
 
 #define WHITE 0xFFFFFF
 #define FAVORITE_PROGRESS_WIDTH 126
@@ -161,7 +162,7 @@ void crazypod_photo_screen_render_delete_confirmation(
         0x111116, LV_OPA_COVER);
     lv_obj_set_style_border_width(card, 1, 0);
     lv_obj_set_style_border_color(
-        card, lv_color_hex(0xFF453A), 0);
+        card, crazypod_ui_color(0xFF453A), 0);
     lv_obj_set_style_border_opa(card, 125, 0);
     {
         lv_obj_t *media = crazypod_ui_widget_box(
@@ -306,7 +307,7 @@ void crazypod_photo_screen_render_grid(
             lv_obj_set_style_border_width(
                 ring, is_selected ? 3 : 1, 0);
             lv_obj_set_style_border_color(
-                ring, lv_color_hex(
+                ring, crazypod_ui_color(
                     is_selected ? WHITE : panel_color), 0);
             lv_obj_set_style_border_opa(
                 ring, is_selected ? 235 : 90, 0);

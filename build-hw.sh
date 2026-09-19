@@ -182,16 +182,21 @@ case "$CRAZYPOD_TARGET" in
     ipod6g)
         CRAZYPOD_TARGET_LABEL="iPod 6G"
         CRAZYPOD_PACKAGE_NAME="CrazyPod-6G"
+        CRAZYPOD_FONT_CANVAS=full
         MINIAPPS=1
         ;;
     ipodvideo)
         CRAZYPOD_TARGET_LABEL="iPod Video (5G)"
         CRAZYPOD_PACKAGE_NAME="CrazyPod-5G"
+        CRAZYPOD_FONT_CANVAS=full
         MINIAPPS=1
         ;;
     ipodmini2g)
         CRAZYPOD_TARGET_LABEL="iPod Mini 2G"
         CRAZYPOD_PACKAGE_NAME="CrazyPod-Mini2G"
+        # The product UI's type is resolved a size down on this panel, so
+        # the package carries the small end of the font pack, not the large.
+        CRAZYPOD_FONT_CANVAS=compact
         # Mini App scenes and Now Playing themes are authored against a
         # 320x240 colour canvas and validated against it at install time.
         # The Mini's 138x110 monochrome panel cannot show them, and its
@@ -240,6 +245,7 @@ if [ "$repro_enabled" -eq 1 ]; then
 fi
 require_tools
 python3 tests/test-crazypod-lvgl-layer-budget.py
+python3 tests/test-crazypod-compact-font-ladder.py
 if [ "$FIRMWARE_ONLY" -eq 0 ] && [ "$MINIAPPS" -eq 1 ]; then
 npm ci --ignore-scripts --no-audit --no-fund \
     --prefix tools/miniapp-builder
@@ -409,9 +415,11 @@ if [ ! -x "$RUNTIME_FONT_BUILDER" ]; then
     echo "Error: missing CrazyPod runtime font builder." >&2
     exit 1
 fi
-"$RUNTIME_FONT_BUILDER" "$PACKAGE_DIR/.rockbox/fonts"
+"$RUNTIME_FONT_BUILDER" --canvas "$CRAZYPOD_FONT_CANVAS" \
+    "$PACKAGE_DIR/.rockbox/fonts"
 if [ "$MINIAPPS" -eq 1 ]; then
     python3 ../tools/crazypod_runtime_font_audit.py \
+        --canvas "$CRAZYPOD_FONT_CANVAS" \
         --font-dir "$PACKAGE_DIR/.rockbox/fonts/crazypod-aot" \
         ../dist/miniapps/*.cpk
 fi

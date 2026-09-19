@@ -1550,12 +1550,25 @@ void crazypod_state_set_reduce_motion(bool enabled)
 
 bool crazypod_state_reduce_effects(void)
 {
-    return reduce_effects != CRAZYPOD_REDUCE_EFFECTS_OFF;
+    return crazypod_state_reduce_effects_level() !=
+           CRAZYPOD_REDUCE_EFFECTS_OFF;
 }
 
 int crazypod_state_reduce_effects_level(void)
 {
+#ifdef HAVE_CRAZYPOD_MONO_UI
+    /*
+     * The glass is not a preference on a four-shade panel, it is noise. A
+     * sampled backdrop, a tinted scrim and a blurred shadow all resolve to
+     * the same two or three greys the type is drawn in, so the panel stops
+     * separating and the frame costs three fills to say nothing. The
+     * monochrome build draws flat surfaces with borders instead, and the
+     * setting has nothing left to choose between.
+     */
+    return CRAZYPOD_REDUCE_EFFECTS_HIGH;
+#else
     return reduce_effects;
+#endif
 }
 
 void crazypod_state_set_reduce_effects_level(int level)

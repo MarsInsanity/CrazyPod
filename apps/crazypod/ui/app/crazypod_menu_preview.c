@@ -31,6 +31,7 @@
 #include "../presentation/crazypod_ui_widgets.h"
 #include "../shell/crazypod_extras_preview.h"
 #include "crazypod_menu_preview.h"
+#include "../presentation/crazypod_ui_color.h"
 
 #define ARTWORK_CACHE_SIZE 72
 #define NOW_ARTWORK_SIZE 68
@@ -144,7 +145,7 @@ static void render_editor(
         118, 64, 14,
         primary_color(), 210);
     lv_obj_set_style_bg_grad_color(
-        card, lv_color_hex(secondary_color()), 0);
+        card, crazypod_ui_color(secondary_color()), 0);
     lv_obj_set_style_bg_grad_dir(
         card, LV_GRAD_DIR_HOR, 0);
     symbol = crazypod_ui_widget_label(
@@ -218,13 +219,13 @@ static void build_simple(lv_obj_t *parent)
         primary_color(), 200);
     lv_obj_set_style_border_width(simple.badge, 1, 0);
     lv_obj_set_style_border_color(
-        simple.badge, lv_color_hex(0xFFFFFF), 0);
+        simple.badge, crazypod_ui_color(0xFFFFFF), 0);
     lv_obj_set_style_border_opa(simple.badge, 90, 0);
 
     simple.icon = lv_image_create(simple.badge);
     lv_image_set_scale(simple.icon, 512);
     lv_obj_set_style_image_recolor(
-        simple.icon, lv_color_hex(0xFFFFFF), 0);
+        simple.icon, crazypod_ui_color(0xFFFFFF), 0);
     lv_obj_set_style_image_recolor_opa(
         simple.icon, LV_OPA_COVER, 0);
     lv_obj_remove_flag(simple.icon, LV_OBJ_FLAG_CLICKABLE);
@@ -265,7 +266,7 @@ static void render_simple(const struct route_state *state)
         return;
 
     lv_obj_set_style_bg_color(
-        simple.badge, lv_color_hex(primary_color()), 0);
+        simple.badge, crazypod_ui_color(primary_color()), 0);
     if(simple.asset != asset) {
         simple.asset = asset;
         if(asset != NULL) {

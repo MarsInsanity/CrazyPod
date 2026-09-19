@@ -617,24 +617,38 @@ bool crazypod_wallpaper_prepare_frosted_lock_media(
         tint, tint_opa);
 }
 
+/*
+ * A photograph dithered into four shades and put behind type takes the type
+ * with it: every shade the wallpaper uses is one of the four the text is
+ * drawn in. The monochrome build draws its pages flat, so no wallpaper is
+ * ever handed out -- and the callers all already handle there not being one,
+ * which is what happens on a device that has none set.
+ */
+#ifdef HAVE_CRAZYPOD_MONO_UI
+#define WALLPAPER_OR_NONE(valid, descriptor) NULL
+#else
+#define WALLPAPER_OR_NONE(valid, descriptor) \
+    ((valid) ? &(descriptor) : NULL)
+#endif
+
 const lv_image_dsc_t *crazypod_default_wallpaper(void)
 {
-    return wallpaper_valid ? &wallpaper_descriptor : NULL;
+    return WALLPAPER_OR_NONE(wallpaper_valid, wallpaper_descriptor);
 }
 
 const lv_image_dsc_t *crazypod_custom_home_wallpaper(void)
 {
-    return custom_home_valid ? &custom_home_descriptor : NULL;
+    return WALLPAPER_OR_NONE(custom_home_valid, custom_home_descriptor);
 }
 
 const lv_image_dsc_t *crazypod_custom_menu_wallpaper(void)
 {
-    return custom_menu_valid ? &custom_menu_descriptor : NULL;
+    return WALLPAPER_OR_NONE(custom_menu_valid, custom_menu_descriptor);
 }
 
 const lv_image_dsc_t *crazypod_custom_lock_wallpaper(void)
 {
-    return custom_lock_valid ? &custom_lock_descriptor : NULL;
+    return WALLPAPER_OR_NONE(custom_lock_valid, custom_lock_descriptor);
 }
 
 const lv_image_dsc_t *crazypod_frosted_wallpaper_capsule(void)

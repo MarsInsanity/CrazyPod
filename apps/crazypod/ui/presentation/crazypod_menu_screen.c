@@ -15,6 +15,7 @@
 #include "crazypod_marquee.h"
 #include "../../crazypod_state.h"
 #include "crazypod_menu_screen.h"
+#include "crazypod_ui_color.h"
 
 #define COLOR_WHITE 0xFFFFFF
 #define CRAZYPOD_VISIBLE_ROWS 6
@@ -170,12 +171,12 @@ void crazypod_menu_screen_render(
             if(context->gradient_highlight &&
                !crazypod_state_reduce_effects()) {
                 lv_obj_set_style_bg_grad_color(
-                    row_box, lv_color_hex(context->secondary_color), 0);
+                    row_box, crazypod_ui_color(context->secondary_color), 0);
                 lv_obj_set_style_bg_grad_dir(row_box, LV_GRAD_DIR_HOR, 0);
             }
             lv_obj_set_style_border_width(row_box, 1, 0);
             lv_obj_set_style_border_color(row_box,
-                                           lv_color_hex(COLOR_WHITE), 0);
+                                           crazypod_ui_color(COLOR_WHITE), 0);
             lv_obj_set_style_border_opa(row_box, 90, 0);
         }
 
@@ -197,7 +198,7 @@ void crazypod_menu_screen_render(
                 lv_obj_align(circle, LV_ALIGN_LEFT_MID, 6, 0);
                 lv_image_set_src(icon, icon_asset);
                 lv_obj_set_style_image_recolor(
-                    icon, lv_color_hex(COLOR_WHITE), 0);
+                    icon, crazypod_ui_color(COLOR_WHITE), 0);
                 lv_obj_set_style_image_recolor_opa(
                     icon, LV_OPA_COVER, 0);
                 lv_obj_set_style_opa(

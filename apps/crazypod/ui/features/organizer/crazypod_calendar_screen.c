@@ -12,6 +12,7 @@
 #include "crazypod_calendar_model.h"
 #include "../../presentation/crazypod_ui_widgets.h"
 #include "crazypod_calendar_screen.h"
+#include "../../presentation/crazypod_ui_color.h"
 
 #define CALENDAR_FONT (&lv_font_source_han_sans_sc_14_cjk)
 #define CALENDAR_WHITE 0xFFFFFF
@@ -91,7 +92,7 @@ static void refresh_cell(
 
     lv_obj_set_style_text_color(
         cell->label,
-        lv_color_hex(selected ? CALENDAR_WHITE :
+        crazypod_ui_color(selected ? CALENDAR_WHITE :
                      in_month ? 0x0E0E0E : 0xB8B8B8), 0);
     lv_obj_set_style_text_opa(
         cell->label, in_month ? LV_OPA_COVER : 155, 0);
@@ -99,7 +100,7 @@ static void refresh_cell(
     if(has_event) {
         lv_obj_set_style_bg_color(
             cell->dot,
-            lv_color_hex(selected ? CALENDAR_WHITE : 0x0E0E0E), 0);
+            crazypod_ui_color(selected ? CALENDAR_WHITE : 0x0E0E0E), 0);
         lv_obj_set_style_bg_opa(
             cell->dot, in_month ? 205 : 70, 0);
         lv_obj_remove_flag(cell->dot, LV_OBJ_FLAG_HIDDEN);
@@ -222,7 +223,7 @@ void crazypod_calendar_screen_render_grid(
     panel = crazypod_ui_widget_box(
         content, 10, 38, 300, 194, 12, 0xFFFFFF, LV_OPA_COVER);
     lv_obj_set_style_border_width(panel, 1, 0);
-    lv_obj_set_style_border_color(panel, lv_color_hex(0x000000), 0);
+    lv_obj_set_style_border_color(panel, crazypod_ui_color(0x000000), 0);
     lv_obj_set_style_border_opa(panel, 34, 0);
     label = crazypod_ui_widget_label(
         panel, CP_TR("CALENDAR"), &lv_font_montserrat_8,
@@ -312,7 +313,7 @@ void crazypod_calendar_screen_render_grid(
         lv_obj_set_style_border_width(
             grid.cells[slot].highlight, 1, 0);
         lv_obj_set_style_border_color(
-            grid.cells[slot].highlight, lv_color_hex(0x0E0E0E), 0);
+            grid.cells[slot].highlight, crazypod_ui_color(0x0E0E0E), 0);
 
         snprintf(day_text, sizeof(day_text), CP_FMT("%d"), day);
         label = crazypod_ui_widget_label(
@@ -359,7 +360,7 @@ void crazypod_calendar_screen_render_day(
         content, 25, 49, 270, 172, 12, 0xFFFFFF, LV_OPA_COVER);
     lv_obj_set_style_border_width(overlay, 1, 0);
     lv_obj_set_style_border_color(
-        overlay, lv_color_hex(0x0E0E0E), 0);
+        overlay, crazypod_ui_color(0x0E0E0E), 0);
     lv_obj_set_style_border_opa(overlay, 210, 0);
     label = crazypod_ui_widget_label(
         overlay, CP_TR("SCHEDULE"), &lv_font_montserrat_8,

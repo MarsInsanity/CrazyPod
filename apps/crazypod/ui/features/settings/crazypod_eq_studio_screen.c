@@ -8,6 +8,7 @@
 
 #include "../../presentation/crazypod_ui_widgets.h"
 #include "crazypod_eq_studio_screen.h"
+#include "../../presentation/crazypod_ui_color.h"
 
 #define WHITE 0xFFFFFF
 #define MUTED 0x8E8E93
@@ -144,7 +145,7 @@ void crazypod_eq_studio_screen_render(
         if(index == model->band) {
             lv_obj_set_style_border_width(bar, 1, 0);
             lv_obj_set_style_border_color(
-                bar, lv_color_hex(WHITE), 0);
+                bar, crazypod_ui_color(WHITE), 0);
             lv_obj_set_style_border_opa(bar, 95, 0);
         }
         crazypod_ui_widget_box(

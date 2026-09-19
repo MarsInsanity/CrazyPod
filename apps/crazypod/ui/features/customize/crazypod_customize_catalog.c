@@ -32,18 +32,23 @@ const char *const crazypod_customize_preset_edit_actions[] = {
 };
 
 const char *const crazypod_customize_detail_titles[] = {
-    CP_TR("Icon Size"), CP_TR("Wave Style"), CP_TR("Glow"), CP_TR("Highlight"),
+    CP_TR("Icon Size"), CP_TR("Wave Style"),
+#ifndef HAVE_CRAZYPOD_MONO_UI
+    CP_TR("Glow"), CP_TR("Highlight"),
     CP_TR("Primary"), CP_TR("Secondary")
+#endif
 };
 
 const enum crazypod_appearance_field
 crazypod_customize_detail_fields[] = {
     CRAZYPOD_APPEARANCE_ICON_SCALE,
     CRAZYPOD_APPEARANCE_SOUND_WAVE_STYLE,
+#ifndef HAVE_CRAZYPOD_MONO_UI
     CRAZYPOD_APPEARANCE_GLOW,
     CRAZYPOD_APPEARANCE_HIGHLIGHT_STYLE,
     CRAZYPOD_APPEARANCE_PRIMARY,
     CRAZYPOD_APPEARANCE_SECONDARY,
+#endif
 };
 
 const char *const crazypod_customize_layout_titles[] = {
