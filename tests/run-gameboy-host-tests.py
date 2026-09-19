@@ -14,7 +14,10 @@ core += [root / f"apps/crazypod/gameboy/crazypod_gameboy_{name}.c"
 flags = ["-std=c99", "-O2", "-Wall", "-Wextra", "-Werror",
          "-fno-strict-aliasing", "-DCRAZYPOD_GAMEBOY_CORE",
          "-I" + str(root / "tests/crazypod-gameboy-stubs"),
-         "-I" + str(root / "apps/crazypod")]
+         "-I" + str(root / "apps/crazypod"),
+         # The core paints into crazypod_pixel_t, which is where the
+         # firmware decides what a pixel is for the panel it is built for.
+         "-I" + str(root / "firmware/export")]
 with tempfile.TemporaryDirectory(prefix="crazypod-gameboy-") as temporary:
     for name in ("core", "storage", "screen"):
         sources = list(core)
