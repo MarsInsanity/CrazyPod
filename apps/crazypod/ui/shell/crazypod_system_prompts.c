@@ -17,6 +17,7 @@
 #include "../../crazypod_books.h"
 #include "../../crazypod_coverflow.h"
 #include "../../crazypod_music.h"
+#include "../../crazypod_diag_log.h"
 #include "../../crazypod_organizer.h"
 #include "../../crazypod_photos.h"
 #include "../../crazypod_screen_recording.h"
@@ -121,10 +122,18 @@ static void execute(enum shutdown_type type)
         crazypod_miniapps_feature_reset_input();
         crazypod_miniapps_feature_close();
     }
+    /*
+     * Which way the device went down. A reset held on the wheel never
+     * reaches this line, and that is the difference worth seeing: the
+     * reported bug says a reboot loses what was playing while a clean
+     * power-off keeps it.
+     */
+    crazypod_diag_log("shutdown", "type=%d", (int)type);
     crazypod_state_save(true);
     /* A different file from the settings, and nothing was writing it on
      * the way out: a book that had not been paused lost its place. */
     crazypod_audiobooks_flush();
+    crazypod_diag_log_flush();
     shutdown_hw(type);
 }
 

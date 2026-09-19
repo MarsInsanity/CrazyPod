@@ -7,6 +7,8 @@
 #include <stdint.h>
 #include <string.h>
 
+#include "string-extra.h"
+
 #include "audio.h"
 #include "backlight.h"
 #include "dir.h"
@@ -1621,7 +1623,9 @@ static bool save_queue(uint32_t *hash_out, uint32_t *count_out)
     int i;
     bool success = true;
     char path[MAX_PATH];
+    char first[MAX_PATH];
 
+    first[0] = '\0';
     mkdir(STATE_DIRECTORY);
     fd = open(QUEUE_TEMP_PATH, O_WRONLY | O_CREAT | O_TRUNC, 0666);
     if(fd < 0)
@@ -1640,6 +1644,8 @@ static bool save_queue(uint32_t *hash_out, uint32_t *count_out)
         }
         hash = hash_bytes(hash, path, length);
         hash = hash_bytes(hash, "\n", 1);
+        if(count == 0)
+            strlcpy(first, path, sizeof(first));
         ++count;
     }
     if(fsync(fd) < 0)
@@ -1647,6 +1653,17 @@ static bool save_queue(uint32_t *hash_out, uint32_t *count_out)
     close(fd);
     if(!success || rename(QUEUE_TEMP_PATH, QUEUE_PATH) < 0)
         return false;
+
+    /*
+     * The queue file is rewritten only when the queue itself changed, so
+     * one line here says whether a newly started selection ever reached
+     * the card. Reported: after a reboot Play resumes the same audiobook
+     * however long a different track was played first, and a clean
+     * power-off does not do it. That difference is either a save that
+     * never happened or a save that happened and was not read back.
+     */
+    crazypod_diag_log("queuesave", "count=%lu [%s]",
+                      (unsigned long)count, first);
 
     *hash_out = hash;
     *count_out = count;
@@ -1663,6 +1680,7 @@ void crazypod_state_save(bool force)
     int fd;
     int i;
     bool success;
+    bool rewrote = false;
 
     id3 = audio_current_track();
     elapsed = id3 != NULL ? id3->elapsed : resume_elapsed;
@@ -1681,9 +1699,12 @@ void crazypod_state_save(bool force)
     }
     else {
         if(!save_queue(&queue_hash, &queue_count)) {
+            crazypod_diag_log("statefail", "queue file");
+            crazypod_diag_log_flush();
             state_save_failed();
             return;
         }
+        rewrote = true;
         saved_queue_hash = queue_hash;
         saved_queue_count = queue_count;
         saved_queue_generation = crazypod_queue_generation();
@@ -1751,6 +1772,8 @@ void crazypod_state_save(bool force)
 
     fd = open(STATE_TEMP_PATH, O_WRONLY | O_CREAT | O_TRUNC, 0666);
     if(fd < 0) {
+        crazypod_diag_log("statefail", "header open");
+        crazypod_diag_log_flush();
         state_save_failed();
         return;
     }
@@ -1759,9 +1782,22 @@ void crazypod_state_save(bool force)
         success = false;
     close(fd);
     if(!success || rename(STATE_TEMP_PATH, STATE_PATH) < 0) {
+        crazypod_diag_log("statefail", "header write");
+        crazypod_diag_log_flush();
         state_save_failed();
         return;
     }
+    /*
+     * Both files are on the card now, and the disk is awake, so pushing
+     * the held diagnostic lines out costs nothing extra. It also means a
+     * reset that never runs shutdown code still leaves the last save on
+     * the card to be read afterwards.
+     */
+    crazypod_diag_log(
+        "statesave", "force=%d queue=%lu index=%lu elapsed=%lu rewrote=%d",
+        force ? 1 : 0, (unsigned long)queue_count,
+        (unsigned long)state.queue_index, elapsed, rewrote ? 1 : 0);
+    crazypod_diag_log_flush();
 
     state_save_failures = 0;
     state_dirty = false;
