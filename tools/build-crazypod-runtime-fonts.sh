@@ -1,7 +1,9 @@
 #!/bin/sh
 set -eu
 
-canvas=both
+# The full canvas is the default: it is what every 320x240 package carries,
+# and what this script produced before the pack was split.
+canvas=full
 while [ "$#" -gt 1 ]; do
     case "$1" in
         --canvas)

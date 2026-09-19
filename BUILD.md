@@ -2,9 +2,15 @@
 
 CrazyPod's shipping product target is iPod Classic 6G (`ipod6g`).
 
-A second target, iPod Classic 5G/5.5G "Video" (`ipodvideo`), is under
-bring-up. It compiles, links and packages, but it has **not** been run on
-hardware. See "iPod Video bring-up target" below before using it.
+Two further targets are under bring-up. Both compile, link and package, but
+neither has been run on hardware:
+
+- iPod Classic 5G/5.5G "Video" (`ipodvideo`) - see "iPod Video bring-up
+  target" below.
+- iPod Mini 2nd generation (`ipodmini2g`) - see "iPod Mini 2G bring-up
+  target" below. It draws the monochrome build of the UI for its 138x110
+  four-shade panel, and ships without the Media app, the Game Boy emulator,
+  Mini Apps, video playback or wallpaper.
 
 ## Prerequisites
 
@@ -41,6 +47,17 @@ scripts are not the release path for this LVGL product revision.
 ./build-sim.sh
 ./build-sim.sh --incremental
 ```
+
+`--target` selects the model, defaulting to `ipod6g`. The 6G builds into
+`build-sim/`; every other target builds into `build-sim-<target>/`, so the
+simulators coexist:
+
+```sh
+./build-sim.sh --target ipodmini2g    # build-sim-ipodmini2g/rockboxui
+```
+
+The Mini's simulator needs neither Node.js nor FFmpeg, because its firmware
+builds neither the Mini App loader nor the video engine.
 
 Run from the build directory so the simulated disk resolves correctly:
 
@@ -114,6 +131,7 @@ the packaged zip and the Mini App CPK payloads all follow the target:
 ```sh
 ./build-hw.sh                        # build-hw-ipod6g/CrazyPod-6G.zip
 ./build-hw.sh --target ipodvideo     # build-hw-ipodvideo/CrazyPod-5G.zip
+./build-hw.sh --target ipodmini2g    # build-hw-ipodmini2g/CrazyPod-Mini2G.zip
 ```
 
 Set Rockbox's build version explicitly for a tagged release. V1.0 was built
@@ -152,14 +170,18 @@ What differs from the 6G, and how:
 | Accessory | serial iAP plus USB iAP (`HAVE_CRAZYPOD_IAP`) | not ported; the feature is off |
 | Install | DFU plus `mks5lboot` | `bootloader-ipodvideo.ipod` via `ipodpatcher` |
 
-Build the 5G bootloader with stock Rockbox tooling; `build-bootloader.sh`
-covers the 6G NOR path only and does not apply here:
+Build the 5G bootloader with `build-bootloader.sh`, which takes the same
+`--target` as the firmware script:
 
 ```sh
-mkdir build-bootloader-ipodvideo && cd build-bootloader-ipodvideo
-../tools/configure --target=ipodvideo --type=b
-make
+./build-bootloader.sh --target ipodvideo
+# build-bootloader-ipodvideo/bootloader-ipodvideo.ipod
 ```
+
+The script only builds the image. How it is installed differs by model and
+the difference matters: the 6G's goes on over DFU with `mks5lboot`, while
+the 5G's is written into the firmware partition with `ipodpatcher`, as
+below.
 
 ### Memory budget on 32 MiB units
 
@@ -262,6 +284,98 @@ inline-remote support. Boot, library scanning and playback have run on a
 30 GB unit; playback still stutters and the UI is slow, which is what the
 performance log is for.
 
+## iPod Mini 2G bring-up target
+
+`ipodmini2g` builds the product UI against Rockbox's iPod Mini 2nd
+generation platform layer. It is the first CrazyPod target without a colour
+panel, and almost everything below differs from the 6G because of that one
+fact.
+
+The panel is 138x110 at `LCD_DEPTH 2`: four shades of grey, packed four
+pixels to a byte (`LCD_PIXELFORMAT HORIZONTAL_PACKING`). The SoC is a
+PP5022 as on the Video, so the dual-core, performance-log and 32 MiB notes
+in the Video section apply here too; the Mini always has 32 MiB.
+
+| Area | 6G | iPod Mini 2G |
+| --- | --- | --- |
+| Panel | 320x240 RGB565 | 138x110, 4 greys, 2bpp packed |
+| SoC | S5L8702, ARMv5, single core | PP5022, ARMv4T, dual core |
+| RAM | 64 MiB | 32 MiB |
+| Keypad | `IPOD_4G_PAD` | `IPOD_4G_PAD` (unchanged) |
+| Display setting | backlight brightness | LCD contrast and invert |
+| Install | DFU plus `mks5lboot` | `bootloader-ipodmini2g.ipod` via `ipodpatcher` |
+
+### How colour becomes ink
+
+The UI is composed in RGB565 exactly as on a colour panel; nothing in the
+feature code knows the panel is monochrome. Two maps, both in
+`apps/crazypod/crazypod_mono.c`, turn that into four greys, and they are
+deliberately different:
+
+- The **design map** inverts. CrazyPod's palette is a dark UI, and a dark
+  UI on a reflective grey LCD is unreadable, so `crazypod_ui_color()` sends
+  design colours through a map that makes the near-black page white and the
+  near-white type black. Everything drawn goes through that one call;
+  `crazypod_ui_shade()` is the escape hatch for a value already chosen as a
+  grey.
+- The **flush quantiser** does not invert. Photographs, album art and the
+  boot logo must come back as themselves, so `crazypod_mono_blit_row()`
+  quantises luma faithfully at thresholds 42/127/212.
+
+`tests/crazypod_mono_host_test.c` pins the packing convention (four pixels
+per byte, leftmost in the high bits, the stored value an inverted
+brightness) and checks that the four design greys survive a round trip
+through the quantiser unchanged.
+
+### What is not built
+
+Five things the 6G ships are compiled out, not hidden at runtime. The flags
+are derived from the panel in `firmware/export/config.h`, so no target
+header lists them by hand:
+
+| Flag | Off on the Mini because |
+| --- | --- |
+| `HAVE_CRAZYPOD_MEDIA_LIBRARY` | the Media app cannot show a photograph on 138x110 in four shades |
+| `HAVE_CRAZYPOD_GAMEBOY` | a 160x144 Game Boy frame does not fit, and it would be unplayable in four greys if it did |
+| `HAVE_CRAZYPOD_MINIAPPS` | Mini App scenes and Now Playing themes are authored against a 320x240 colour canvas |
+| `HAVE_CRAZYPOD_VIDEO` | the decoder stack targets a colour panel, and this SoC would not keep up regardless |
+| `HAVE_CRAZYPOD_WALLPAPER` | a photograph behind type takes the type with it when both are drawn in four greys |
+
+The application catalog shrinks with them: `CRAZYPOD_APP_COUNT` is 14 here
+against 17 on a 6G. A menu order written by a 6G and carried across on the
+same disk still restores -- the applications this build does not have are
+dropped and the rest keep their arrangement.
+`tests/crazypod_apps_catalog_host_test.c` is compiled twice, once against
+each panel's configuration, to check both halves of that.
+
+`CrazyPod-Mini2G.zip` matches: no `Pictures`, `Videos` or `MiniApps`
+folders, no `default-home.bmp`, and no CPK payloads.
+
+### Layout and type
+
+`HAVE_CRAZYPOD_COMPACT_UI` selects a second set of layout constants in
+`apps/crazypod/ui/presentation/crazypod_ui_metrics.h` -- a 12px status bar
+rather than 32, six 14px rows rather than six 28px ones, and so on.
+
+Type is resolved a size down through the ladder in
+`crazypod_runtime_font.c`, and the AOT font pack is built to match:
+`tools/crazypod-runtime-font-specs.txt` marks each tuple `full`, `compact`
+or both, and `build-crazypod-runtime-fonts.sh --canvas compact` bakes only
+the small end. Neither package carries the other's sizes, which matters
+because a CJK face costs about a megabyte per size.
+`tests/test-crazypod-compact-font-ladder.py` checks that every size the
+ladder can ask for is in the pack.
+
+### Installing
+
+The Mini takes its bootloader through `ipodpatcher`, exactly as the Video
+does; follow "Installing on Windows" above, substituting
+`bootloader-ipodmini2g.ipod` and `CrazyPod-Mini2G.zip`. CI attaches both,
+plus `ipodpatcher.exe`, to the `crazypod-ipodmini2g-firmware` artifact.
+
+Recovery is the same as on the Video: MENU+SELECT for about six seconds
+resets, and reset plus SELECT+PLAY reaches disk mode.
+
 ## Cover art must be baseline JPEG
 
 The JPEG decoder is baseline only. A progressive JPEG -- which is what
@@ -340,11 +454,17 @@ Incremental build:
 ./build-bootloader.sh --incremental
 ```
 
-Output:
+`--target` selects the model here too, and the output follows it:
 
 ```text
 build-bootloader-ipod6g/bootloader-ipod6g.ipod
+build-bootloader-ipodvideo/bootloader-ipodvideo.ipod
+build-bootloader-ipodmini2g/bootloader-ipodmini2g.ipod
 ```
+
+The script builds the image for any of the three; it does not install one,
+and the install path is not the same for all three. See the per-target
+sections above.
 
 Installing a bootloader is a separate, device-writing operation. The build
 script deliberately does not flash it and `CrazyPod-6G.zip` deliberately does
@@ -378,6 +498,11 @@ required by the independent product:
 .rockbox/crazypod/miniapps/packages/now-playing-neon-1.4.6.cpk
 .rockbox/crazypod/miniapps/packages/now-playing-signal-1.0.7.cpk
 ```
+
+`CrazyPod-Mini2G.zip` is the same list without `default-home.bmp` and
+without `miniapps/packages/`, because that firmware builds neither the
+wallpaper nor the Mini App loader. Its `fonts/crazypod-aot/` holds the
+compact end of the pack rather than the full one.
 
 There are no Rockbox WPS files, themes, skin fonts, plugins, or recording
 encoder codecs in the product package.

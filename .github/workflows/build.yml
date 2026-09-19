@@ -26,11 +26,20 @@ jobs:
         include:
           - target: ipod6g
             label: iPod 6G
+            # The 6G's bootloader goes on over DFU with mks5lboot, not with
+            # ipodpatcher, and is not built here.
+            bootloader: dfu
             package: CrazyPod-6G.zip
-          # Bring-up target: compiles and packages, not hardware certified.
+          # Bring-up targets: they compile and package, but have not been
+          # certified on hardware.
           - target: ipodvideo
             label: iPod Video (5G)
+            bootloader: ipodpatcher
             package: CrazyPod-5G.zip
+          - target: ipodmini2g
+            label: iPod Mini 2G
+            bootloader: ipodpatcher
+            package: CrazyPod-Mini2G.zip
     steps:
       - name: Check out source
         uses: actions/checkout@v5
@@ -81,23 +90,19 @@ jobs:
             exit 1
           fi
 
-      # The iPod Video installs its bootloader with ipodpatcher rather than
-      # the 6G's DFU/NOR path, so ship the bootloader image alongside the
-      # firmware. build-bootloader.sh covers the 6G NOR path only.
-      - name: Build iPod Video bootloader
-        if: matrix.target == 'ipodvideo' && !inputs.firmware_only
+      # The Video and the Mini install their bootloader with ipodpatcher
+      # rather than the 6G's DFU/NOR path, so ship the bootloader image
+      # alongside the firmware.
+      - name: Build ${{ matrix.label }} bootloader
+        if: matrix.bootloader == 'ipodpatcher' && !inputs.firmware_only
         shell: bash
-        run: |
-          mkdir -p build-bootloader-ipodvideo
-          cd build-bootloader-ipodvideo
-          ../tools/configure --target=ipodvideo --type=b
-          make -j"$(nproc)"
+        run: ./build-bootloader.sh --target "${{ matrix.target }}"
 
-      # Installing on the iPod Video needs ipodpatcher, and most owners of one
-      # are on Windows without a build environment. Cross-build the Windows
-      # binary so the artifact carries everything the install needs.
+      # Installing on those needs ipodpatcher, and most owners of one are on
+      # Windows without a build environment. Cross-build the Windows binary
+      # so the artifact carries everything the install needs.
       - name: Build ipodpatcher for Windows
-        if: matrix.target == 'ipodvideo' && !inputs.firmware_only
+        if: matrix.bootloader == 'ipodpatcher' && !inputs.firmware_only
         shell: bash
         run: |
           make -C utils/ipodpatcher \
@@ -130,7 +135,7 @@ jobs:
           path: |
             build-hw-${{ matrix.target }}/rockbox.ipod
             build-hw-${{ matrix.target }}/${{ matrix.package }}
-            build-bootloader-ipodvideo/bootloader-ipodvideo.ipod
+            build-bootloader-${{ matrix.target }}/bootloader-${{ matrix.target }}.ipod
             utils/ipodpatcher/ipodpatcher.exe
             dist/miniapps/*.cpk
 
@@ -173,13 +178,35 @@ jobs:
             exit 1
           fi
 
+      # The Mini draws the monochrome build of the UI, which the 6G
+      # simulator never exercises: everything below the design palette is a
+      # different code path. Build it here so a regression in it is caught
+      # without a device. It shares the runner because it is the shorter
+      # build of the two -- no Mini Apps, no video engine.
+      - name: Build iPod Mini 2G simulator
+        shell: bash
+        run: |
+          set -o pipefail
+          if ! ./build-sim.sh --target ipodmini2g 2>&1 \
+              | tee build-sim-mini.log; then
+            {
+              echo '## iPod Mini 2G simulator build log (tail)'
+              echo '```text'
+              tail -n 120 build-sim-mini.log
+              echo '```'
+            } >> "$GITHUB_STEP_SUMMARY"
+            exit 1
+          fi
+
       - name: Upload simulator build log
         if: always()
         uses: actions/upload-artifact@v4
         with:
           name: crazypod-macos-build-log
           if-no-files-found: warn
-          path: build-sim.log
+          path: |
+            build-sim.log
+            build-sim-mini.log
 
       - name: Upload simulator artifacts
         uses: actions/upload-artifact@v4
@@ -189,3 +216,5 @@ jobs:
           path: |
             build-sim/rockboxui
             build-sim/CrazyPod Simulator.app
+            build-sim-ipodmini2g/rockboxui
+            build-sim-ipodmini2g/CrazyPod Simulator.app

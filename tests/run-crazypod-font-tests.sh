@@ -8,12 +8,22 @@ trap 'rm -rf "$test_root"' EXIT HUP INT TERM
 cd "$repo_root"
 
 python3 tests/test-crazypod-font-tool.py
+python3 tests/test-crazypod-compact-font-ladder.py
 tools/build-crazypod-runtime-fonts.sh "$test_root/runtime-fonts"
 python3 tests/test-crazypod-runtime-font.py \
     "$test_root/runtime-fonts/crazypod-aot"
 python3 tools/crazypod_runtime_font_audit.py \
     --font-dir "$test_root/runtime-fonts/crazypod-aot" \
     dist/miniapps/*.cpk
+
+# The Mini carries the small end of the pack rather than the full one, and
+# resolves every request a size down into it. Build that end too: the
+# ladder test above checks the two tables agree, this checks the files the
+# agreed-on sizes name actually come out.
+tools/build-crazypod-runtime-fonts.sh --canvas compact \
+    "$test_root/runtime-fonts-compact"
+python3 tests/test-crazypod-runtime-font.py \
+    --canvas compact "$test_root/runtime-fonts-compact/crazypod-aot"
 
 python3 tools/crazypod_font_tool.py collect \
     --input apps/crazypod/crazypod_l10n.c \

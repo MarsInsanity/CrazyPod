@@ -16,27 +16,36 @@ SCENE_RENDERER = ROOT / (
     "crazypod_miniapp_scene_renderer.c"
 )
 
-# This checks a font directory built for the 320x240 canvas, which is what
-# the packaging step produces for the colour iPods; the Mini's small end of
-# the pack is marked `compact` and is not in that directory.
-SPECS = set()
-for line_number, raw_line in enumerate(
-        SPEC_FILE.read_text(encoding="ascii").splitlines(), 1):
-    line = raw_line.strip()
-    if not line or line.startswith("#"):
-        continue
-    match = re.fullmatch(
-        r"(system|serif|mono):(\d{3}):(\d{1,2})(?::(full|compact))?", line)
-    if match is None:
-        raise SystemExit(
-            f"invalid runtime font spec at {SPEC_FILE}:{line_number}: {line}"
-        )
-    spec = (match.group(1), int(match.group(2)), int(match.group(3)))
-    if spec in SPECS:
-        raise SystemExit(f"duplicate runtime font spec: {line}")
-    if match.group(4) == "compact":
-        continue
-    SPECS.add(spec)
+# The pack is split by canvas. A spec marked `full` is only in the 320x240
+# packages, where the design's own sizes live; one marked `compact` is only
+# in the Mini's, where its rewritten sizes land; an unmarked one is in both.
+# Which half this run checks follows --canvas.
+def load_specs(canvas):
+    specs = set()
+    seen = set()
+    for line_number, raw_line in enumerate(
+            SPEC_FILE.read_text(encoding="ascii").splitlines(), 1):
+        line = raw_line.strip()
+        if not line or line.startswith("#"):
+            continue
+        match = re.fullmatch(
+            r"(system|serif|mono):(\d{3}):(\d{1,2})(?::(full|compact))?",
+            line)
+        if match is None:
+            raise SystemExit(
+                f"invalid runtime font spec at {SPEC_FILE}:{line_number}: "
+                f"{line}"
+            )
+        spec = (match.group(1), int(match.group(2)), int(match.group(3)))
+        if spec in seen:
+            raise SystemExit(f"duplicate runtime font spec: {line}")
+        seen.add(spec)
+        if match.group(4) not in (None, canvas):
+            continue
+        specs.add(spec)
+    return specs
+
+
 LOCALES = ("jp", "kr", "sc", "tc")
 CJK_ADVANCE_SAMPLES = {
     "sc": "设置正在播放中文",
@@ -69,9 +78,19 @@ def rb12_glyph_width(data, codepoint):
         raise ValueError(f"missing width for U+{codepoint:04X}")
     return data[width_start + width_index]
 
-if len(sys.argv) != 2:
-    raise SystemExit("usage: test-crazypod-runtime-font.py FONT_DIR")
-font_dir = Path(sys.argv[1])
+argv = sys.argv[1:]
+canvas = "full"
+if len(argv) >= 2 and argv[0] == "--canvas":
+    canvas = argv[1]
+    argv = argv[2:]
+    if canvas not in ("full", "compact"):
+        raise SystemExit(f"unknown font canvas: {canvas}")
+if len(argv) != 1:
+    raise SystemExit(
+        "usage: test-crazypod-runtime-font.py [--canvas full|compact] "
+        "FONT_DIR")
+font_dir = Path(argv[0])
+SPECS = load_specs(canvas)
 
 header = RUNTIME_HEADER.read_text(encoding="ascii")
 source = RUNTIME_SOURCE.read_text(encoding="ascii")
@@ -195,5 +214,6 @@ for license_name in ("OFL-Noto-CJK.txt", "SOURCE",
     if not (font_dir / license_name).is_file():
         raise SystemExit(f"missing {license_name}")
 
-print(f"Noto/PingFang AOT runtime fonts: 3 semantic families, "
-      f"{len(SPECS)} tuples, 4 regional faces, normalized system line metrics")
+print(f"Noto/PingFang AOT runtime fonts ({canvas} canvas): 3 semantic "
+      f"families, {len(SPECS)} tuples, 4 regional faces, normalized system "
+      "line metrics")

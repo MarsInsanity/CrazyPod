@@ -40,16 +40,34 @@ while [ "$#" -gt 0 ]; do
         -h|--help)
             cat <<'EOF'
 Usage: build-bootloader.sh [-i|--incremental]
+                           [--target ipod6g|ipodvideo|ipodmini2g]
 
-Builds the CrazyPod bootloader exclusively for iPod Classic 6G.
+Builds the CrazyPod bootloader. Defaults to ipod6g.
+
+How the result is installed differs by model, and the difference matters.
+The 6G takes its bootloader over DFU with mks5lboot. The Video and the
+Mini take theirs with ipodpatcher, which rewrites the firmware partition
+in place; read the Rockbox manual for that model before using one.
 
 Environment:
-  CRAZYPOD_INCREMENTAL=1  reuse build-bootloader-ipod6g/
+  CRAZYPOD_TARGET=name    same as --target
+  CRAZYPOD_INCREMENTAL=1  reuse build-bootloader-<target>/
   CRAZYPOD_SKIP_DEP=1     skip make dep when make.dep exists
   CROSS_COMPILE=prefix-   default arm-none-eabi-
   JOBS=N                  parallel job count
 EOF
             exit 0
+            ;;
+        --target)
+            [ "$#" -ge 2 ] || {
+                echo "Error: --target needs a value." >&2
+                exit 2
+            }
+            CRAZYPOD_TARGET="$2"
+            shift
+            ;;
+        --target=*)
+            CRAZYPOD_TARGET="${1#--target=}"
             ;;
         *)
             echo "Error: unsupported argument '$1'." >&2
@@ -61,24 +79,35 @@ done
 
 CROSS_COMPILE="${CROSS_COMPILE:-arm-none-eabi-}"
 export CROSS_COMPILE
+CRAZYPOD_TARGET="${CRAZYPOD_TARGET:-ipod6g}"
+case "$CRAZYPOD_TARGET" in
+    ipod6g) label="iPod 6G" ;;
+    ipodvideo) label="iPod Video (5G)" ;;
+    ipodmini2g) label="iPod Mini 2G" ;;
+    *)
+        echo "Error: unknown CrazyPod target '$CRAZYPOD_TARGET'." >&2
+        exit 2
+        ;;
+esac
 require_tools
 
-builddir="build-bootloader-ipod6g"
-stamp="crazypod bootloader ipod6g"
+builddir="build-bootloader-$CRAZYPOD_TARGET"
+stamp="crazypod bootloader $CRAZYPOD_TARGET"
+output="bootloader-$CRAZYPOD_TARGET.ipod"
 
 configure_build() {
-    ../tools/configure --target=ipod6g --type=b
+    ../tools/configure --target="$CRAZYPOD_TARGET" --type=b
     printf '%s\n' "$stamp" > .crazypod_bootloader_configure_stamp
 }
 
 if [ "$incremental" -eq 0 ]; then
-    echo "CrazyPod: clean iPod 6G bootloader build"
+    echo "CrazyPod: clean $label bootloader build"
     rm -rf "$builddir"
     mkdir "$builddir"
     cd "$builddir"
     configure_build
 else
-    echo "CrazyPod: incremental iPod 6G bootloader build"
+    echo "CrazyPod: incremental $label bootloader build"
     mkdir -p "$builddir"
     cd "$builddir"
     if [ ! -f Makefile ] ||
@@ -96,9 +125,9 @@ fi
 
 make -j"$(detect_jobs)"
 
-if [ ! -f bootloader-ipod6g.ipod ]; then
-    echo "Error: bootloader build did not produce bootloader-ipod6g.ipod." >&2
+if [ ! -f "$output" ]; then
+    echo "Error: bootloader build did not produce $output." >&2
     exit 1
 fi
 
-echo "CrazyPod: built $(pwd)/bootloader-ipod6g.ipod"
+echo "CrazyPod: built $(pwd)/$output"

@@ -17,32 +17,44 @@ detect_jobs() {
 
 require_tools() {
     missing=0
-    for tool in make gcc perl python3 node npm sdl2-config pkg-config; do
+    tools="make gcc perl python3 sdl2-config pkg-config"
+    if [ "$miniapps" -eq 1 ]; then
+        tools="$tools node npm"
+    fi
+    for tool in $tools; do
         if ! command -v "$tool" >/dev/null 2>&1; then
             echo "Error: missing required simulator tool '$tool' on PATH." >&2
             missing=1
         fi
     done
     [ "$missing" -eq 0 ] || exit 2
-    for package in libavformat libavcodec libavutil libswscale libswresample; do
-        if ! pkg-config --exists "$package"; then
-            echo "Error: missing required FFmpeg package '$package'." >&2
-            missing=1
-        fi
-    done
+    # The simulator's video engine is FFmpeg, and it is built only where
+    # there is a colour panel to play a film on.
+    if [ "$video" -eq 1 ]; then
+        for package in libavformat libavcodec libavutil libswscale \
+            libswresample; do
+            if ! pkg-config --exists "$package"; then
+                echo "Error: missing required FFmpeg package" \
+                    "'$package'." >&2
+                missing=1
+            fi
+        done
+    fi
     [ "$missing" -eq 0 ] || exit 2
 }
 
 usage() {
     cat <<'EOF'
 Usage: build-sim.sh [-i|--incremental]
+                    [--target ipod6g|ipodvideo|ipodmini2g]
 
-Builds the CrazyPod iPod 6G simulator. It does not install Rockbox themes,
-skins, fonts, or plugins.
+Builds a CrazyPod simulator. Defaults to ipod6g. It does not install
+Rockbox themes, skins, fonts, or plugins.
 
-  -i, --incremental   Reuse build-sim/ when already configured.
+  -i, --incremental   Reuse the target's build directory when configured.
 
 Environment:
+  CRAZYPOD_TARGET=name    same as --target
   ROCKPOD_INCREMENTAL=1   same as --incremental
   ROCKPOD_SKIP_DEP=1      skip make dep when make.dep exists
   JOBS=N                  parallel job count
@@ -63,6 +75,17 @@ while [ "$#" -gt 0 ]; do
             usage
             exit 0
             ;;
+        --target)
+            [ "$#" -ge 2 ] || {
+                echo "Error: --target needs a value." >&2
+                exit 2
+            }
+            CRAZYPOD_TARGET="$2"
+            shift
+            ;;
+        --target=*)
+            CRAZYPOD_TARGET="${1#--target=}"
+            ;;
         *)
             echo "Unknown option: $1" >&2
             usage >&2
@@ -72,8 +95,36 @@ while [ "$#" -gt 0 ]; do
     shift
 done
 
+CRAZYPOD_TARGET="${CRAZYPOD_TARGET:-ipod6g}"
+case "$CRAZYPOD_TARGET" in
+    ipod6g|ipodvideo)
+        label="iPod 6G"
+        [ "$CRAZYPOD_TARGET" = ipod6g ] || label="iPod Video (5G)"
+        miniapps=1
+        video=1
+        wallpaper=1
+        font_canvas=full
+        ;;
+    ipodmini2g)
+        label="iPod Mini 2G"
+        # Nothing here is a size choice: the Mini's firmware does not build
+        # the Mini App loader, the video engine or the wallpaper, so the
+        # simdisk must not offer them either.
+        miniapps=0
+        video=0
+        wallpaper=0
+        font_canvas=compact
+        ;;
+    *)
+        echo "Error: unknown CrazyPod target '$CRAZYPOD_TARGET'." >&2
+        exit 2
+        ;;
+esac
+
 require_tools
 python3 tests/test-crazypod-lvgl-layer-budget.py
+python3 tests/test-crazypod-compact-font-ladder.py
+if [ "$miniapps" -eq 1 ]; then
 npm ci --ignore-scripts --no-audit --no-fund \
     --prefix tools/miniapp-builder
 node tools/miniapp-builder/src/cli.mjs generate \
@@ -89,23 +140,28 @@ node tools/miniapp-builder/src/cli.mjs generate \
 # generated artifact in sync with the TSX source.
 test -f miniapps/themes/atelier-hifi/generated/app.c
 test -f miniapps/themes/signal-one/generated/app.c
+fi
 
-builddir="build-sim"
-configure_stamp="crazypod simulator ipod6g lvgl sdl-threads"
+if [ "$CRAZYPOD_TARGET" = ipod6g ]; then
+    builddir="build-sim"
+else
+    builddir="build-sim-$CRAZYPOD_TARGET"
+fi
+configure_stamp="crazypod simulator $CRAZYPOD_TARGET lvgl sdl-threads"
 
 configure_build() {
-    ../tools/configure --target=ipod6g --type=s --sdl-threads
+    ../tools/configure --target="$CRAZYPOD_TARGET" --type=s --sdl-threads
     printf '%s\n' "$configure_stamp" > .crazypod-configure
 }
 
 if [ "$incremental" -eq 0 ]; then
-    echo "CrazyPod: clean iPod 6G simulator build"
+    echo "CrazyPod: clean $label simulator build"
     rm -rf "$builddir"
     mkdir "$builddir"
     cd "$builddir"
     configure_build
 else
-    echo "CrazyPod: incremental iPod 6G simulator build"
+    echo "CrazyPod: incremental $label simulator build"
     mkdir -p "$builddir"
     cd "$builddir"
     if [ ! -f Makefile ] || [ ! -f .crazypod-configure ] ||
@@ -122,8 +178,10 @@ make -j"$(detect_jobs)"
 
 codec_dir="lib/rbcodec/codecs"
 sim_codec_dir="simdisk/.rockbox/codecs"
-mkdir -p simdisk/MiniApps/Games/GB simdisk/MiniApps/Games/GBC
-cp ../packaging/gameboy/README.txt simdisk/MiniApps/Games/README.txt
+if [ "$miniapps" -eq 1 ]; then
+    mkdir -p simdisk/MiniApps/Games/GB simdisk/MiniApps/Games/GBC
+    cp ../packaging/gameboy/README.txt simdisk/MiniApps/Games/README.txt
+fi
 sim_font_dir="simdisk/.rockbox/fonts"
 codepage_tool="$(cd .. && pwd)/tools/codepages"
 runtime_font_builder="$(cd .. && pwd)/tools/build-crazypod-runtime-fonts.sh"
@@ -143,7 +201,7 @@ if [ ! -x "$runtime_font_builder" ]; then
     echo "Error: missing CrazyPod runtime font builder." >&2
     exit 1
 fi
-"$runtime_font_builder" "$(pwd)/$sim_font_dir"
+"$runtime_font_builder" --canvas "$font_canvas" "$(pwd)/$sim_font_dir"
 mkdir -p "$sim_codec_dir"
 find "$sim_codec_dir" -type f -name '*.codec' -delete
 for codec in "$codec_dir"/*.codec; do
@@ -158,69 +216,73 @@ if [ ! -d ../assets/crazypod-icons ]; then
     echo "Error: missing generated CrazyPod icon assets." >&2
     exit 1
 fi
-if [ ! -f ../assets/crazypod/default-home.bmp ]; then
+if [ "$wallpaper" -eq 1 ] && [ ! -f ../assets/crazypod/default-home.bmp ]; then
     echo "Error: missing generated CrazyPod default wallpaper." >&2
     exit 1
 fi
 rm -rf "$icon_dir"
 mkdir -p "$icon_dir"
 cp -R ../assets/crazypod-icons/. "$icon_dir/"
-cp ../assets/crazypod/default-home.bmp \
-   simdisk/.rockbox/crazypod/default-home.bmp
-mkdir -p miniapps/packages
-find miniapps/packages -type f -name 'game2048-*.cpk' -delete
-find miniapps/packages -type f -name 'capability-lab-*.cpk' -delete
-find miniapps/packages -type f -name 'native-reference-*.cpk' -delete
-find miniapps/packages -type f -name 'now-playing-neon-*.cpk' -delete
-find miniapps/packages -type f -name 'now-playing-signal-*.cpk' -delete
-game2048_package="game2048-$(node -p \
-    "require('../miniapps/apps/game2048/crazypod.config.json').manifest.version").cpk"
-capability_lab_package="capability-lab-$(node -p \
-    "require('../miniapps/apps/capability-lab/crazypod.config.json').manifest.version").cpk"
-native_reference_package="native-reference-$(node -p \
-    "require('../miniapps/apps/native-reference/crazypod.config.json').manifest.version").cpk"
-now_playing_theme_package="now-playing-neon-$(node -p \
-    "require('../miniapps/themes/atelier-hifi/crazypod.config.json').manifest.version").cpk"
-signal_theme_package="now-playing-signal-$(node -p \
-    "require('../miniapps/themes/signal-one/crazypod.config.json').manifest.version").cpk"
-node ../tools/miniapp-builder/src/cli.mjs build \
-    ../miniapps/apps/game2048 \
-    --target simulator \
-    --binary miniapps/apps/game2048/app.dylib \
-    --out "miniapps/packages/$game2048_package"
-node ../tools/miniapp-builder/src/cli.mjs build \
-    ../miniapps/apps/capability-lab \
-    --target simulator \
-    --binary miniapps/apps/capability-lab/app.dylib \
-    --out "miniapps/packages/$capability_lab_package"
-node ../tools/miniapp-builder/src/cli.mjs build \
-    ../miniapps/apps/native-reference \
-    --target simulator \
-    --binary miniapps/apps/native-reference/app.dylib \
-    --out "miniapps/packages/$native_reference_package"
-node ../tools/miniapp-builder/src/cli.mjs build \
-    ../miniapps/themes/atelier-hifi \
-    --target simulator \
-    --binary miniapps/themes/atelier-hifi/app.dylib \
-    --out "miniapps/packages/$now_playing_theme_package"
-node ../tools/miniapp-builder/src/cli.mjs build \
-    ../miniapps/themes/signal-one \
-    --target simulator \
-    --binary miniapps/themes/signal-one/app.dylib \
-    --out "miniapps/packages/$signal_theme_package"
-miniapp_package_dir="simdisk/.rockbox/crazypod/miniapps/packages"
-mkdir -p "$miniapp_package_dir"
-find "$miniapp_package_dir" -type f -name '*.cpk' -delete
-cp "miniapps/packages/$game2048_package" \
-   "$miniapp_package_dir/"
-cp "miniapps/packages/$capability_lab_package" \
-   "$miniapp_package_dir/"
-cp "miniapps/packages/$native_reference_package" \
-   "$miniapp_package_dir/"
-cp "miniapps/packages/$now_playing_theme_package" \
-   "$miniapp_package_dir/"
-cp "miniapps/packages/$signal_theme_package" \
-   "$miniapp_package_dir/"
+if [ "$wallpaper" -eq 1 ]; then
+    cp ../assets/crazypod/default-home.bmp \
+       simdisk/.rockbox/crazypod/default-home.bmp
+fi
+if [ "$miniapps" -eq 1 ]; then
+    mkdir -p miniapps/packages
+    find miniapps/packages -type f -name 'game2048-*.cpk' -delete
+    find miniapps/packages -type f -name 'capability-lab-*.cpk' -delete
+    find miniapps/packages -type f -name 'native-reference-*.cpk' -delete
+    find miniapps/packages -type f -name 'now-playing-neon-*.cpk' -delete
+    find miniapps/packages -type f -name 'now-playing-signal-*.cpk' -delete
+    game2048_package="game2048-$(node -p \
+        "require('../miniapps/apps/game2048/crazypod.config.json').manifest.version").cpk"
+    capability_lab_package="capability-lab-$(node -p \
+        "require('../miniapps/apps/capability-lab/crazypod.config.json').manifest.version").cpk"
+    native_reference_package="native-reference-$(node -p \
+        "require('../miniapps/apps/native-reference/crazypod.config.json').manifest.version").cpk"
+    now_playing_theme_package="now-playing-neon-$(node -p \
+        "require('../miniapps/themes/atelier-hifi/crazypod.config.json').manifest.version").cpk"
+    signal_theme_package="now-playing-signal-$(node -p \
+        "require('../miniapps/themes/signal-one/crazypod.config.json').manifest.version").cpk"
+    node ../tools/miniapp-builder/src/cli.mjs build \
+        ../miniapps/apps/game2048 \
+        --target simulator \
+        --binary miniapps/apps/game2048/app.dylib \
+        --out "miniapps/packages/$game2048_package"
+    node ../tools/miniapp-builder/src/cli.mjs build \
+        ../miniapps/apps/capability-lab \
+        --target simulator \
+        --binary miniapps/apps/capability-lab/app.dylib \
+        --out "miniapps/packages/$capability_lab_package"
+    node ../tools/miniapp-builder/src/cli.mjs build \
+        ../miniapps/apps/native-reference \
+        --target simulator \
+        --binary miniapps/apps/native-reference/app.dylib \
+        --out "miniapps/packages/$native_reference_package"
+    node ../tools/miniapp-builder/src/cli.mjs build \
+        ../miniapps/themes/atelier-hifi \
+        --target simulator \
+        --binary miniapps/themes/atelier-hifi/app.dylib \
+        --out "miniapps/packages/$now_playing_theme_package"
+    node ../tools/miniapp-builder/src/cli.mjs build \
+        ../miniapps/themes/signal-one \
+        --target simulator \
+        --binary miniapps/themes/signal-one/app.dylib \
+        --out "miniapps/packages/$signal_theme_package"
+    miniapp_package_dir="simdisk/.rockbox/crazypod/miniapps/packages"
+    mkdir -p "$miniapp_package_dir"
+    find "$miniapp_package_dir" -type f -name '*.cpk' -delete
+    cp "miniapps/packages/$game2048_package" \
+       "$miniapp_package_dir/"
+    cp "miniapps/packages/$capability_lab_package" \
+       "$miniapp_package_dir/"
+    cp "miniapps/packages/$native_reference_package" \
+       "$miniapp_package_dir/"
+    cp "miniapps/packages/$now_playing_theme_package" \
+       "$miniapp_package_dir/"
+    cp "miniapps/packages/$signal_theme_package" \
+       "$miniapp_package_dir/"
+fi
 
 app_bundle="CrazyPod Simulator.app"
 mkdir -p "$app_bundle/Contents/MacOS"

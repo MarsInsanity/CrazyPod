@@ -1208,6 +1208,11 @@
         "apps/crazypod/ui/features/notes/crazypod_notes_feature.c:140"
       ]
     },
+    "Contrast": {
+      "locations": [
+        "apps/crazypod/ui/features/settings/crazypod_settings_model.c:99"
+      ]
+    },
     "Controls": {
       "locations": [
         "apps/crazypod/ui/features/settings/crazypod_settings_catalog.c:13"
@@ -1978,6 +1983,11 @@
     "Hold Center to Erase": {
       "locations": [
         "apps/crazypod/ui/features/notes/crazypod_notes_feature.c:205"
+      ]
+    },
+    "Invert Display": {
+      "locations": [
+        "apps/crazypod/ui/features/settings/crazypod_settings_model.c:102"
       ]
     },
     "No book title or author matched.": {

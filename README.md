@@ -46,7 +46,8 @@ history. Upstream copyright and license notices remain in place.
 | | Current support |
 | --- | --- |
 | Device | iPod Classic 6G target family (`ipod6g`: 6th, 6.5th, and 7th generation) |
-| Display | 320×240 RGB565 |
+| Bring-up targets | iPod Classic 5G/5.5G "Video" (`ipodvideo`) and iPod Mini 2G (`ipodmini2g`) build and package, but neither has been run on hardware |
+| Display | 320×240 RGB565; 138×110 in four greys on the Mini |
 | Interface | LVGL 9.5.0; click-wheel navigation |
 | Languages | English, Simplified Chinese, Traditional Chinese, Japanese, Korean, German, French, Spanish, and Brazilian Portuguese |
 | Media | Local files only |
@@ -227,6 +228,19 @@ Build the iPod 6G firmware:
 
 Both scripts perform clean builds by default. Pass `--incremental` to reuse an
 existing build directory.
+
+Both also take `--target`. `ipodvideo` and `ipodmini2g` are bring-up targets:
+they compile and package, but neither has been run on hardware, and neither is
+covered by the V1.0 install procedure below. The Mini draws a monochrome build
+of the UI on its 138×110 four-shade panel, and ships without the Media app, the
+Game Boy emulator, Mini Apps, video playback or wallpaper, because none of the
+five is usable there. See [BUILD.md](BUILD.md) before using either.
+
+```sh
+./build-hw.sh --target ipodvideo     # build-hw-ipodvideo/CrazyPod-5G.zip
+./build-hw.sh --target ipodmini2g    # build-hw-ipodmini2g/CrazyPod-Mini2G.zip
+./build-sim.sh --target ipodmini2g   # build-sim-ipodmini2g/rockboxui
+```
 
 | Artifact | Path |
 | --- | --- |

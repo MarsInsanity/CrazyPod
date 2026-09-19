@@ -30,6 +30,7 @@ CrazyPod V1.0 是面向 iPod Classic 6G 硬件系列的实验性独立固件。�
 | 项目 | 当前支持 |
 | --- | --- |
 | 设备 | iPod Classic 6G 目标系列（第 6、6.5 和 7 代） |
+| 移植中的目标 | iPod Classic 5G/5.5G “Video”（`ipodvideo`）与 iPod Mini 第二代（`ipodmini2g`）可以编译打包，但均未在真机上运行验证 |
 | 屏幕 | 320×240 RGB565 |
 | 界面 | LVGL 9.5.0；滚轮导航 |
 | 语言 | 英文、简体中文、繁体中文、日文、韩文、德文、法文、西班牙文和巴西葡萄牙文 |
@@ -110,6 +111,18 @@ cd build-sim
 ```
 
 两个脚本默认执行干净构建。传入 `--incremental` 可复用现有构建目录。
+
+两个脚本同样接受 `--target`。`ipodvideo` 与 `ipodmini2g` 属于移植中的目标：
+可以编译打包，但均未在真机上运行验证，也不适用于下文的 V1.0 安装流程。Mini
+的面板为 138×110 四级灰度，因此使用单色版界面，并且不包含“媒体”应用、Game Boy
+模拟器、Mini Apps、视频播放与壁纸——这五项在该屏幕上都无法使用。使用前请先阅读
+[BUILD.md](BUILD.md)。
+
+```sh
+./build-hw.sh --target ipodvideo     # build-hw-ipodvideo/CrazyPod-5G.zip
+./build-hw.sh --target ipodmini2g    # build-hw-ipodmini2g/CrazyPod-Mini2G.zip
+./build-sim.sh --target ipodmini2g   # build-sim-ipodmini2g/rockboxui
+```
 
 | 产物 | 路径 |
 | --- | --- |
