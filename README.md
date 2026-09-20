@@ -431,8 +431,8 @@ Expand-Archive -Path $archive -DestinationPath $temp.FullName
 New-Item -ItemType Directory -Force -Path "$mount\.rockbox" | Out-Null
 Copy-Item "$($temp.FullName)\.rockbox\*" `
   "$mount\.rockbox\" -Recurse -Force
-"Music","Podcasts","Books","Audiobooks","Pictures","Videos","Contacts",`
-  "Calendars","MiniApps" | ForEach-Object {
+"Music","Podcasts","Books","Audiobooks","Pictures","Videos",`
+  "Contacts","Calendars","MiniApps" | ForEach-Object {
     New-Item -ItemType Directory -Force -Path "$mount\$_" | Out-Null
   }
 # Write the firmware again last, after every resource has reached the iPod.
