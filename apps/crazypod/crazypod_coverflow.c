@@ -1,7 +1,57 @@
 #include "config.h"
 #include "crazypod_pixel.h"
 
-#ifdef HAVE_CRAZYPOD_UI
+#if defined(HAVE_CRAZYPOD_UI) && defined(HAVE_CRAZYPOD_MONO_UI)
+
+/*
+ * No cover flow on the monochrome panel.
+ *
+ * It composites album art straight into the framebuffer, casting it to
+ * crazypod_pixel_t and addressing it as pixels + y * LCD_WIDTH. That is
+ * an RGB565 framebuffer's arithmetic. This panel packs four pixels into a
+ * byte, so a row is 35 bytes and the whole thing is 3850; the same
+ * arithmetic reaches about 30 KB, and clear_flow_area() memset16()s
+ * straight past the end of it. Unlike the scene transition, which only
+ * read out of bounds, this writes -- it is the data abort inside memset16
+ * that panicked the device.
+ *
+ * Sizing it correctly would mean compositing and dithering album art on a
+ * 138x110 four-shade panel, where a sleeve is a smudge and the Media app
+ * is not built for the same reason. So the flow is not built either, and
+ * the music screens fall back to the list they already use.
+ */
+#include <stdbool.h>
+
+#include "crazypod_coverflow.h"
+
+void crazypod_coverflow_configure(void (*boost)(int ticks)) { (void)boost; }
+void crazypod_coverflow_enter(int selected) { (void)selected; }
+bool crazypod_coverflow_warm(int selected) { (void)selected; return false; }
+void crazypod_coverflow_leave(void) {}
+bool crazypod_coverflow_active(void) { return false; }
+bool crazypod_coverflow_compositing_active(void) { return false; }
+bool crazypod_coverflow_motion_active(void) { return false; }
+void crazypod_coverflow_set_input_suspended(bool suspended)
+{
+    (void)suspended;
+}
+void crazypod_coverflow_set_compositing_suspended(bool suspended)
+{
+    (void)suspended;
+}
+int crazypod_coverflow_step(int direction) { (void)direction; return -1; }
+int crazypod_coverflow_center_album(void) { return -1; }
+int crazypod_coverflow_selected_album(void) { return -1; }
+int crazypod_coverflow_take_wheel_feedback(void) { return 0; }
+void crazypod_coverflow_invalidate(void) {}
+void crazypod_coverflow_capture_flush(
+    int x, int y, int width, int height)
+{
+    (void)x; (void)y; (void)width; (void)height;
+}
+void crazypod_coverflow_tick(void) {}
+
+#elif defined(HAVE_CRAZYPOD_UI)
 
 #include <stdint.h>
 #include <string.h>

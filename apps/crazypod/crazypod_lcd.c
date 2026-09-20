@@ -594,17 +594,42 @@ static const lv_font_t *lcd_localized_font(const lv_font_t *font,
 static int draw_text(const lv_font_t *font, const char *text,
                      int x, int y, int maximum_x, crazypod_ink_t color);
 
+/*
+ * The panic screen is drawn straight to the framebuffer, so it carries its
+ * own metrics rather than the UI's: this code runs when the UI is the thing
+ * that has failed, and it cannot depend on it. On a 138x110 panel the
+ * design's 16px title and 14px margins put "CRAZYPOD PANIC" off the right
+ * edge -- it read "CRAZYPOD PA" on the first panic the Mini produced.
+ */
+#ifdef HAVE_CRAZYPOD_COMPACT_UI
+#define PANIC_TITLE_FONT (&lv_font_montserrat_12)
+#define PANIC_BODY_FONT (&lv_font_montserrat_10)
+#define PANIC_MARGIN 3
+#define PANIC_TITLE_Y 2
+#define PANIC_BODY_Y 20
+#define PANIC_BOTTOM_GAP 2
+#define PANIC_LINE_GAP 1
+#else
+#define PANIC_TITLE_FONT (&lv_font_montserrat_16)
+#define PANIC_BODY_FONT (&lv_font_montserrat_12)
+#define PANIC_MARGIN 14
+#define PANIC_TITLE_Y 18
+#define PANIC_BODY_Y 48
+#define PANIC_BOTTOM_GAP 12
+#define PANIC_LINE_GAP 3
+#endif
+
 static void show_message(const char *title, const char *message,
                          const char *footer, crazypod_ink_t background)
 {
-    const lv_font_t *title_font = &lv_font_montserrat_16;
-    const lv_font_t *body_font = &lv_font_montserrat_12;
+    const lv_font_t *title_font = PANIC_TITLE_FONT;
+    const lv_font_t *body_font = PANIC_BODY_FONT;
     const crazypod_ink_t foreground = ink_rgb(255, 255, 255);
     const char *cursor;
     int footer_y;
     int bottom;
-    int x = 14;
-    int y = 18;
+    int x = PANIC_MARGIN;
+    int y = PANIC_TITLE_Y;
 
     title = crazypod_l10n_text(title);
     message = crazypod_l10n_text(message);
@@ -619,21 +644,28 @@ static void show_message(const char *title, const char *message,
      * first build stamp failed to appear on the one panic it was written
      * for.
      */
-    footer_y = LCD_HEIGHT - 12 - body_font->line_height;
-    bottom = footer != NULL ? footer_y : LCD_HEIGHT - 12;
+    footer_y = LCD_HEIGHT - PANIC_BOTTOM_GAP - body_font->line_height;
+    bottom = footer != NULL ? footer_y : LCD_HEIGHT - PANIC_BOTTOM_GAP;
 
+    /*
+     * Stop at the right margin as the body already does. The title was
+     * drawn glyph by glyph to the end of the string whatever the width,
+     * so a title wider than the panel simply ran off it.
+     */
     while(*title != '\0') {
         lv_font_glyph_dsc_t glyph;
         uint32_t codepoint = next_utf8(&title);
 
         if(lv_font_get_glyph_dsc(title_font, &glyph, codepoint, 0)) {
+            if(x + glyph.adv_w > LCD_WIDTH - PANIC_MARGIN)
+                break;
             draw_glyph(title_font, codepoint, x, y, foreground);
             x += glyph.adv_w;
         }
     }
 
-    x = 14;
-    y = 48;
+    x = PANIC_MARGIN;
+    y = PANIC_BODY_Y;
     while(*cursor != '\0' && y + body_font->line_height < bottom) {
         const char *line_start = cursor;
         int line_width = x;
@@ -647,7 +679,7 @@ static void show_message(const char *title, const char *message,
                 cursor = next;
                 continue;
             }
-            if(line_width + glyph.adv_w > LCD_WIDTH - 14)
+            if(line_width + glyph.adv_w > LCD_WIDTH - PANIC_MARGIN)
                 break;
             line_width += glyph.adv_w;
             cursor = next;
@@ -670,12 +702,12 @@ static void show_message(const char *title, const char *message,
 
         if(*cursor == '\n')
             ++cursor;
-        y += body_font->line_height + 3;
+        y += body_font->line_height + PANIC_LINE_GAP;
     }
 
     if(footer != NULL)
-        (void)draw_text(body_font, footer, 14, footer_y,
-                        LCD_WIDTH - 14, foreground);
+        (void)draw_text(body_font, footer, PANIC_MARGIN, footer_y,
+                        LCD_WIDTH - PANIC_MARGIN, foreground);
     lcd_update();
 }
 
