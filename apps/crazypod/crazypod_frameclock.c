@@ -381,10 +381,18 @@ void crazypod_present_tick(void)
     /* While a finger remains on the Home wheel, ordinary LVGL dirt can
        continue to arrive from playback progress, status timers, or a frame
        queued just before the touch began. Keep it in the framebuffer until
-       release; only the TE-synchronized Home band may reach the panel. */
+       release; only the synchronized Home band may reach the panel.
+
+       This is worth doing only where there is such a band. The native
+       carousel is the sole caller of crazypod_present_queue_home_rect(),
+       so a build without it tags every home frame PRESENT_SYNC_NONE, and
+       the hold below would withhold the selection itself until the finger
+       came off the wheel rather than withholding dirt around it. */
+#ifdef HAVE_CRAZYPOD_NATIVE_CAROUSEL
     if(home_interaction_active && present_sync == PRESENT_SYNC_NONE &&
        !crazypod_present_is_full())
         return;
+#endif
 
     /* Full-screen updates bypass the software frame clock. The LCD driver
        still waits for TE/FMARK when hardware synchronization is available. */

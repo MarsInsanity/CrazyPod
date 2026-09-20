@@ -61,7 +61,7 @@ static lv_obj_t *screen;
 static lv_obj_t *wallpaper;
 static lv_obj_t *title;
 static lv_obj_t *indicators[CRAZYPOD_APP_COUNT];
-#ifndef HAVE_CRAZYPOD_ICON_THEMES
+#ifndef HAVE_CRAZYPOD_NATIVE_CAROUSEL
 /* The carousel as ordinary widgets: one image per visible position,
  * created once and moved. See crazypod_desktop_native.h for why. */
 static lv_obj_t *carousel[CRAZYPOD_DESKTOP_NATIVE_MAX_VISIBLE];
@@ -549,7 +549,7 @@ void crazypod_desktop_refresh_appearance(void)
 /* How far apart the carousel's icons sit. */
 #define CAROUSEL_GAP 6
 
-#ifndef HAVE_CRAZYPOD_ICON_THEMES
+#ifndef HAVE_CRAZYPOD_NATIVE_CAROUSEL
 /* What an icon a full step away from the middle is reduced to. */
 #define CAROUSEL_EDGE_SCALE 70
 #define CAROUSEL_EDGE_OPA 110
@@ -660,7 +660,7 @@ static void render_desktop_icons(
         ++visible;
     }
     render_started_us = crazypod_monotonic_usec();
-#ifdef HAVE_CRAZYPOD_ICON_THEMES
+#ifdef HAVE_CRAZYPOD_NATIVE_CAROUSEL
     rendered = snapshot
         ? crazypod_desktop_native_render_snapshot(
             app_indices, centers_x, visible, tile_size)

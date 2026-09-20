@@ -28,7 +28,7 @@
     ((CRAZYPOD_DESKTOP_NATIVE_TOP + CRAZYPOD_DESKTOP_NATIVE_BOTTOM) / 2)
 #define CRAZYPOD_DESKTOP_NATIVE_MAX_VISIBLE 5
 
-#ifdef HAVE_CRAZYPOD_ICON_THEMES
+#ifdef HAVE_CRAZYPOD_NATIVE_CAROUSEL
 void crazypod_desktop_native_reset(void);
 void crazypod_desktop_native_invalidate(bool discard_backdrop);
 void crazypod_desktop_native_invalidate_icons(void);

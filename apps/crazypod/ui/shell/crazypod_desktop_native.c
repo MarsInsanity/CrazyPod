@@ -1,7 +1,7 @@
 #include "config.h"
 #include "crazypod_pixel.h"
 
-#if defined(HAVE_CRAZYPOD_UI) && defined(HAVE_CRAZYPOD_ICON_THEMES)
+#if defined(HAVE_CRAZYPOD_UI) && defined(HAVE_CRAZYPOD_NATIVE_CAROUSEL)
 
 #include <string.h>
 

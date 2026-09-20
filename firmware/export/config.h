@@ -1522,6 +1522,13 @@ Lyre prototype 1 */
 #ifndef HAVE_CRAZYPOD_MONO_UI
 #define HAVE_CRAZYPOD_WALLPAPER
 #define HAVE_CRAZYPOD_ICON_THEMES
+/*
+ * The home screen's carousel drawn straight to the framebuffer, scrubbed
+ * by wheel position. It is the only thing that queues a Home present band,
+ * which is why the frame clock asks for this rather than for icon themes:
+ * a build without it has no band to hold ordinary frames back for.
+ */
+#define HAVE_CRAZYPOD_NATIVE_CAROUSEL
 #endif
 #endif
 
