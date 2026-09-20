@@ -355,8 +355,8 @@ mkdir -p "$PACKAGE_DIR/.rockbox/codepages"
 mkdir -p "$PACKAGE_DIR/.rockbox/fonts"
 mkdir -p "$PACKAGE_DIR/.rockbox/crazypod/icons"
 mkdir -p "$PACKAGE_DIR/.rockbox/crazypod/miniapps/packages"
-for content_directory in Music Podcasts Books Pictures Videos Contacts \
-    Calendars MiniApps MiniApps/Games/GB MiniApps/Games/GBC; do
+for content_directory in Music Podcasts Books Audiobooks Pictures Videos \
+    Contacts Calendars MiniApps MiniApps/Games/GB MiniApps/Games/GBC; do
     mkdir -p "$PACKAGE_DIR/$content_directory"
 done
 cp ../packaging/gameboy/README.txt "$PACKAGE_DIR/MiniApps/Games/README.txt"
@@ -409,8 +409,8 @@ rm -f "$CRAZYPOD_PACKAGE_NAME.zip"
 (
     cd "$PACKAGE_DIR"
     zip -q -r "$PACKAGE_DIR/../$CRAZYPOD_PACKAGE_NAME.zip" \
-        .rockbox Music Podcasts Books Pictures Videos Contacts Calendars \
-        MiniApps
+        .rockbox Music Podcasts Books Audiobooks Pictures Videos Contacts \
+        Calendars MiniApps
 )
 mv "$PACKAGE_DIR/../$CRAZYPOD_PACKAGE_NAME.zip" \
     "$CRAZYPOD_PACKAGE_NAME.zip"
