@@ -33,10 +33,38 @@
 #define COLOR_FAVORITE 0xFF375F
 #define NOW_ACTION_CELL_COUNT 4
 #define NOW_PLAYBACK_MODE_COUNT 4
+#ifdef HAVE_CRAZYPOD_COMPACT_UI
+/*
+ * Now Playing's own popups, which are not the choice overlay. The queue
+ * card alone is declared 200 wide against a 138 panel, and four 31px play
+ * mode rows plus a title and a line of instructions come to more than the
+ * panel is tall.
+ *
+ * The instruction line goes altogether: "Scroll previews Center applies
+ * Menu cancels" is three hints in a card with room for none of them, and
+ * it drives the card's width through now_playback_popup_width().
+ */
+#define NOW_PLAYBACK_ROW_HEIGHT 15
+#define NOW_QUEUE_HEADER_HEIGHT 16
+#define NOW_QUEUE_ROW_HEIGHT 14
+#define NOW_QUEUE_POPUP_WIDTH (LCD_WIDTH - 8)
+#define NOW_SHOW_INSTRUCTIONS 0
+#define NOW_POPUP_INSET 4
+#define NOW_PROGRESS_STEP_MS 5000
+#define NOW_VOLUME_HUD_X 0
+#define NOW_VOLUME_HUD_WIDTH 10
+#define NOW_VOLUME_HUD_HEIGHT 70
+#define NOW_VOLUME_TRACK_X 3
+#define NOW_VOLUME_TRACK_Y 6
+#define NOW_VOLUME_TRACK_WIDTH 4
+#define NOW_VOLUME_TRACK_HEIGHT 58
+#else
 #define NOW_PLAYBACK_ROW_HEIGHT 31
 #define NOW_QUEUE_HEADER_HEIGHT 34
 #define NOW_QUEUE_ROW_HEIGHT 28
 #define NOW_QUEUE_POPUP_WIDTH 200
+#define NOW_SHOW_INSTRUCTIONS 1
+#define NOW_POPUP_INSET 14
 #define NOW_PROGRESS_STEP_MS 5000
 #define NOW_VOLUME_HUD_X 0
 #define NOW_VOLUME_HUD_WIDTH 18
@@ -45,6 +73,7 @@
 #define NOW_VOLUME_TRACK_Y 10
 #define NOW_VOLUME_TRACK_WIDTH 6
 #define NOW_VOLUME_TRACK_HEIGHT 84
+#endif
 #define NOW_VOLUME_HUD_MS 1200
 #define CRAZYPOD_METADATA_FONT (crazypod_runtime_font_at_size(18))
 #define NOW_QUEUE_TITLE_FONT (crazypod_runtime_font_at_size(15))
@@ -858,12 +887,15 @@ static int now_playback_popup_width(void)
     int mode;
 
     width = crazypod_popup_text_width(
-        CP_TR("Play Mode"), &lv_font_montserrat_10) + 28;
+        CP_TR("Play Mode"), &lv_font_montserrat_10) +
+        2 * NOW_POPUP_INSET;
+#if NOW_SHOW_INSTRUCTIONS
     retain_larger(
         &width,
         crazypod_popup_text_width(
             CP_TR("Scroll previews  Center applies  Menu cancels"),
             &lv_font_montserrat_8) + 28);
+#endif
     for(mode = 0; mode < NOW_PLAYBACK_MODE_COUNT; ++mode) {
         retain_larger(
             &width,
@@ -934,26 +966,30 @@ static void show_now_playback_popup(void)
         now_playback_selected = now_playback_mode_current();
     geometry = crazypod_popup_centered_geometry(
         now_playback_popup_width(), 1);
+#if NOW_SHOW_INSTRUCTIONS
     instruction_height = crazypod_popup_wrapped_text_height(
         CP_TR("Scroll previews  Center applies  Menu cancels"),
         &lv_font_montserrat_8,
         geometry.width - 28, 1);
+#else
+    instruction_height = 0;
+#endif
     rows_y = title_y +
         lv_font_get_line_height(&lv_font_montserrat_10) + 8;
     instruction_y = rows_y +
         NOW_PLAYBACK_MODE_COUNT * NOW_PLAYBACK_ROW_HEIGHT + 8;
     geometry = crazypod_popup_centered_geometry(
         geometry.width,
-        instruction_y + instruction_height + 10);
-    row_width = geometry.width - 24;
+        instruction_y + instruction_height + NOW_POPUP_INSET);
+    row_width = geometry.width - 2 * NOW_POPUP_INSET;
     now_overlay_panel = make_now_glass_panel(
         geometry.x, geometry.y,
         geometry.width, geometry.height);
     title = crazypod_ui_widget_label(
         now_overlay_panel, CP_TR("Play Mode"),
         &lv_font_montserrat_10, COLOR_WHITE, 110);
-    lv_obj_set_pos(title, 14, title_y);
-    lv_obj_set_width(title, geometry.width - 28);
+    lv_obj_set_pos(title, NOW_POPUP_INSET, title_y);
+    lv_obj_set_width(title, geometry.width - 2 * NOW_POPUP_INSET);
     lv_obj_set_style_text_align(
         title, LV_TEXT_ALIGN_CENTER, 0);
 
@@ -961,7 +997,7 @@ static void show_now_playback_popup(void)
         int y = rows_y + mode * NOW_PLAYBACK_ROW_HEIGHT;
 
         now_playback_view.rows[mode] = crazypod_ui_widget_box(
-            now_overlay_panel, 12, y,
+            now_overlay_panel, NOW_POPUP_INSET, y,
             row_width, NOW_PLAYBACK_ROW_HEIGHT, 7,
             COLOR_WHITE, LV_OPA_TRANSP);
         now_playback_view.icons[mode] = crazypod_ui_widget_icon(
@@ -993,6 +1029,7 @@ static void show_now_playback_popup(void)
             LV_TEXT_ALIGN_CENTER, 0);
     }
 
+#if NOW_SHOW_INSTRUCTIONS
     instruction = crazypod_ui_widget_label(
         now_overlay_panel,
         CP_TR("Scroll previews  Center applies  Menu cancels"),
@@ -1006,6 +1043,10 @@ static void show_now_playback_popup(void)
     lv_obj_set_style_text_align(
         instruction, LV_TEXT_ALIGN_LEFT, 0);
     lv_obj_set_style_text_line_space(instruction, 1, 0);
+#else
+    (void)instruction;
+    (void)instruction_y;
+#endif
     refresh_now_playback_popup();
     animate_now_popup(now_overlay_panel, geometry.y);
 }

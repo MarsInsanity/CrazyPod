@@ -19,13 +19,33 @@
  * scenes they are drawn for cannot be shown. Both entries are left out
  * rather than opening onto a screen with nothing on it.
  */
-#if defined(HAVE_CRAZYPOD_WALLPAPER) && defined(HAVE_CRAZYPOD_MINIAPPS)
-#define CRAZYPOD_CUSTOMIZE_MENU_COUNT 7
-#elif defined(HAVE_CRAZYPOD_WALLPAPER) || defined(HAVE_CRAZYPOD_MINIAPPS)
-#define CRAZYPOD_CUSTOMIZE_MENU_COUNT 6
+#ifdef HAVE_CRAZYPOD_WALLPAPER
+#define CRAZYPOD_CUSTOMIZE_HAS_BACKGROUNDS 1
 #else
-#define CRAZYPOD_CUSTOMIZE_MENU_COUNT 5
+#define CRAZYPOD_CUSTOMIZE_HAS_BACKGROUNDS 0
 #endif
+#ifdef HAVE_CRAZYPOD_MINIAPPS
+#define CRAZYPOD_CUSTOMIZE_HAS_THEMES 1
+#else
+#define CRAZYPOD_CUSTOMIZE_HAS_THEMES 0
+#endif
+/*
+ * Layout chooses the screen's corner radius, which is an illusion drawn in
+ * the corners of a rectangular panel. It needs shades to fade the mask
+ * into what is behind it, and with four there are none: the mask reads as
+ * black stair-steps bitten out of the picture, worse than the square
+ * corners it hides. The monochrome build draws no corners and does not
+ * offer the choice.
+ */
+#ifdef HAVE_CRAZYPOD_MONO_UI
+#define CRAZYPOD_CUSTOMIZE_HAS_LAYOUT 0
+#else
+#define CRAZYPOD_CUSTOMIZE_HAS_LAYOUT 1
+#endif
+/* Presets, Icons, Details and Headphones are on every panel. */
+#define CRAZYPOD_CUSTOMIZE_MENU_COUNT \
+    (4 + CRAZYPOD_CUSTOMIZE_HAS_BACKGROUNDS + \
+     CRAZYPOD_CUSTOMIZE_HAS_THEMES + CRAZYPOD_CUSTOMIZE_HAS_LAYOUT)
 #define CRAZYPOD_CUSTOMIZE_PRESET_ACTION_COUNT 3
 #define CRAZYPOD_CUSTOMIZE_PRESET_EDIT_COUNT 3
 /*

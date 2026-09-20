@@ -304,6 +304,22 @@ void crazypod_appearance_save(void)
 
 const struct crazypod_appearance *crazypod_appearance_get(void)
 {
+#ifdef HAVE_CRAZYPOD_MONO_UI
+    /*
+     * No rounded screen corners on this panel. They are an illusion drawn
+     * in the corners of a rectangular screen, and the illusion needs the
+     * shades to fade the mask into whatever is behind it. With four there
+     * is nothing to fade through: the mask reads as four black stair-steps
+     * bitten out of the picture, which is worse than the square corners it
+     * is hiding.
+     *
+     * Zeroing them here rather than at each of the dozen places that read
+     * the radius means every consumer -- the masks, the capsule, the lock
+     * screen -- draws square without knowing why.
+     */
+    appearance.screen_top_radius = 0;
+    appearance.screen_bottom_radius = 0;
+#endif
     return &appearance;
 }
 

@@ -136,15 +136,31 @@ static void preview_model_build(
     model->swatch_color = primary_color;
     model->gradient = appearance->highlight_style != 0;
     if(state->route == DIY_ROUTE_MENU) {
+        /*
+         * By route, not by position. The rows are not a fixed list -- a
+         * panel without wallpaper drops Backgrounds and one without Mini
+         * Apps drops Themes -- so counting from zero described the wrong
+         * row as soon as either was missing, telling the Mini's owner that
+         * Headphones was "Home, menu and lock pictures".
+         */
+        enum crazypod_route row = crazypod_customize_menu_route(
+            state->selected);
+
         model->symbol = crazypod_customize_menu_symbols[state->selected];
         model->detail =
-            state->selected == 0 ? CP_TR("Save and reuse appearances") :
-            state->selected == 1 ? CP_TR("16 complete icon themes") :
-            state->selected == 2 ? CP_TR("Wave, size, glow and colors") :
-            state->selected == 3 ? CP_TR("Home, menu and lock pictures") :
-            state->selected == 4 ? CP_TR("Themes") :
-            state->selected == 5 ? CP_TR("Choose the insert animation") :
-                                   CP_TR("Screen corner radius");
+            row == DIY_ROUTE_PRESETS
+                ? CP_TR("Save and reuse appearances") :
+            row == DIY_ROUTE_ICONS
+                ? CP_TR("16 complete icon themes") :
+            row == DIY_ROUTE_DETAILS
+                ? CP_TR("Wave, size, glow and colors") :
+            row == DIY_ROUTE_BACKGROUNDS
+                ? CP_TR("Home, menu and lock pictures") :
+            row == DIY_ROUTE_NOW_PLAYING_THEMES
+                ? CP_TR("Themes") :
+            row == DIY_ROUTE_HEADPHONE_POPUP
+                ? CP_TR("Choose the insert animation") :
+                  CP_TR("Screen corner radius");
     }
     else if(state->route == DIY_ROUTE_PRESETS) {
         model->symbol = state->selected == 0 ? LV_SYMBOL_SAVE :

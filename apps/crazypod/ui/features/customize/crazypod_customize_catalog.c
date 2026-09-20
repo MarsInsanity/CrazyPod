@@ -19,7 +19,10 @@ const char *const crazypod_customize_menu_titles[] = {
 #ifdef HAVE_CRAZYPOD_MINIAPPS
     CP_TR("Themes"),
 #endif
-    CP_TR("Headphones"), CP_TR("Layout")
+    CP_TR("Headphones"),
+#if CRAZYPOD_CUSTOMIZE_HAS_LAYOUT
+    CP_TR("Layout"),
+#endif
 };
 
 const char *const crazypod_customize_menu_symbols[] = {
@@ -30,7 +33,10 @@ const char *const crazypod_customize_menu_symbols[] = {
 #ifdef HAVE_CRAZYPOD_MINIAPPS
     LV_SYMBOL_AUDIO,
 #endif
-    LV_SYMBOL_AUDIO, LV_SYMBOL_SHUFFLE
+    LV_SYMBOL_AUDIO,
+#if CRAZYPOD_CUSTOMIZE_HAS_LAYOUT
+    LV_SYMBOL_SHUFFLE,
+#endif
 };
 
 static const enum crazypod_route menu_routes[
@@ -42,7 +48,10 @@ static const enum crazypod_route menu_routes[
 #ifdef HAVE_CRAZYPOD_MINIAPPS
     DIY_ROUTE_NOW_PLAYING_THEMES,
 #endif
-    DIY_ROUTE_HEADPHONE_POPUP, DIY_ROUTE_LAYOUT
+    DIY_ROUTE_HEADPHONE_POPUP,
+#if CRAZYPOD_CUSTOMIZE_HAS_LAYOUT
+    DIY_ROUTE_LAYOUT,
+#endif
 };
 
 enum crazypod_route crazypod_customize_menu_route(int index)
