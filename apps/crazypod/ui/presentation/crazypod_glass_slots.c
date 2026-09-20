@@ -95,6 +95,22 @@ bool crazypod_glass_slot_prepare_frame(
     int x, int y, int width, int height,
     enum crazypod_glass_material material)
 {
+#ifdef HAVE_CRAZYPOD_MONO_UI
+    /*
+     * Never sample the framebuffer on the packed panel. render_slot()
+     * reads it as RGB565 at a stride of LCD_WIDTH, which is 276 bytes a
+     * row against the 35 this panel actually has -- the whole framebuffer
+     * is 3850 bytes and the read reaches about 30 KB. The route renderer
+     * calls this on every route change, so it was running constantly.
+     *
+     * There is nothing to lose by refusing: the monochrome build reports
+     * Reduce Effects at its highest level, under which a glass panel is
+     * drawn flat and the sampled backdrop is discarded anyway.
+     */
+    (void)slot; (void)x; (void)y; (void)width; (void)height;
+    (void)material;
+    return false;
+#else
     const crazypod_pixel_t *framebuffer =
         (const crazypod_pixel_t *)crazypod_platform_display_framebuffer();
 
@@ -102,6 +118,7 @@ bool crazypod_glass_slot_prepare_frame(
     return render_slot(
         slot, framebuffer, LCD_WIDTH, LCD_HEIGHT, LCD_WIDTH,
         x, y, width, height, material);
+#endif
 }
 
 bool crazypod_glass_slot_prepare_menu(

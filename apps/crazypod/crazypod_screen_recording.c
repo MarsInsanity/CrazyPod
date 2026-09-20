@@ -512,6 +512,17 @@ crazypod_screen_recording_toggle(long now)
 
 static void copy_frame(uint8_t *destination)
 {
+#ifdef HAVE_CRAZYPOD_MONO_UI
+    /*
+     * The recorder writes a BMP from the framebuffer read as RGB565 rows
+     * of LCD_WIDTH pixels. Those rows are 35 packed bytes here, not 276,
+     * so the walk runs about 26 KB past the end. Recording has nowhere to
+     * go on this build in any case: it writes into /Videos, which the
+     * Mini's package does not create because the Media app is not built.
+     */
+    (void)destination;
+    return;
+#else
     const crazypod_pixel_t *framebuffer =
         crazypod_platform_display_framebuffer();
     int row;
@@ -530,6 +541,7 @@ static void copy_frame(uint8_t *destination)
             *destination++ = (uint8_t)(pixel >> 8);
         }
     }
+#endif
 }
 
 enum crazypod_screen_recording_event

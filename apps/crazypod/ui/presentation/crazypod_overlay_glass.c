@@ -72,6 +72,18 @@ static void prepare_panel_descriptor(
      * still being computed first -- every pixel of the popup's area read,
      * averaged, blurred, tinted and packed into an image nobody drew.
      */
+#ifdef HAVE_CRAZYPOD_MONO_UI
+    /*
+     * Structurally, not by setting. The sampler below reads the
+     * framebuffer as RGB565 at a stride of LCD_WIDTH, which this panel's
+     * packed rows are not; it is only the reduce-effects test that has
+     * been keeping that read from happening, and memory safety should not
+     * rest on a preference.
+     */
+    (void)x; (void)y; (void)width; (void)height; (void)tint_opacity;
+    valid = false;
+    return;
+#else
     if(crazypod_state_reduce_effects()) {
         valid = false;
         return;
@@ -93,6 +105,7 @@ static void prepare_panel_descriptor(
         lv_image_cache_drop(&descriptor);
     valid = crazypod_image_configure_rgb565(
         &descriptor, render_pixels, width, height);
+#endif
 }
 
 lv_obj_t *crazypod_overlay_glass_panel(

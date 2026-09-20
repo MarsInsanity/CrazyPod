@@ -368,10 +368,14 @@ void crazypod_present_now(void)
         ++present_diagnostics.present_timeouts;
     crazypod_perf_log_present_done();
 #ifdef SIMULATOR
+    /*
+     * elems counts framebuffer elements, which are fb_data -- two bytes on
+     * a colour panel and one on the packed one. Scaling by the pixel type
+     * read twice the framebuffer on the Mini.
+     */
     simulator_present_crc = crc_32(
         lcd_framebuffer_default.data,
-        (uint32_t)(
-            lcd_framebuffer_default.elems * sizeof(crazypod_pixel_t)),
+        (uint32_t)(lcd_framebuffer_default.elems * sizeof(fb_data)),
         0xffffffffu);
 #endif
     promote_deferred_present();
