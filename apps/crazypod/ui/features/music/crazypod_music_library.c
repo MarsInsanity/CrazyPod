@@ -11,6 +11,8 @@
 
 #include "../../../crazypod_artwork.h"
 #include "../../../crazypod_music.h"
+#include "../../../crazypod_runtime_font.h"
+#include "../../presentation/crazypod_ui_metrics.h"
 #include "../../presentation/crazypod_ui_widgets.h"
 #include "crazypod_music_feature.h"
 
@@ -58,10 +60,14 @@ static void render_loading(void)
        library.host.prepare_loading_surface == NULL)
         return;
     library.host.prepare_loading_surface();
+    /* Montserrat carries LV_SYMBOL; the AOT text faces do not. */
     symbol = crazypod_ui_widget_label(
         library.host.parent, LV_SYMBOL_REFRESH,
         &lv_font_montserrat_24, COLOR_CYAN, LV_OPA_COVER);
-    lv_obj_set_pos(symbol, 148, 91);
+    lv_obj_set_width(symbol, CRAZYPOD_METRIC_LOADING_TEXT_WIDTH);
+    lv_obj_set_style_text_align(symbol, LV_TEXT_ALIGN_CENTER, 0);
+    lv_obj_set_pos(symbol, CRAZYPOD_METRIC_LOADING_TEXT_X,
+                   CRAZYPOD_METRIC_LOADING_SYMBOL_Y);
     title = crazypod_ui_widget_label(
         library.host.parent,
         library.artwork_cache_failed
@@ -75,10 +81,13 @@ static void render_loading(void)
                         CRAZYPOD_MUSIC_VALIDATION_RUNNING
                         ? CP_TR("Checking Music Library")
                         : CP_TR("Building Music Library"),
-        &lv_font_montserrat_12, COLOR_WHITE, LV_OPA_COVER);
-    lv_obj_set_width(title, 260);
+        crazypod_runtime_font_at_size(
+            CRAZYPOD_METRIC_LOADING_TITLE_SIZE),
+        COLOR_WHITE, LV_OPA_COVER);
+    lv_obj_set_width(title, CRAZYPOD_METRIC_LOADING_TEXT_WIDTH);
     lv_obj_set_style_text_align(title, LV_TEXT_ALIGN_CENTER, 0);
-    lv_obj_set_pos(title, 30, 132);
+    lv_obj_set_pos(title, CRAZYPOD_METRIC_LOADING_TEXT_X,
+                   CRAZYPOD_METRIC_LOADING_TITLE_Y);
     if(library.artwork_preparing) {
         snprintf(detail, sizeof(detail), CP_FMT("%d / %d albums"),
                  crazypod_artwork_library_prime_completed(),
@@ -98,13 +107,17 @@ static void render_loading(void)
                         : CP_FMT("Reading local files and metadata"));
     }
     detail_label = crazypod_ui_widget_label(
-        library.host.parent, detail, &lv_font_montserrat_8,
-        COLOR_WHITE, 110);
+        library.host.parent, detail,
+        crazypod_runtime_font_at_size(
+            CRAZYPOD_METRIC_LOADING_DETAIL_SIZE),
+        COLOR_WHITE, CRAZYPOD_METRIC_LOADING_DETAIL_OPA);
     library.loading_detail = detail_label;
-    lv_obj_set_width(detail_label, 260);
+    lv_obj_set_width(detail_label, CRAZYPOD_METRIC_LOADING_TEXT_WIDTH);
     lv_obj_set_style_text_align(
         detail_label, LV_TEXT_ALIGN_CENTER, 0);
-    lv_obj_set_pos(detail_label, 30, 155);
+    lv_label_set_long_mode(detail_label, LV_LABEL_LONG_MODE_WRAP);
+    lv_obj_set_pos(detail_label, CRAZYPOD_METRIC_LOADING_TEXT_X,
+                   CRAZYPOD_METRIC_LOADING_DETAIL_Y);
 }
 
 static void finish_loading(void)

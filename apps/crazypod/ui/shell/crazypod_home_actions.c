@@ -15,6 +15,8 @@
 #include "settings.h"
 #include "sound.h"
 
+#include "../../crazypod_runtime_font.h"
+#include "../presentation/crazypod_ui_metrics.h"
 #include "../../crazypod_state.h"
 #include "../presentation/crazypod_menu_icon_assets.h"
 #include "../presentation/crazypod_overlay_glass.h"
@@ -197,12 +199,12 @@ static void refresh_action_selection(void)
 
 static void show_action_list(void)
 {
-    const int width = 236;
-    const int height = 108;
-    const int inset = 12;
-    const int gap = 7;
-    const int cells_y = 35;
-    const int cell_height = 58;
+    const int width = CRAZYPOD_METRIC_HOME_ACTIONS_WIDTH;
+    const int height = CRAZYPOD_METRIC_HOME_ACTIONS_HEIGHT;
+    const int inset = CRAZYPOD_METRIC_HOME_ACTIONS_INSET;
+    const int gap = CRAZYPOD_METRIC_HOME_ACTIONS_GAP;
+    const int cells_y = CRAZYPOD_METRIC_HOME_ACTIONS_CELLS_Y;
+    const int cell_height = CRAZYPOD_METRIC_HOME_ACTIONS_CELL_HEIGHT;
     const int cells_width = width - 2 * inset;
     const int cell_width =
         (cells_width - gap * (HOME_ACTION_COUNT - 1)) /
@@ -214,8 +216,9 @@ static void show_action_list(void)
     begin_overlay(width, height);
     title = make_label(
         actions.panel, CP_TR("ACTIONS"),
-        &lv_font_montserrat_10, COLOR_WHITE, 110);
-    lv_obj_set_pos(title, inset, 11);
+        &lv_font_montserrat_10, COLOR_WHITE,
+        CRAZYPOD_METRIC_HOME_ACTIONS_TITLE_OPA);
+    lv_obj_set_pos(title, inset, CRAZYPOD_METRIC_HOME_ACTIONS_TITLE_Y);
     lv_obj_set_width(title, width - 2 * inset);
     lv_obj_set_style_text_align(title, LV_TEXT_ALIGN_CENTER, 0);
 
@@ -232,15 +235,16 @@ static void show_action_list(void)
             COLOR_WHITE, 9);
         circle = make_box(
             actions.cells[index], 0, 0,
-            HOME_ACTION_ICON_CIRCLE_SIZE,
-            HOME_ACTION_ICON_CIRCLE_SIZE,
+            CRAZYPOD_METRIC_HOME_ACTIONS_CIRCLE,
+            CRAZYPOD_METRIC_HOME_ACTIONS_CIRCLE,
             LV_RADIUS_CIRCLE, COLOR_WHITE, 20);
         lv_obj_center(circle);
         actions.icons[index] = lv_image_create(circle);
         lv_image_set_src(actions.icons[index], asset);
         lv_image_set_scale(
             actions.icons[index],
-            HOME_ACTION_ICON_SIZE * LV_SCALE_NONE / asset->header.w);
+            CRAZYPOD_METRIC_HOME_ACTIONS_ICON * LV_SCALE_NONE /
+                asset->header.w);
         lv_obj_set_style_image_recolor(
             actions.icons[index], crazypod_ui_color(COLOR_WHITE), 0);
         lv_obj_set_style_image_recolor_opa(
@@ -287,8 +291,9 @@ static void refresh_adjustment(void)
 
 static void show_adjustment(void)
 {
-    const int width = 198;
-    const int height = 190;
+    const int width = CRAZYPOD_METRIC_HOME_ADJUST_WIDTH;
+    const int height = CRAZYPOD_METRIC_HOME_ADJUST_HEIGHT;
+    const int arc = CRAZYPOD_METRIC_HOME_ADJUST_ARC;
     lv_obj_t *title;
     lv_obj_t *icon;
     const lv_image_dsc_t *asset =
@@ -298,23 +303,29 @@ static void show_adjustment(void)
     begin_overlay(width, height);
     title = make_label(
         actions.panel, action_title(actions.selected),
-        &lv_font_montserrat_10, COLOR_WHITE, 120);
-    lv_obj_set_pos(title, 12, 12);
-    lv_obj_set_width(title, width - 24);
+        &lv_font_montserrat_10, COLOR_WHITE,
+        CRAZYPOD_METRIC_HOME_ACTIONS_TITLE_OPA);
+    lv_obj_set_pos(title, 4, CRAZYPOD_METRIC_HOME_ACTIONS_TITLE_Y);
+    lv_obj_set_width(title, width - 8);
     lv_obj_set_style_text_align(title, LV_TEXT_ALIGN_CENTER, 0);
 
     actions.level_arc = lv_arc_create(actions.panel);
-    lv_obj_set_pos(actions.level_arc, (width - 112) / 2, 38);
-    lv_obj_set_size(actions.level_arc, 112, 112);
+    lv_obj_set_pos(actions.level_arc, (width - arc) / 2,
+                   CRAZYPOD_METRIC_HOME_ADJUST_ARC_Y);
+    lv_obj_set_size(actions.level_arc, arc, arc);
     lv_arc_set_range(actions.level_arc, 0, 100);
     lv_arc_set_bg_angles(actions.level_arc, 0, 360);
     lv_arc_set_rotation(actions.level_arc, 270);
     lv_obj_remove_flag(actions.level_arc, LV_OBJ_FLAG_CLICKABLE);
-    lv_obj_set_style_arc_width(actions.level_arc, 8, LV_PART_MAIN);
+    lv_obj_set_style_arc_width(
+        actions.level_arc, CRAZYPOD_METRIC_HOME_ADJUST_ARC_WIDTH,
+        LV_PART_MAIN);
     lv_obj_set_style_arc_color(
         actions.level_arc, crazypod_ui_color(COLOR_WHITE), LV_PART_MAIN);
     lv_obj_set_style_arc_opa(actions.level_arc, 28, LV_PART_MAIN);
-    lv_obj_set_style_arc_width(actions.level_arc, 8, LV_PART_INDICATOR);
+    lv_obj_set_style_arc_width(
+        actions.level_arc, CRAZYPOD_METRIC_HOME_ADJUST_ARC_WIDTH,
+        LV_PART_INDICATOR);
     lv_obj_set_style_arc_color(
         actions.level_arc, crazypod_ui_color(COLOR_ACCENT),
         LV_PART_INDICATOR);
@@ -333,17 +344,21 @@ static void show_adjustment(void)
         lv_obj_align(icon, LV_ALIGN_CENTER, 0, -14);
     }
     actions.level_value = make_label(
-        actions.panel, "", &lv_font_montserrat_24,
+        actions.panel, "",
+        crazypod_runtime_font_at_size(
+            CRAZYPOD_METRIC_HOME_ADJUST_VALUE_SIZE),
         COLOR_WHITE, 245);
-    lv_obj_set_width(actions.level_value, 86);
+    lv_obj_set_width(actions.level_value, arc - 20);
     lv_obj_set_style_text_align(
         actions.level_value, LV_TEXT_ALIGN_CENTER, 0);
     lv_obj_align(actions.level_value, LV_ALIGN_CENTER, 0, 13);
     actions.detail = make_label(
         actions.panel, CP_TR("Wheel adjusts"),
-        &lv_font_montserrat_8, COLOR_WHITE, 75);
-    lv_obj_set_pos(actions.detail, 10, 163);
-    lv_obj_set_width(actions.detail, width - 20);
+        &lv_font_montserrat_8, COLOR_WHITE,
+        CRAZYPOD_METRIC_HOME_ADJUST_DETAIL_OPA);
+    lv_obj_set_pos(actions.detail, 4,
+                   CRAZYPOD_METRIC_HOME_ADJUST_DETAIL_Y);
+    lv_obj_set_width(actions.detail, width - 8);
     lv_obj_set_style_text_align(
         actions.detail, LV_TEXT_ALIGN_CENTER, 0);
     lv_label_set_long_mode(actions.detail, LV_LABEL_LONG_MODE_DOTS);

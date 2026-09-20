@@ -1,7 +1,46 @@
 #include "config.h"
 #include "crazypod_pixel.h"
 
-#ifdef HAVE_CRAZYPOD_UI
+#if defined(HAVE_CRAZYPOD_UI) && defined(HAVE_CRAZYPOD_MONO_UI)
+
+/*
+ * No push, pop or replace on the monochrome panel.
+ *
+ * The slide works by snapshotting the framebuffer before and after the
+ * scene changes and compositing the two as RGB565 images. That holds only
+ * where the framebuffer is RGB565. This panel packs four pixels into a
+ * byte, so its whole framebuffer is 3850 bytes where the snapshot expects
+ * 30360: the memcpy read about 26 KB past the end of it and slid whatever
+ * happened to follow across the screen, which is the banded noise the Mini
+ * showed whenever an app opened or closed.
+ *
+ * Unpacking into a pair of RGB565 snapshots would cost 60 KB of buffers
+ * and a conversion of the whole screen twice per transition, on a PP5022
+ * driving a 138x110 panel. The transition is not worth that here, so the
+ * scene is presented directly, which is what Reduce Motion already does.
+ */
+#include "crazypod_scene_transition.h"
+
+bool crazypod_scene_transition_begin(
+    enum crazypod_scene_motion_kind kind)
+{
+    (void)kind;
+    return false;
+}
+
+bool crazypod_scene_transition_commit(lv_obj_t *parent)
+{
+    (void)parent;
+    return false;
+}
+
+bool crazypod_scene_transition_active(void) { return false; }
+bool crazypod_scene_transition_owns_framebuffer(void) { return false; }
+void crazypod_scene_transition_service(void) {}
+void crazypod_scene_transition_finish(void) {}
+void crazypod_scene_transition_reset(void) {}
+
+#elif defined(HAVE_CRAZYPOD_UI)
 
 #include <string.h>
 
