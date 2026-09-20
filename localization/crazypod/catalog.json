@@ -243,6 +243,11 @@
         "apps/crazypod/ui/features/organizer/crazypod_workout_screen.c:150"
       ]
     },
+    "%s  ·  %d LAPS": {
+      "locations": [
+        "apps/crazypod/ui/features/organizer/crazypod_clock_screen.c:414"
+      ]
+    },
     "%s  ·  MPEG": {
       "locations": [
         "apps/crazypod/ui/features/photos/crazypod_photos_preview.c:158"
@@ -2864,6 +2869,11 @@
     "Spoken books with chapters": {
       "locations": [
         "apps/crazypod/ui/features/books/crazypod_books_preview.c:250"
+      ]
+    },
+    "TIME ONLY": {
+      "locations": [
+        "apps/crazypod/ui/features/organizer/crazypod_workout_screen.c:149"
       ]
     },
     "Themes": {

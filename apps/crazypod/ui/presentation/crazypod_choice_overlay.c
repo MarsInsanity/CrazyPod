@@ -17,6 +17,37 @@
 #define COLOR_WHITE 0xFFFFFF
 #define COLOR_SUCCESS 0x34DB7A
 #define COLOR_FAILURE 0xFF4D59
+#ifdef HAVE_CRAZYPOD_COMPACT_UI
+/*
+ * The card was never going to fit: its minimum width is 156, which is
+ * wider than this whole panel, and the 72 pixels it reserves beside each
+ * label for the marker and value chrome left about forty for the text --
+ * which is why every option read as "Chap..." rather than "Chapters".
+ *
+ * Here the card is nearly the full width, the chrome is the marker and a
+ * couple of pixels, and the rows are the height of a menu row.
+ */
+#define POPUP_MIN_WIDTH 112
+#define POPUP_MAX_WIDTH (LCD_WIDTH - 6)
+#define POPUP_ROW_LABEL_CHROME_WIDTH 26
+#define POPUP_ROW_HEIGHT 15
+#define POPUP_ACTION_ROW_Y 18
+#define POPUP_CHOICE_ROW_Y 24
+#define POPUP_BOTTOM_PADDING 4
+/* Row chrome: a small swatch, the label, then the marker. */
+#define POPUP_SWATCH_X 3
+#define POPUP_SWATCH_SIZE 5
+#define POPUP_LABEL_X 12
+#define POPUP_MARKER_WIDTH 12
+/*
+ * Hierarchy by shade, not by opacity. The design fades the card's title
+ * to a tenth and an unselected row to two thirds, which reads on a panel
+ * with 256 steps between ink and paper; with four, both land on the card
+ * they are printed on and the title disappeared entirely.
+ */
+#define POPUP_TITLE_OPA LV_OPA_COVER
+#define POPUP_ROW_OPA LV_OPA_COVER
+#else
 #define POPUP_MIN_WIDTH 156
 #define POPUP_MAX_WIDTH (LCD_WIDTH - 32)
 #define POPUP_ROW_LABEL_CHROME_WIDTH 72
@@ -24,6 +55,13 @@
 #define POPUP_ACTION_ROW_Y 38
 #define POPUP_CHOICE_ROW_Y 50
 #define POPUP_BOTTOM_PADDING 10
+#define POPUP_SWATCH_X 9
+#define POPUP_SWATCH_SIZE 9
+#define POPUP_LABEL_X 24
+#define POPUP_MARKER_WIDTH 24
+#define POPUP_TITLE_OPA 100
+#define POPUP_ROW_OPA 180
+#endif
 
 struct choice_overlay_view {
     int kind;
@@ -235,7 +273,7 @@ static void refresh(void)
         lv_obj_set_style_border_opa(
             view.rows[row], selected ? 72 : 0, 0);
         lv_obj_set_style_text_opa(
-            view.labels[row], selected ? 255 : 180, 0);
+            view.labels[row], selected ? 255 : POPUP_ROW_OPA, 0);
         lv_obj_set_style_text_opa(
             view.markers[row], current ? 235 :
             selected ? 190 : 80, 0);
@@ -343,7 +381,7 @@ void crazypod_choice_overlay_show(
 
     view.title = crazypod_ui_widget_label(
         view.panel, "", &lv_font_montserrat_10,
-        COLOR_WHITE, 100);
+        COLOR_WHITE, POPUP_TITLE_OPA);
     lv_obj_set_width(view.title, view.geometry.width - 24);
     lv_obj_set_style_text_align(
         view.title, LV_TEXT_ALIGN_CENTER, 0);
@@ -373,27 +411,31 @@ void crazypod_choice_overlay_show(
             POPUP_ROW_HEIGHT, 8,
             COLOR_SUCCESS, 68);
         view.swatches[row] = crazypod_ui_widget_box(
-            view.rows[row], 9, 9, 9, 9,
+            view.rows[row], POPUP_SWATCH_X,
+            (POPUP_ROW_HEIGHT - POPUP_SWATCH_SIZE) / 2,
+            POPUP_SWATCH_SIZE, POPUP_SWATCH_SIZE,
             LV_RADIUS_CIRCLE, COLOR_WHITE, 35);
         view.labels[row] = crazypod_ui_widget_label(
             view.rows[row], "", metadata_font,
             COLOR_WHITE, 180);
         lv_obj_set_width(
-            view.labels[row], view.row_width - 48);
+            view.labels[row],
+            view.row_width - POPUP_LABEL_X - POPUP_MARKER_WIDTH);
         lv_obj_set_style_text_align(
             view.labels[row], LV_TEXT_ALIGN_LEFT, 0);
         crazypod_ui_widget_align_row_label(
-            view.labels[row], 24, CRAZYPOD_UI_ROW_LABEL_TEXT);
+            view.labels[row], POPUP_LABEL_X,
+            CRAZYPOD_UI_ROW_LABEL_TEXT);
         lv_label_set_long_mode(
             view.labels[row], LV_LABEL_LONG_MODE_DOTS);
         view.markers[row] = crazypod_ui_widget_label(
             view.rows[row], LV_SYMBOL_BULLET,
             &lv_font_montserrat_8, COLOR_WHITE, 80);
-        lv_obj_set_width(view.markers[row], 24);
+        lv_obj_set_width(view.markers[row], POPUP_MARKER_WIDTH);
         lv_obj_set_style_text_align(
             view.markers[row], LV_TEXT_ALIGN_CENTER, 0);
         crazypod_ui_widget_align_row_label(
-            view.markers[row], view.row_width - 27,
+            view.markers[row], view.row_width - POPUP_MARKER_WIDTH - 3,
             CRAZYPOD_UI_ROW_LABEL_MARKER);
     }
 

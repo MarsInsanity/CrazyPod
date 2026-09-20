@@ -8,6 +8,8 @@
 #include <string.h>
 
 #include "../../../crazypod_workouts.h"
+#include "../../../crazypod_runtime_font.h"
+#include "../../presentation/crazypod_ui_metrics.h"
 #include "../../presentation/crazypod_ui_widgets.h"
 #include "crazypod_workout_screen.h"
 #include "../../../crazypod_color.h"
@@ -16,6 +18,16 @@
 #define CRAZYPOD_WORKOUT_WHITE 0xFFFFFF
 #define CRAZYPOD_WORKOUT_RUNNING 0xA8F12D
 #define CRAZYPOD_WORKOUT_PAUSED 0xFFB340
+
+/* The large canvas sets its readout beside the ring and ragged left; the
+ * small one stacks it under the ring, where it has to be centred. */
+#if CRAZYPOD_METRIC_WORKOUT_SHOW_LEGEND
+#define CRAZYPOD_WORKOUT_ALIGN LV_TEXT_ALIGN_LEFT
+#define CRAZYPOD_WORKOUT_RING_FONT (&lv_font_montserrat_24)
+#else
+#define CRAZYPOD_WORKOUT_ALIGN LV_TEXT_ALIGN_CENTER
+#define CRAZYPOD_WORKOUT_RING_FONT (&lv_font_montserrat_16)
+#endif
 
 static void format_duration(
     char *text, size_t size, uint32_t seconds)
@@ -100,35 +112,56 @@ void crazypod_workout_screen_render_ready(
     lv_obj_t *label;
 
     crazypod_ui_widget_box(
-        content, 0, 32, 320, 208, 0, 0x050505, LV_OPA_COVER);
+        content, 0, CRAZYPOD_METRIC_STATUS_HEIGHT, LCD_WIDTH,
+        LCD_HEIGHT - CRAZYPOD_METRIC_STATUS_HEIGHT, 0,
+        0x050505, LV_OPA_COVER);
     panel = crazypod_ui_widget_box(
-        content, 18, 48, 284, 166, 18, 0x111512, LV_OPA_COVER);
+        content, CRAZYPOD_METRIC_WORKOUT_PANEL_X,
+        CRAZYPOD_METRIC_WORKOUT_PANEL_Y,
+        CRAZYPOD_METRIC_WORKOUT_PANEL_WIDTH,
+        CRAZYPOD_METRIC_WORKOUT_PANEL_HEIGHT,
+        CRAZYPOD_METRIC_WORKOUT_PANEL_RADIUS, 0x111512, LV_OPA_COVER);
     lv_obj_set_style_border_width(panel, 1, 0);
     lv_obj_set_style_border_color(panel, crazypod_ui_color(0xA8F12D), 0);
     lv_obj_set_style_border_opa(panel, 100, 0);
     label = crazypod_ui_widget_label(
         panel, crazypod_workout_activity_title(activity),
-        &lv_font_montserrat_16, CRAZYPOD_WORKOUT_WHITE, LV_OPA_COVER);
-    lv_obj_set_width(label, 248);
+        crazypod_runtime_font_at_size(CRAZYPOD_METRIC_WORKOUT_TITLE_SIZE),
+        CRAZYPOD_WORKOUT_WHITE, LV_OPA_COVER);
+    lv_obj_set_width(label, CRAZYPOD_METRIC_WORKOUT_TEXT_WIDTH);
     lv_obj_set_style_text_align(label, LV_TEXT_ALIGN_CENTER, 0);
-    lv_obj_set_pos(label, 18, 20);
+    lv_obj_set_pos(label, CRAZYPOD_METRIC_WORKOUT_TEXT_X,
+                   CRAZYPOD_METRIC_WORKOUT_TITLE_Y);
     label = crazypod_ui_widget_label(
-        panel, CP_TR("READY"), &lv_font_montserrat_24,
+        panel, CP_TR("READY"),
+        crazypod_runtime_font_at_size(CRAZYPOD_METRIC_WORKOUT_STATE_SIZE),
         0xA8F12D, LV_OPA_COVER);
-    lv_obj_set_width(label, 248);
+    lv_obj_set_width(label, CRAZYPOD_METRIC_WORKOUT_TEXT_WIDTH);
     lv_obj_set_style_text_align(label, LV_TEXT_ALIGN_CENTER, 0);
-    lv_obj_set_pos(label, 18, 57);
+    lv_obj_set_pos(label, CRAZYPOD_METRIC_WORKOUT_TEXT_X,
+                   CRAZYPOD_METRIC_WORKOUT_STATE_Y);
     label = crazypod_ui_widget_label(
-        panel, CP_TR("TIME ONLY\nNo motion, distance, or calorie estimates"),
-        &lv_font_montserrat_10, CRAZYPOD_WORKOUT_WHITE, 145);
-    lv_obj_set_width(label, 248);
+        panel,
+#if CRAZYPOD_METRIC_WORKOUT_SHOW_LEGEND
+        CP_TR("TIME ONLY\nNo motion, distance, or calorie estimates"),
+#else
+        /* The caveat, without the sentence there is no room for. */
+        CP_TR("TIME ONLY"),
+#endif
+        crazypod_runtime_font_at_size(CRAZYPOD_METRIC_WORKOUT_NOTE_SIZE),
+        CRAZYPOD_WORKOUT_WHITE, 145);
+    lv_obj_set_width(label, CRAZYPOD_METRIC_WORKOUT_TEXT_WIDTH);
     lv_obj_set_style_text_align(label, LV_TEXT_ALIGN_CENTER, 0);
-    lv_obj_set_pos(label, 18, 96);
+    lv_obj_set_pos(label, CRAZYPOD_METRIC_WORKOUT_TEXT_X,
+                   CRAZYPOD_METRIC_WORKOUT_NOTE_Y);
     label = crazypod_ui_widget_label(
-        panel, CP_TR("CENTER  START"), &lv_font_montserrat_10, 0xA8F12D, 230);
-    lv_obj_set_width(label, 248);
+        panel, CP_TR("CENTER  START"),
+        crazypod_runtime_font_at_size(CRAZYPOD_METRIC_WORKOUT_NOTE_SIZE),
+        0xA8F12D, 230);
+    lv_obj_set_width(label, CRAZYPOD_METRIC_WORKOUT_TEXT_WIDTH);
     lv_obj_set_style_text_align(label, LV_TEXT_ALIGN_CENTER, 0);
-    lv_obj_set_pos(label, 18, 140);
+    lv_obj_set_pos(label, CRAZYPOD_METRIC_WORKOUT_TEXT_X,
+                   CRAZYPOD_METRIC_WORKOUT_HINT_Y);
 }
 
 void crazypod_workout_screen_render_active(
@@ -144,41 +177,69 @@ void crazypod_workout_screen_render_active(
     memset(&face, 0, sizeof(face));
 
     backdrop = crazypod_ui_widget_box(
-        content, 0, 32, 320, 208, 0, 0x050505, LV_OPA_COVER);
+        content, 0, CRAZYPOD_METRIC_STATUS_HEIGHT, LCD_WIDTH,
+        LCD_HEIGHT - CRAZYPOD_METRIC_STATUS_HEIGHT, 0,
+        0x050505, LV_OPA_COVER);
     ring = crazypod_ui_widget_box(
-        content, 26, 49, 126, 126, LV_RADIUS_CIRCLE,
+        content, CRAZYPOD_METRIC_WORKOUT_RING_X,
+        CRAZYPOD_METRIC_WORKOUT_RING_Y,
+        CRAZYPOD_METRIC_WORKOUT_RING_SIZE,
+        CRAZYPOD_METRIC_WORKOUT_RING_SIZE, LV_RADIUS_CIRCLE,
         0x0A0A0A, LV_OPA_COVER);
-    lv_obj_set_style_border_width(ring, 5, 0);
+    lv_obj_set_style_border_width(
+        ring, CRAZYPOD_METRIC_WORKOUT_RING_BORDER, 0);
     lv_obj_set_style_border_opa(ring, 235, 0);
+    /*
+     * Montserrat, not the runtime face: LV_SYMBOL_PLAY is in LVGL's own
+     * symbol range, which the AOT text fonts do not carry, so resolving
+     * this through the size ladder left the ring empty.
+     */
     label = crazypod_ui_widget_label(
-        ring, LV_SYMBOL_PLAY, &lv_font_montserrat_24,
+        ring, LV_SYMBOL_PLAY, CRAZYPOD_WORKOUT_RING_FONT,
         CRAZYPOD_WORKOUT_RUNNING, LV_OPA_COVER);
     lv_obj_center(label);
     face.ring = ring;
     face.ring_icon = label;
     label = crazypod_ui_widget_label(
         content, crazypod_workout_activity_title(activity),
-        &lv_font_montserrat_10, CRAZYPOD_WORKOUT_WHITE, 165);
-    lv_obj_set_pos(label, 174, 56);
+        crazypod_runtime_font_at_size(CRAZYPOD_METRIC_WORKOUT_NOTE_SIZE),
+        CRAZYPOD_WORKOUT_WHITE, 165);
+    lv_obj_set_width(label, CRAZYPOD_METRIC_WORKOUT_TEXT_WIDTH);
+    lv_obj_set_style_text_align(label, CRAZYPOD_WORKOUT_ALIGN, 0);
+    lv_obj_set_pos(label, CRAZYPOD_METRIC_WORKOUT_TEXT_X,
+                   CRAZYPOD_METRIC_WORKOUT_ACTIVITY_Y);
     format_duration(elapsed, sizeof(elapsed), seconds);
     label = crazypod_ui_widget_label(
-        content, elapsed, &lv_font_montserrat_24,
+        content, elapsed,
+        crazypod_runtime_font_at_size(
+            CRAZYPOD_METRIC_WORKOUT_ELAPSED_SIZE),
         CRAZYPOD_WORKOUT_WHITE, LV_OPA_COVER);
-    lv_obj_set_pos(label, 174, 76);
+    lv_obj_set_width(label, CRAZYPOD_METRIC_WORKOUT_TEXT_WIDTH);
+    lv_obj_set_style_text_align(label, CRAZYPOD_WORKOUT_ALIGN, 0);
+    lv_obj_set_pos(label, CRAZYPOD_METRIC_WORKOUT_TEXT_X,
+                   CRAZYPOD_METRIC_WORKOUT_ELAPSED_Y);
     face.elapsed = label;
+#if CRAZYPOD_METRIC_WORKOUT_SHOW_LEGEND
     crazypod_ui_widget_box(
         content, 174, 108, 126, 1, 0,
         CRAZYPOD_WORKOUT_WHITE, 90);
+#endif
     label = crazypod_ui_widget_label(
-        content, CP_TR("RUNNING"), &lv_font_montserrat_10,
+        content, CP_TR("RUNNING"),
+        crazypod_runtime_font_at_size(CRAZYPOD_METRIC_WORKOUT_NOTE_SIZE),
         CRAZYPOD_WORKOUT_RUNNING, 235);
-    lv_obj_set_pos(label, 174, 119);
+    lv_obj_set_width(label, CRAZYPOD_METRIC_WORKOUT_TEXT_WIDTH);
+    lv_obj_set_style_text_align(label, CRAZYPOD_WORKOUT_ALIGN, 0);
+    lv_obj_set_pos(label, CRAZYPOD_METRIC_WORKOUT_TEXT_X,
+                   CRAZYPOD_METRIC_WORKOUT_STATUS_Y);
     face.status = label;
+#if CRAZYPOD_METRIC_WORKOUT_SHOW_LEGEND
     label = crazypod_ui_widget_label(
         content,
         CP_TR("CENTER  PAUSE / RESUME\nPLAY  FINISH\nTIME-ONLY LOG"),
         &lv_font_montserrat_8, CRAZYPOD_WORKOUT_WHITE, 125);
     lv_obj_set_pos(label, 174, 145);
+#endif
 
     face.backdrop = backdrop;
     face.activity = activity;

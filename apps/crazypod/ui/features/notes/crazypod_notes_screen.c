@@ -6,6 +6,8 @@
 
 #include "lvgl.h"
 
+#include "../../../crazypod_runtime_font.h"
+#include "../../presentation/crazypod_ui_metrics.h"
 #include "../../presentation/crazypod_ui_text.h"
 #include "../../presentation/crazypod_ui_widgets.h"
 #include "crazypod_notes_screen.h"
@@ -21,11 +23,105 @@ void crazypod_notes_screen_render_composer(
 {
     static char title_display[CRAZYPOD_NOTE_TITLE_SIZE + 2];
     static char body_display[CRAZYPOD_NOTE_BODY_SIZE + 2];
+#ifdef HAVE_CRAZYPOD_MONO_UI
+#define NOTE_PAPER 0xFFFFFF
+#define NOTE_DARK 0x000000
+#define NOTE_MUTED 0x555555
+#define NOTE_FAINT 0xAAAAAA
+#else
+#define NOTE_PAPER 0xFAEFCB
+#define NOTE_DARK 0x30291F
+#define NOTE_MUTED 0x6E5B42
+#define NOTE_FAINT 0x8C7958
+#endif
     lv_obj_t *paper;
     lv_obj_t *label;
     lv_obj_t *key;
     int line;
 
+#ifdef HAVE_CRAZYPOD_COMPACT_UI
+    /*
+     * A plain sheet. The large canvas draws a legal pad -- punched holes, a
+     * red margin rule, six ruled lines under a paper gradient -- and at
+     * 138x110 in four shades every one of those is a grey smudge competing
+     * with the text. What the editor needs here is the two fields, which
+     * side is being typed into, and the key legend.
+     *
+     * The sheet is cream on the large canvas, which the design map inverts
+     * to near-black; it names the panel's shades instead, as the watch
+     * faces and the month sheet do.
+     */
+    (void)line;
+    paper = crazypod_ui_widget_box_shade(
+        content, 2, CRAZYPOD_METRIC_STATUS_HEIGHT + 2,
+        LCD_WIDTH - 4, LCD_HEIGHT - CRAZYPOD_METRIC_STATUS_HEIGHT - 4, 3,
+        NOTE_PAPER, LV_OPA_COVER);
+    lv_obj_set_style_border_width(paper, 1, 0);
+    lv_obj_set_style_border_color(paper, crazypod_ui_shade(NOTE_DARK), 0);
+    lv_obj_set_style_border_opa(paper, 90, 0);
+
+    label = crazypod_ui_widget_label_shade(
+        paper,
+        (*model->editor).source_id == 0 ? CP_TR("NEW NOTE") : CP_TR("EDIT NOTE"),
+        crazypod_runtime_font_at_size(10), NOTE_MUTED, LV_OPA_COVER);
+    lv_obj_set_pos(label, 4, 2);
+    label = crazypod_ui_widget_label_shade(
+        paper, model->dirty ? CP_TR("Unsaved") : CP_TR("Saved"),
+        crazypod_runtime_font_at_size(10), NOTE_MUTED, 220);
+    lv_obj_set_width(label, 60);
+    lv_obj_set_style_text_align(label, LV_TEXT_ALIGN_RIGHT, 0);
+    lv_obj_set_pos(label, LCD_WIDTH - 70, 2);
+
+    /* The field being typed into is named in ink, the other one faint. */
+    label = crazypod_ui_widget_label_shade(
+        paper, CP_TR("TITLE"), crazypod_runtime_font_at_size(10),
+        model->body_active ? NOTE_FAINT : NOTE_DARK, 230);
+    lv_obj_set_pos(label, 4, 14);
+    label = crazypod_ui_widget_label_shade(
+        paper,
+        model->body_active
+            ? ((*model->editor).title[0] != '\0'
+                ? (*model->editor).title : CP_TR("Untitled"))
+            : crazypod_ui_text_with_cursor(
+                (*model->editor).title, model->title_cursor,
+                title_display, sizeof(title_display)),
+        crazypod_runtime_font_at_size(12), NOTE_DARK,
+        (*model->editor).title[0] != '\0' ? 255 : 125);
+    lv_obj_set_pos(label, 4, 24);
+    lv_obj_set_width(label, LCD_WIDTH - 12);
+    lv_label_set_long_mode(label, LV_LABEL_LONG_MODE_DOTS);
+    crazypod_ui_widget_box_shade(
+        paper, 4, 38, LCD_WIDTH - 12, 1, 0, NOTE_DARK, 120);
+
+    label = crazypod_ui_widget_label_shade(
+        paper, CP_TR("BODY"), crazypod_runtime_font_at_size(10),
+        model->body_active ? NOTE_DARK : NOTE_FAINT, 230);
+    lv_obj_set_pos(label, 4, 41);
+    label = crazypod_ui_widget_label_shade(
+        paper,
+        !model->body_active
+            ? ((*model->editor).body[0] != '\0'
+                ? (*model->editor).body : CP_TR("Empty body"))
+            : crazypod_ui_text_with_cursor(
+                (*model->editor).body, model->body_cursor,
+                body_display, sizeof(body_display)),
+        crazypod_runtime_font_at_size(12), NOTE_DARK,
+        (*model->editor).body[0] != '\0' ? 235 : 115);
+    lv_obj_set_pos(label, 4, 51);
+    lv_obj_set_width(label, LCD_WIDTH - 12);
+    lv_obj_set_height(label, 22);
+    lv_label_set_long_mode(label, LV_LABEL_LONG_MODE_CLIP);
+
+    key = crazypod_ui_widget_box_shade(
+        paper, 4, 74, LCD_WIDTH - 12, 16, 3,
+        NOTE_DARK, LV_OPA_COVER);
+    label = crazypod_ui_widget_label_shade(
+        key, selection != NULL ? selection : "",
+        crazypod_runtime_font_at_size(12), NOTE_PAPER, LV_OPA_COVER);
+    lv_obj_set_width(label, LCD_WIDTH - 16);
+    lv_obj_set_style_text_align(label, LV_TEXT_ALIGN_CENTER, 0);
+    lv_obj_set_pos(label, 0, 2);
+#else
     paper = crazypod_ui_widget_box(content, 10, 38, 300, 190, 12,
                      0xFAEFCB, LV_OPA_COVER);
     lv_obj_set_style_bg_grad_color(
@@ -121,6 +217,7 @@ void crazypod_notes_screen_render_composer(
     lv_obj_set_style_text_align(label, LV_TEXT_ALIGN_CENTER, 0);
     lv_obj_set_pos(label, 8, 20);
     lv_label_set_long_mode(label, LV_LABEL_LONG_MODE_WRAP);
+#endif
 }
 
 void crazypod_notes_screen_render_reader(

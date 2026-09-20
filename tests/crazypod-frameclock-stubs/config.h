@@ -17,5 +17,11 @@
 #define HAVE_CRAZYPOD_MEDIA_LIBRARY
 #define HAVE_CRAZYPOD_WALLPAPER
 #define HAVE_CRAZYPOD_ICON_THEMES
+/*
+ * The native carousel, which is the only thing that queues a Home present
+ * band and so the only reason the frame clock holds ordinary frames back
+ * while a finger is on the wheel.
+ */
+#define HAVE_CRAZYPOD_NATIVE_CAROUSEL
 
 #endif

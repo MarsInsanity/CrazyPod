@@ -10,6 +10,8 @@
 
 #include "../../../crazypod_organizer.h"
 #include "crazypod_calendar_model.h"
+#include "../../../crazypod_runtime_font.h"
+#include "../../presentation/crazypod_ui_metrics.h"
 #include "../../presentation/crazypod_ui_widgets.h"
 #include "crazypod_calendar_screen.h"
 #include "../../../crazypod_color.h"
@@ -17,6 +19,29 @@
 #define CALENDAR_FONT (&lv_font_source_han_sans_sc_14_cjk)
 #define CALENDAR_WHITE 0xFFFFFF
 #define CALENDAR_PANEL 0x1B1B22
+
+/*
+ * The month sheet is ink on paper like the watch faces, so it names the
+ * panel's shades rather than going through the design map, which inverts
+ * for the monochrome build and would print the sheet black.
+ */
+#ifdef HAVE_CRAZYPOD_MONO_UI
+#define SHEET_BOX crazypod_ui_widget_box_shade
+#define SHEET_LABEL crazypod_ui_widget_label_shade
+#define SHEET_INK crazypod_ui_shade
+#define SHEET_PAPER 0xFFFFFF
+#define SHEET_DARK 0x000000
+#define SHEET_MUTED 0x555555
+#define SHEET_FAINT 0xAAAAAA
+#else
+#define SHEET_BOX crazypod_ui_widget_box
+#define SHEET_LABEL crazypod_ui_widget_label
+#define SHEET_INK crazypod_ui_color
+#define SHEET_PAPER 0xFFFFFF
+#define SHEET_DARK 0x0E0E0E
+#define SHEET_MUTED 0x5C5C5C
+#define SHEET_FAINT 0x949494
+#endif
 
 /*
  * The month grid is 42 cells, each of which was a fresh label plus up to
@@ -90,17 +115,23 @@ static void refresh_cell(
     else
         lv_obj_add_flag(cell->highlight, LV_OBJ_FLAG_HIDDEN);
 
+    /*
+     * The sheet's own shades, as at creation. Through the design map the
+     * near-black day number becomes paper, which is the colour it is
+     * printed on: the month came out blank but for the days either side
+     * of it, which map the other way.
+     */
     lv_obj_set_style_text_color(
         cell->label,
-        crazypod_ui_color(selected ? CALENDAR_WHITE :
-                     in_month ? 0x0E0E0E : 0xB8B8B8), 0);
+        SHEET_INK(selected ? SHEET_PAPER :
+                  in_month ? SHEET_DARK : SHEET_FAINT), 0);
     lv_obj_set_style_text_opa(
         cell->label, in_month ? LV_OPA_COVER : 155, 0);
 
     if(has_event) {
         lv_obj_set_style_bg_color(
             cell->dot,
-            crazypod_ui_color(selected ? CALENDAR_WHITE : 0x0E0E0E), 0);
+            SHEET_INK(selected ? SHEET_PAPER : SHEET_DARK), 0);
         lv_obj_set_style_bg_opa(
             cell->dot, in_month ? 205 : 70, 0);
         lv_obj_remove_flag(cell->dot, LV_OBJ_FLAG_HIDDEN);
@@ -217,53 +248,70 @@ void crazypod_calendar_screen_render_grid(
         return;
 
     memset(&grid, 0, sizeof(grid));
-    crazypod_ui_widget_box(
-        content, 0, 32, LCD_WIDTH, LCD_HEIGHT - 32, 0,
-        0xF9F9F7, LV_OPA_COVER);
-    panel = crazypod_ui_widget_box(
-        content, 10, 38, 300, 194, 12, 0xFFFFFF, LV_OPA_COVER);
+    SHEET_BOX(
+        content, 0, CRAZYPOD_METRIC_STATUS_HEIGHT, LCD_WIDTH,
+        LCD_HEIGHT - CRAZYPOD_METRIC_STATUS_HEIGHT, 0,
+        SHEET_PAPER, LV_OPA_COVER);
+    panel = SHEET_BOX(
+        content, CRAZYPOD_METRIC_CAL_PANEL_X,
+        CRAZYPOD_METRIC_CAL_PANEL_Y,
+        CRAZYPOD_METRIC_CAL_PANEL_WIDTH,
+        CRAZYPOD_METRIC_CAL_PANEL_HEIGHT,
+        CRAZYPOD_METRIC_CAL_PANEL_RADIUS, SHEET_PAPER, LV_OPA_COVER);
     lv_obj_set_style_border_width(panel, 1, 0);
-    lv_obj_set_style_border_color(panel, crazypod_ui_color(0x000000), 0);
-    lv_obj_set_style_border_opa(panel, 34, 0);
-    label = crazypod_ui_widget_label(
+    lv_obj_set_style_border_color(panel, SHEET_INK(SHEET_DARK), 0);
+    lv_obj_set_style_border_opa(panel, 90, 0);
+#if CRAZYPOD_METRIC_CAL_SHOW_CAPTION
+    label = SHEET_LABEL(
         panel, CP_TR("CALENDAR"), &lv_font_montserrat_8,
-        0x949494, LV_OPA_COVER);
+        SHEET_FAINT, LV_OPA_COVER);
     lv_obj_set_style_text_letter_space(label, 2, 0);
     lv_obj_set_pos(label, 14, 5);
+#endif
     snprintf(text, sizeof(text), CP_FMT("%s %d"),
              months[date->month], date->year);
-    label = crazypod_ui_widget_label(
-        panel, text, &lv_font_montserrat_16,
-        0x0E0E0E, LV_OPA_COVER);
-    lv_obj_set_pos(label, 14, 22);
+    label = SHEET_LABEL(
+        panel, text,
+        crazypod_runtime_font_at_size(CRAZYPOD_METRIC_CAL_TITLE_SIZE),
+        SHEET_DARK, LV_OPA_COVER);
+    lv_obj_set_pos(label, CRAZYPOD_METRIC_CAL_TITLE_X,
+                   CRAZYPOD_METRIC_CAL_TITLE_Y);
     snprintf(text, sizeof(text), CP_FMT("%s %d"),
              calendar_compact_weekdays[
                  crazypod_ui_calendar_weekday(
                      date->year, date->month, date->day)],
              date->day);
-    label = crazypod_ui_widget_label(
+    label = SHEET_LABEL(
         panel, text, &lv_font_montserrat_10,
-        0x5C5C5C, LV_OPA_COVER);
-    lv_obj_set_width(label, 72);
+        SHEET_MUTED, LV_OPA_COVER);
+    lv_obj_set_width(label, CRAZYPOD_METRIC_CAL_DAY_LABEL_WIDTH);
     lv_obj_set_style_text_align(label, LV_TEXT_ALIGN_RIGHT, 0);
-    lv_obj_set_pos(label, 210, 24);
+    lv_obj_set_pos(label, CRAZYPOD_METRIC_CAL_DAY_LABEL_X,
+                   CRAZYPOD_METRIC_CAL_DAY_LABEL_Y);
     grid.day_label = label;
-    crazypod_ui_widget_box(
-        panel, 12, 50, 276, 1, 0, 0x0E0E0E, 205);
+    SHEET_BOX(
+        panel, CRAZYPOD_METRIC_CAL_RULE_X, CRAZYPOD_METRIC_CAL_RULE_Y,
+        CRAZYPOD_METRIC_CAL_RULE_WIDTH, 1, 0, SHEET_DARK, 205);
 
     for(slot = 0; slot < 7; ++slot) {
-        label = crazypod_ui_widget_label(
+        label = SHEET_LABEL(
             panel, weekdays[slot], &lv_font_montserrat_8,
-            0x949494, 230);
-        lv_obj_set_width(label, 40);
+            SHEET_FAINT, 230);
+        lv_obj_set_width(label, CRAZYPOD_METRIC_CAL_CELL_WIDTH);
         lv_obj_set_style_text_align(label, LV_TEXT_ALIGN_CENTER, 0);
-        lv_obj_set_pos(label, 10 + slot * 40, 58);
+        lv_obj_set_pos(
+            label,
+            CRAZYPOD_METRIC_CAL_GRID_X +
+                slot * CRAZYPOD_METRIC_CAL_CELL_WIDTH,
+            CRAZYPOD_METRIC_CAL_WEEKDAY_Y);
     }
     for(slot = 0; slot < 42; ++slot) {
         int column = slot % 7;
         int row = slot / 7;
-        int x = 10 + column * 40;
-        int y = 75 + row * 19;
+        int x = CRAZYPOD_METRIC_CAL_GRID_X +
+                column * CRAZYPOD_METRIC_CAL_CELL_WIDTH;
+        int y = CRAZYPOD_METRIC_CAL_GRID_Y +
+                row * CRAZYPOD_METRIC_CAL_CELL_HEIGHT;
         int relative_day = slot - first + 1;
         int day;
         int year = date->year;
@@ -307,26 +355,34 @@ void crazypod_calendar_screen_render_grid(
         }
         /* Every cell gets all three objects whatever its state, so a
          * later focus move only has to restyle them. */
-        grid.cells[slot].highlight = crazypod_ui_widget_box(
-            panel, x + 2, y - 1, 36, 19, 7,
-            0x0E0E0E, LV_OPA_COVER);
+        grid.cells[slot].highlight = SHEET_BOX(
+            panel, x + 1, y - 1,
+            CRAZYPOD_METRIC_CAL_CELL_WIDTH - 2,
+            CRAZYPOD_METRIC_CAL_CELL_HEIGHT,
+            CRAZYPOD_METRIC_CAL_CELL_HEIGHT / 3,
+            SHEET_DARK, LV_OPA_COVER);
         lv_obj_set_style_border_width(
             grid.cells[slot].highlight, 1, 0);
         lv_obj_set_style_border_color(
-            grid.cells[slot].highlight, crazypod_ui_color(0x0E0E0E), 0);
+            grid.cells[slot].highlight, SHEET_INK(SHEET_DARK), 0);
 
         snprintf(day_text, sizeof(day_text), CP_FMT("%d"), day);
-        label = crazypod_ui_widget_label(
-            panel, day_text, &lv_font_montserrat_10,
-            0x0E0E0E, LV_OPA_COVER);
-        lv_obj_set_width(label, 40);
+        label = SHEET_LABEL(
+            panel, day_text,
+            crazypod_runtime_font_at_size(CRAZYPOD_METRIC_CAL_DAY_SIZE),
+            SHEET_DARK, LV_OPA_COVER);
+        lv_obj_set_width(label, CRAZYPOD_METRIC_CAL_CELL_WIDTH);
         lv_obj_set_style_text_align(label, LV_TEXT_ALIGN_CENTER, 0);
         lv_obj_set_pos(label, x, y);
         grid.cells[slot].label = label;
 
-        grid.cells[slot].dot = crazypod_ui_widget_box(
-            panel, x + 19, y + 15, 3, 3,
-            LV_RADIUS_CIRCLE, 0x0E0E0E, 205);
+        /* The event dot sits in the cell's bottom corner; on the small
+         * grid that corner is four pixels from the number. */
+        grid.cells[slot].dot = SHEET_BOX(
+            panel, x + CRAZYPOD_METRIC_CAL_CELL_WIDTH / 2 - 1,
+            y + CRAZYPOD_METRIC_CAL_CELL_HEIGHT - 4,
+            CRAZYPOD_METRIC_CAL_DOT, CRAZYPOD_METRIC_CAL_DOT,
+            LV_RADIUS_CIRCLE, SHEET_DARK, 205);
 
         refresh_cell(&grid.cells[slot], in_month, selected,
                      is_today, has_event);
