@@ -69,6 +69,28 @@
 #define CRAZYPOD_METRIC_ROW_TEXT_SIZE 12
 #define CRAZYPOD_METRIC_HEADER_TEXT_SIZE 10
 
+/*
+ * The watch faces. On the large canvas the dial sits on the left of a wide
+ * card with the time and date in a column beside it; there is no room for
+ * two columns here, so the dial is centred and the readout goes under it.
+ */
+#define CRAZYPOD_METRIC_FACE_PANEL_X 2
+#define CRAZYPOD_METRIC_FACE_PANEL_Y 14
+#define CRAZYPOD_METRIC_FACE_PANEL_WIDTH (LCD_WIDTH - 4)
+#define CRAZYPOD_METRIC_FACE_PANEL_HEIGHT (LCD_HEIGHT - 16)
+#define CRAZYPOD_METRIC_FACE_PANEL_RADIUS 4
+#define CRAZYPOD_METRIC_FACE_DIAL_SIZE 56
+#define CRAZYPOD_METRIC_FACE_DIAL_X \
+    ((CRAZYPOD_METRIC_FACE_PANEL_WIDTH - CRAZYPOD_METRIC_FACE_DIAL_SIZE) / 2)
+#define CRAZYPOD_METRIC_FACE_DIAL_Y 3
+/* The column under the dial: caption, the time itself, then the date. */
+#define CRAZYPOD_METRIC_FACE_TEXT_X 0
+#define CRAZYPOD_METRIC_FACE_TEXT_WIDTH CRAZYPOD_METRIC_FACE_PANEL_WIDTH
+#define CRAZYPOD_METRIC_FACE_TIME_Y 62
+#define CRAZYPOD_METRIC_FACE_TIME_SIZE 16
+#define CRAZYPOD_METRIC_FACE_DETAIL_Y 80
+#define CRAZYPOD_METRIC_FACE_DETAIL_SIZE 10
+
 #else /* the 320x240 canvas the product UI was drawn on */
 
 #define CRAZYPOD_METRIC_STATUS_HEIGHT 32

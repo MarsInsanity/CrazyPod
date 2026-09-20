@@ -10,12 +10,42 @@
 
 #include "settings.h"
 
+#include "../../../crazypod_runtime_font.h"
+#include "../../presentation/crazypod_ui_metrics.h"
 #include "../../presentation/crazypod_ui_text.h"
 #include "../../presentation/crazypod_ui_widgets.h"
 #include "crazypod_clock_screen.h"
 #include "../../../crazypod_color.h"
 
 #define COLOR_WHITE 0xFFFFFF
+
+/*
+ * The watch faces are the one part of the product already drawn as ink on
+ * paper: a white dial with black hands, on a near-white card. Everything
+ * else is a dark UI, which is what crazypod_ui_color() inverts for the
+ * monochrome panel -- and applying that here turns the white face black,
+ * which is what the Mini showed. So the faces name the panel's own shades
+ * and are drawn with the helpers that pass them through unmapped.
+ */
+#ifdef HAVE_CRAZYPOD_MONO_UI
+#define FACE_BOX crazypod_ui_widget_box_shade
+#define FACE_LABEL crazypod_ui_widget_label_shade
+#define FACE_INK crazypod_ui_shade
+#define FACE_PAPER 0xFFFFFF
+#define FACE_DARK 0x000000
+#define FACE_MUTED 0x555555
+#define FACE_FAINT 0xAAAAAA
+#else
+#define FACE_BOX crazypod_ui_widget_box
+#define FACE_LABEL crazypod_ui_widget_label
+#define FACE_INK crazypod_ui_color
+#define FACE_PAPER 0xF9F9F7
+#define FACE_DARK 0x0E0E0E
+#define FACE_MUTED 0x5C5C5C
+#define FACE_FAINT 0x949494
+#endif
+/* The eight minor tick marks, a shade down from the ink. */
+#define MARK_FAINT FACE_FAINT
 
 /*
  * The dial is rebuilt on a timer -- four times a second for the clock,
@@ -80,7 +110,7 @@ static lv_obj_t *make_clock_hand(
     lv_obj_t *dial, int *shown, int center, int length, int width,
     int angle_tenths, uint32_t color)
 {
-    lv_obj_t *hand = crazypod_ui_widget_box(
+    lv_obj_t *hand = FACE_BOX(
         dial, center - width / 2, center - length,
         width, length, width, color, LV_OPA_COVER);
 
@@ -96,25 +126,31 @@ static lv_obj_t *make_analog_clock(
     int hour, int minute, int second_tenths,
     uint32_t dial_color, uint32_t ink_color)
 {
-    lv_obj_t *dial = crazypod_ui_widget_box(
+    lv_obj_t *dial = FACE_BOX(
         parent, x, y, size, size, LV_RADIUS_CIRCLE,
         dial_color, LV_OPA_COVER);
     int center = size / 2;
+    /* The marks scale with the dial: ten pixels of tick on a 140px face is
+     * a seventh of its radius, and the same seventh of a 56px one is four.
+     * Fixed sizes here filled the small dial in solid. */
+    int inset = size >= 100 ? 7 : 3;
+    int long_tick = size >= 100 ? 10 : 5;
+    int short_tick = size >= 100 ? 6 : 3;
     int tick;
 
-    lv_obj_set_style_border_width(dial, 2, 0);
-    lv_obj_set_style_border_color(dial, crazypod_ui_color(ink_color), 0);
+    lv_obj_set_style_border_width(dial, size >= 100 ? 2 : 1, 0);
+    lv_obj_set_style_border_color(dial, FACE_INK(ink_color), 0);
     lv_obj_set_style_border_opa(dial, 220, 0);
     for(tick = 0; tick < 12; ++tick) {
         int width = tick % 3 == 0 ? 2 : 1;
-        int height = tick % 3 == 0 ? 10 : 6;
-        lv_obj_t *mark = crazypod_ui_widget_box(
-            dial, center - width / 2, 7,
+        int height = tick % 3 == 0 ? long_tick : short_tick;
+        lv_obj_t *mark = FACE_BOX(
+            dial, center - width / 2, inset,
             width, height, width,
-            tick % 3 == 0 ? ink_color : 0x949494,
+            tick % 3 == 0 ? ink_color : MARK_FAINT,
             tick % 3 == 0 ? 235 : 180);
         lv_obj_set_style_transform_pivot_x(mark, width / 2, 0);
-        lv_obj_set_style_transform_pivot_y(mark, center - 7, 0);
+        lv_obj_set_style_transform_pivot_y(mark, center - inset, 0);
         lv_obj_set_style_transform_rotation(mark, tick * 300, 0);
     }
     face.hour_hand = make_clock_hand(
@@ -126,9 +162,13 @@ static lv_obj_t *make_analog_clock(
     face.second_hand = make_clock_hand(
         dial, &face.second_angle, center, size * 42 / 100, 1,
         second_tenths * 6, ink_color);
-    crazypod_ui_widget_box(
-        dial, center - 4, center - 4, 8, 8,
-        LV_RADIUS_CIRCLE, ink_color, LV_OPA_COVER);
+    {
+        int hub = size >= 100 ? 8 : 4;
+
+        FACE_BOX(
+            dial, center - hub / 2, center - hub / 2, hub, hub,
+            LV_RADIUS_CIRCLE, ink_color, LV_OPA_COVER);
+    }
     return dial;
 }
 
@@ -152,45 +192,98 @@ void crazypod_clock_screen_render(
         return;
     memset(&face, 0, sizeof(face));
 
-    crazypod_ui_widget_box(
+#ifdef HAVE_CRAZYPOD_COMPACT_UI
+    /*
+     * One column, not two: the dial centred with the time and the date
+     * stacked under it. The wide card the large canvas draws would be
+     * twice this panel across.
+     */
+    /* From under the status bar down. Painting the strip as well would
+     * cover the clock and battery, which are drawn before the route's
+     * content and not by it. */
+    FACE_BOX(
+        content, 0, CRAZYPOD_METRIC_STATUS_HEIGHT, LCD_WIDTH,
+        LCD_HEIGHT - CRAZYPOD_METRIC_STATUS_HEIGHT, 0,
+        FACE_PAPER, LV_OPA_COVER);
+    panel = FACE_BOX(
+        content, CRAZYPOD_METRIC_FACE_PANEL_X,
+        CRAZYPOD_METRIC_FACE_PANEL_Y,
+        CRAZYPOD_METRIC_FACE_PANEL_WIDTH,
+        CRAZYPOD_METRIC_FACE_PANEL_HEIGHT,
+        CRAZYPOD_METRIC_FACE_PANEL_RADIUS, FACE_PAPER, LV_OPA_COVER);
+    lv_obj_set_style_border_width(panel, 1, 0);
+    lv_obj_set_style_border_color(panel, FACE_INK(FACE_DARK), 0);
+    lv_obj_set_style_border_opa(panel, 90, 0);
+    make_analog_clock(
+        panel, CRAZYPOD_METRIC_FACE_DIAL_X, CRAZYPOD_METRIC_FACE_DIAL_Y,
+        CRAZYPOD_METRIC_FACE_DIAL_SIZE, time->hour, time->minute,
+        time->second_tenths, FACE_PAPER, FACE_DARK);
+
+    crazypod_ui_text_clock(text, sizeof(text), time->hour, time->minute,
+                           time->second, true,
+                           global_settings.timeformat != 0);
+    label = FACE_LABEL(
+        panel, text,
+        crazypod_runtime_font_at_size(CRAZYPOD_METRIC_FACE_TIME_SIZE),
+        FACE_DARK, LV_OPA_COVER);
+    lv_obj_set_width(label, CRAZYPOD_METRIC_FACE_TEXT_WIDTH);
+    lv_obj_set_style_text_align(label, LV_TEXT_ALIGN_CENTER, 0);
+    lv_obj_set_pos(label, CRAZYPOD_METRIC_FACE_TEXT_X,
+                   CRAZYPOD_METRIC_FACE_TIME_Y);
+    face.digital = label;
+    snprintf(text, sizeof(text), "%s, %s %d",
+             weekdays[time->weekday], months[time->month],
+             time->month_day);
+    label = FACE_LABEL(
+        panel, text,
+        crazypod_runtime_font_at_size(CRAZYPOD_METRIC_FACE_DETAIL_SIZE),
+        FACE_MUTED, LV_OPA_COVER);
+    lv_obj_set_width(label, CRAZYPOD_METRIC_FACE_TEXT_WIDTH);
+    lv_obj_set_style_text_align(label, LV_TEXT_ALIGN_CENTER, 0);
+    lv_obj_set_pos(label, CRAZYPOD_METRIC_FACE_TEXT_X,
+                   CRAZYPOD_METRIC_FACE_DETAIL_Y);
+    face.date = label;
+#else
+    FACE_BOX(
         content, 0, 32, LCD_WIDTH, LCD_HEIGHT - 32, 0,
-        0xF9F9F7, LV_OPA_COVER);
-    panel = crazypod_ui_widget_box(
+        FACE_PAPER, LV_OPA_COVER);
+    panel = FACE_BOX(
         content, 10, 40, 300, 188, 12, 0xFFFFFF, LV_OPA_COVER);
     lv_obj_set_style_border_width(panel, 1, 0);
-    lv_obj_set_style_border_color(panel, crazypod_ui_color(0x000000), 0);
+    lv_obj_set_style_border_color(panel, FACE_INK(0x000000), 0);
     lv_obj_set_style_border_opa(panel, 34, 0);
     make_analog_clock(
         panel, 14, 23, 140, time->hour, time->minute,
-        time->second_tenths, 0xFFFFFF, 0x0E0E0E);
+        time->second_tenths, 0xFFFFFF, FACE_DARK);
 
-    label = crazypod_ui_widget_label(
+    label = FACE_LABEL(
         panel, CP_TR("LOCAL TIME"), &lv_font_montserrat_8,
-        0x5C5C5C, LV_OPA_COVER);
+        FACE_MUTED, LV_OPA_COVER);
     lv_obj_set_style_text_letter_space(label, 2, 0);
     lv_obj_set_pos(label, 170, 34);
     crazypod_ui_text_clock(text, sizeof(text), time->hour, time->minute,
                            time->second, true,
                            global_settings.timeformat != 0);
-    label = crazypod_ui_widget_label(
+    label = FACE_LABEL(
         panel, text, &lv_font_montserrat_24,
-        0x0E0E0E, LV_OPA_COVER);
+        FACE_DARK, LV_OPA_COVER);
     lv_obj_set_pos(label, 170, 53);
     face.digital = label;
-    crazypod_ui_widget_box(
-        panel, 170, 86, 112, 1, 0, 0x0E0E0E, 210);
+    FACE_BOX(
+        panel, 170, 86, 112, 1, 0, FACE_DARK, 210);
     snprintf(text, sizeof(text), "%s\n%s %d",
              weekdays[time->weekday], months[time->month],
              time->month_day);
-    label = crazypod_ui_widget_label(
+    label = FACE_LABEL(
         panel, text, &lv_font_montserrat_10,
-        0x5C5C5C, LV_OPA_COVER);
+        FACE_MUTED, LV_OPA_COVER);
     lv_obj_set_pos(label, 170, 97);
     face.date = label;
-    label = crazypod_ui_widget_label(
-        panel, CP_TR("DEVICE TIME"), &lv_font_montserrat_8, 0x949494, 230);
+    label = FACE_LABEL(
+        panel, CP_TR("DEVICE TIME"), &lv_font_montserrat_8, FACE_FAINT, 230);
     lv_obj_set_style_text_letter_space(label, 1, 0);
     lv_obj_set_pos(label, 170, 132);
+#endif
 
     face.panel = panel;
     face.stopwatch = false;
@@ -278,13 +371,69 @@ void crazypod_stopwatch_screen_render(
         return;
     memset(&face, 0, sizeof(face));
 
-    crazypod_ui_widget_box(
+#ifdef HAVE_CRAZYPOD_COMPACT_UI
+    /*
+     * The dial, the running time under it and the state under that. The
+     * lap table, the style caption and the key legend the large canvas
+     * prints beside the dial have nowhere to go on a 138px panel, and the
+     * laps are on their own route anyway.
+     */
+    (void)first_lap;
+    (void)lap;
+    FACE_BOX(
+        content, 0, CRAZYPOD_METRIC_STATUS_HEIGHT, LCD_WIDTH,
+        LCD_HEIGHT - CRAZYPOD_METRIC_STATUS_HEIGHT, 0,
+        FACE_PAPER, LV_OPA_COVER);
+    panel = FACE_BOX(
+        content, CRAZYPOD_METRIC_FACE_PANEL_X,
+        CRAZYPOD_METRIC_FACE_PANEL_Y,
+        CRAZYPOD_METRIC_FACE_PANEL_WIDTH,
+        CRAZYPOD_METRIC_FACE_PANEL_HEIGHT,
+        CRAZYPOD_METRIC_FACE_PANEL_RADIUS, FACE_PAPER, LV_OPA_COVER);
+    lv_obj_set_style_border_width(panel, 1, 0);
+    lv_obj_set_style_border_color(panel, FACE_INK(FACE_DARK), 0);
+    lv_obj_set_style_border_opa(panel, 90, 0);
+    make_analog_clock(
+        panel, CRAZYPOD_METRIC_FACE_DIAL_X, CRAZYPOD_METRIC_FACE_DIAL_Y,
+        CRAZYPOD_METRIC_FACE_DIAL_SIZE, (int)(minutes / 60),
+        (int)minutes % 60,
+        (int)seconds * 10 + (int)hundredths / 10,
+        FACE_PAPER, FACE_DARK);
+    snprintf(text, sizeof(text), "%02u:%02u.%02u",
+             minutes, seconds, hundredths);
+    label = FACE_LABEL(
+        panel, text,
+        crazypod_runtime_font_at_size(CRAZYPOD_METRIC_FACE_TIME_SIZE),
+        FACE_DARK, LV_OPA_COVER);
+    lv_obj_set_width(label, CRAZYPOD_METRIC_FACE_TEXT_WIDTH);
+    lv_obj_set_style_text_align(label, LV_TEXT_ALIGN_CENTER, 0);
+    lv_obj_set_pos(label, CRAZYPOD_METRIC_FACE_TEXT_X,
+                   CRAZYPOD_METRIC_FACE_TIME_Y);
+    face.digital = label;
+    if(model->lap_count > 0)
+        snprintf(text, sizeof(text), CP_FMT("%s  ·  %d LAPS"),
+                 model->running ? CP_TR("RUNNING") : CP_TR("PAUSED"),
+                 model->lap_count);
+    else
+        snprintf(text, sizeof(text), "%s",
+                 model->running ? CP_TR("RUNNING") : CP_TR("PAUSED"));
+    label = FACE_LABEL(
+        panel, text,
+        crazypod_runtime_font_at_size(CRAZYPOD_METRIC_FACE_DETAIL_SIZE),
+        FACE_MUTED, LV_OPA_COVER);
+    lv_obj_set_width(label, CRAZYPOD_METRIC_FACE_TEXT_WIDTH);
+    lv_obj_set_style_text_align(label, LV_TEXT_ALIGN_CENTER, 0);
+    lv_obj_set_pos(label, CRAZYPOD_METRIC_FACE_TEXT_X,
+                   CRAZYPOD_METRIC_FACE_DETAIL_Y);
+    face.running = label;
+#else
+    FACE_BOX(
         content, 0, 32, LCD_WIDTH, LCD_HEIGHT - 32, 0,
         canvas_colors[style], LV_OPA_COVER);
-    panel = crazypod_ui_widget_box(
+    panel = FACE_BOX(
         content, 10, 40, 300, 188, 12, 0xFFFFFF, LV_OPA_COVER);
     lv_obj_set_style_border_width(panel, 1, 0);
-    lv_obj_set_style_border_color(panel, crazypod_ui_color(0x000000), 0);
+    lv_obj_set_style_border_color(panel, FACE_INK(0x000000), 0);
     lv_obj_set_style_border_opa(panel, 34, 0);
     make_analog_clock(
         panel, 8, 23, 140, (int)(minutes / 60),
@@ -360,6 +509,7 @@ void crazypod_stopwatch_screen_render(
     lv_obj_set_width(label, 136);
     lv_obj_set_style_text_align(label, LV_TEXT_ALIGN_LEFT, 0);
     lv_obj_set_pos(label, 166, 168);
+#endif
 
     face.panel = panel;
     face.stopwatch = true;
