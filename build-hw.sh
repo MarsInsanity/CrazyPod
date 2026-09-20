@@ -390,8 +390,13 @@ mkdir -p "$PACKAGE_DIR/.rockbox/codecs"
 mkdir -p "$PACKAGE_DIR/.rockbox/codepages"
 mkdir -p "$PACKAGE_DIR/.rockbox/fonts"
 mkdir -p "$PACKAGE_DIR/.rockbox/crazypod/icons"
-CONTENT_DIRECTORIES="Music Podcasts Books Contacts Calendars"
-PACKAGE_TREES=".rockbox Music Podcasts Books Contacts Calendars"
+# Audiobooks sits beside Books rather than under it: the firmware scans
+# AUDIOBOOKS_DIRECTORY "/Audiobooks" (apps/crazypod/crazypod_audiobooks.c),
+# and the empty shelf tells the owner to "Add M4B or MP3 files to
+# /Audiobooks". Every target builds that feature, so every package makes
+# the folder the message names.
+CONTENT_DIRECTORIES="Music Podcasts Books Audiobooks Contacts Calendars"
+PACKAGE_TREES=".rockbox Music Podcasts Books Audiobooks Contacts Calendars"
 if [ "$MEDIA_LIBRARY" -eq 1 ]; then
     CONTENT_DIRECTORIES="$CONTENT_DIRECTORIES Pictures Videos"
     PACKAGE_TREES="$PACKAGE_TREES Pictures Videos"

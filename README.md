@@ -431,7 +431,7 @@ Expand-Archive -Path $archive -DestinationPath $temp.FullName
 New-Item -ItemType Directory -Force -Path "$mount\.rockbox" | Out-Null
 Copy-Item "$($temp.FullName)\.rockbox\*" `
   "$mount\.rockbox\" -Recurse -Force
-"Music","Podcasts","Books","Pictures","Videos","Contacts",`
+"Music","Podcasts","Books","Audiobooks","Pictures","Videos","Contacts",`
   "Calendars","MiniApps" | ForEach-Object {
     New-Item -ItemType Directory -Force -Path "$mount\$_" | Out-Null
   }
@@ -453,7 +453,8 @@ tmp="$(mktemp -d)"
 ditto -x -k "$archive" "$tmp"
 mkdir -p "$mount/.rockbox"
 cp -R "$tmp/.rockbox/." "$mount/.rockbox/"
-for dir in Music Podcasts Books Pictures Videos Contacts Calendars MiniApps; do
+for dir in Music Podcasts Books Audiobooks Pictures Videos Contacts \
+    Calendars MiniApps; do
     mkdir -p "$mount/$dir"
 done
 # Write the firmware again last.
@@ -472,7 +473,8 @@ tmp="$(mktemp -d)"
 unzip -q "$archive" -d "$tmp"
 mkdir -p "$mount/.rockbox"
 cp -a "$tmp/.rockbox/." "$mount/.rockbox/"
-for dir in Music Podcasts Books Pictures Videos Contacts Calendars MiniApps; do
+for dir in Music Podcasts Books Audiobooks Pictures Videos Contacts \
+    Calendars MiniApps; do
     mkdir -p "$mount/$dir"
 done
 # Write the firmware again last.
