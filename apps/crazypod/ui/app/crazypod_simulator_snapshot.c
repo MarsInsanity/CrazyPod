@@ -1157,6 +1157,19 @@ bool crazypod_simulator_snapshot_prepare(
         if(item_count() > 0)
             host->activate_selected();
     }
+    else if(sscanf(screen, "books-move-%d", &preview_index) == 1) {
+        /*
+         * The list as it is after the selection has moved, rather than as
+         * it is drawn fresh at that index. Only this path invalidates the
+         * row that was left and the row that was taken, so only this one
+         * shows what an incremental redraw leaves behind; opening straight
+         * onto a row repaints the whole screen and hides it.
+         */
+        host->open_app(CRAZYPOD_APP_BOOKS);
+        select_bounded(host, preview_index);
+        host->move_selection(1);
+        host->render(false);
+    }
     else if(sscanf(screen, "books-%d", &preview_index) == 1) {
         host->open_app(CRAZYPOD_APP_BOOKS);
         select_bounded(host, preview_index);

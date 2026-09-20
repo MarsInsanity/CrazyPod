@@ -312,7 +312,22 @@ void crazypod_present_now(void)
         submitted = lcd_update_full_sync();
     else
 #endif
-#if defined(CPU_PP) && !defined(SIMULATOR)
+#if defined(HAVE_CRAZYPOD_MONO_UI) && !defined(SIMULATOR)
+    /*
+     * The whole panel, every time. Four pixels share a byte here, so a rect
+     * whose edges fall inside a byte cannot be written without carrying the
+     * neighbours in it, and the driver widens what it was given to the
+     * 8-pixel unit and the panel's own pixel offset besides -- a partial
+     * update is only ever approximately the rows and columns asked for.
+     *
+     * The reason to accept that on a colour panel is cost, and there is
+     * little to speak of here: 110 rows of 36 bytes is 3960 bytes, a
+     * thirty-ninth of the 150 KiB the Video pushes for a full frame and
+     * already does routinely. The Mini buys an exact panel for that, and
+     * the framebuffer and the glass stay in step.
+     */
+    lcd_update_rect(0, 0, LCD_WIDTH, LCD_HEIGHT);
+#elif defined(CPU_PP) && !defined(SIMULATOR)
     /*
      * PortalPlayer pushes pixels through the Broadcom video chip, and
      * lcd_update_rect() takes a different path per width: a full-width rect
