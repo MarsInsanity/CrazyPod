@@ -50,6 +50,15 @@ run full test suites, simulator or hardware builds, or device tests for these
 confirmatory changes unless the user requests them or concrete evidence shows
 broader risk. Never report an unrun check as passed.
 
+## Bug Tracking
+
+[BUGS.md](BUGS.md) is the list of record for known defects. Update it in the
+same change that discovers, diagnoses, or fixes a bug: add an entry when a
+new one is found, move it and name the commit when a fix ships, and mark it
+closed only after hardware confirms it. Identifiers are stable and never
+reused. Every entry ends with what would close it; if that cannot be
+written, say so in the entry rather than guessing at a cause.
+
 ## Real-Device Flashing
 
 When the user asks to flash a connected iPod, use the shortest safe path. First
