@@ -640,21 +640,42 @@ bool crazypod_organizer_feature_render(
     return false;
 }
 
+/*
+ * The clock, the stopwatch and the calendar are the only routes in the
+ * product that name a light page. The caller sends this through
+ * crazypod_ui_color(), which on the monochrome panel inverts -- it is what
+ * turns the dark UI everywhere else into ink on paper -- so a page already
+ * light inverts to black, and these three came up with a black band above
+ * a paper sheet.
+ *
+ * Naming the dark page the rest of the design uses puts paper on the
+ * panel, which is what the sheet and the faces below it are drawn on.
+ */
+#ifdef HAVE_CRAZYPOD_MONO_UI
+#define ORGANIZER_PAPER_PAGE 0x08080D
+#else
+#define ORGANIZER_PAPER_PAGE 0xF9F9F7
+#endif
+
 uint32_t crazypod_organizer_feature_background(
     enum crazypod_route route)
 {
     if(route == STOPWATCH_ROUTE_VIEW) {
+#ifdef HAVE_CRAZYPOD_MONO_UI
+        return ORGANIZER_PAPER_PAGE;
+#else
         static const uint32_t backgrounds[] = {
             0xF9F9F7, 0xF2F2F2, 0xFFFFFF
         };
 
         return backgrounds[
             crazypod_activity_stopwatch_style() % 3];
+#endif
     }
     if(route == CLOCK_ROUTE_VIEW ||
        route == CALENDAR_ROUTE_MONTH ||
        route == CALENDAR_ROUTE_DAY_EVENTS)
-        return 0xF9F9F7;
+        return ORGANIZER_PAPER_PAGE;
     if(route == WORKOUT_ROUTE_READY ||
        route == WORKOUT_ROUTE_ACTIVE ||
        route == WORKOUT_ROUTE_SUMMARY ||

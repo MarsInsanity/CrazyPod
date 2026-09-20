@@ -376,11 +376,22 @@ void crazypod_route_renderer_render(
             : crazypod_appearance_menu_color();
     uint32_t foreground = book_reader
         ? crazypod_books_feature_ink_colors()[theme]
+#ifndef HAVE_CRAZYPOD_MONO_UI
+        /*
+         * DARK_STATUS marks the routes whose page is light, so the clock
+         * and battery are drawn in ink rather than knocked out of it.
+         * The monochrome panel has one page colour and one ink, and both
+         * of these go through the inverting map: asking for ink here
+         * would ask the map for 0x0E0E0E, which is a page colour, and put
+         * paper on paper.
+         */
         : fullscreen &&
           crazypod_route_registry_has_flag(
               state->route,
               CRAZYPOD_ROUTE_FLAG_DARK_STATUS)
-            ? 0x0E0E0E : COLOR_WHITE;
+            ? 0x0E0E0E
+#endif
+        : COLOR_WHITE;
     lv_obj_t *content = crazypod_shell_product_content();
 
     if(crazypod_miniapps_feature_surface_attached(content) &&
