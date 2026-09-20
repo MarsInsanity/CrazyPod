@@ -20,7 +20,21 @@
 #include "crazypod_now_presentation.h"
 
 #define PRESENTATION_BANKS 2
+/*
+ * The decoded cover, which has to be the size the screen draws it at:
+ * crazypod_now_screen.c lays the compact panel out around a 44px cover,
+ * while this stayed at the 108 the 320x240 canvas uses. The screen asked
+ * for 44 and was handed 108, so the sleeve covered nearly the whole
+ * 138x110 panel and buried the track beneath it.
+ *
+ * It also decides how much memory the two banks hold: 108 square is 46 KB
+ * of cover and caption per pair of banks, against 8 KB at 44.
+ */
+#ifdef HAVE_CRAZYPOD_COMPACT_UI
+#define COVER_SIZE 44
+#else
 #define COVER_SIZE 108
+#endif
 #define COVER_CAPTION_HEIGHT (COVER_SIZE / 3)
 #define BACKDROP_WIDTH 40
 #define BACKDROP_HEIGHT 30
