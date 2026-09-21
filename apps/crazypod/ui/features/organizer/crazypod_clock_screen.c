@@ -342,6 +342,11 @@ void crazypod_stopwatch_screen_render(
     lv_obj_t *content,
     const struct crazypod_stopwatch_screen_model *model)
 {
+#ifndef HAVE_CRAZYPOD_COMPACT_UI
+    /*
+     * The three case finishes. The compact face is one finish in four
+     * shades, so it names them itself and does not carry these.
+     */
     static const char *const style_names[] = {
         CP_TR("CLASSIC SILVER"), CP_TR("OBSIDIAN GOLD"), CP_TR("CHAMPAGNE GOLD")
     };
@@ -354,6 +359,7 @@ void crazypod_stopwatch_screen_render(
     static const uint32_t ink_colors[] = {
         0x0E0E0E, 0x2C2416, 0x3B2A10
     };
+#endif
     unsigned total_hundredths =
         (unsigned)(model->elapsed_ticks * 100 /
                    model->ticks_per_second);

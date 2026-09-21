@@ -149,6 +149,12 @@ static int smooth_step(int progress)
     return squared * (3072 - 2 * value) / 1024;
 }
 
+/*
+ * The device illustration, which the compact card does not draw. Left in
+ * the build it is six hundred lines of ceramic gradients and cable arcs
+ * that nothing calls.
+ */
+#if SHOW_DEVICE
 static int back_out(int progress)
 {
     int shifted = clamp_int(progress, 0, 1024) - 1024;
@@ -680,6 +686,7 @@ static void draw_device(lv_event_t *event)
     else
         draw_wired_earbuds(layer, &area, popup.timeline_ms);
 }
+#endif
 
 static void update_copy(bool connected)
 {

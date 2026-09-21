@@ -53,6 +53,8 @@ static lv_obj_t *make_box(
         parent, x, y, width, height, radius, color, opacity);
 }
 
+#ifndef HAVE_CRAZYPOD_MONO_UI
+/* Every label on the monochrome build names its shade instead. */
 static lv_obj_t *make_label(
     lv_obj_t *parent, const char *text, const lv_font_t *font,
     uint32_t color, lv_opa_t opacity)
@@ -60,6 +62,7 @@ static lv_obj_t *make_label(
     return crazypod_ui_widget_label(
         parent, text, font, color, opacity);
 }
+#endif
 
 void crazypod_menu_screen_render(
     const struct route_state *state,

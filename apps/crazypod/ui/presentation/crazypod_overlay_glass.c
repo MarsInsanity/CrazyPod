@@ -30,12 +30,19 @@
      CRAZYPOD_IMAGE_GLASS_SAMPLE_SCALE)
 
 static void (*boost_cpu)(int ticks);
+#ifndef HAVE_CRAZYPOD_MONO_UI
+/*
+ * The sampler's working set. Nothing on the monochrome panel samples the
+ * backdrop -- see prepare_panel_descriptor() -- so these are not carried
+ * there; at a popup's worth of pixels each they are not small.
+ */
 static crazypod_pixel_t sample_pixels[SAMPLE_WIDTH * SAMPLE_HEIGHT]
     CACHEALIGN_AT_LEAST_ATTR(16);
 static crazypod_pixel_t sample_scratch[SAMPLE_WIDTH * SAMPLE_HEIGHT]
     CACHEALIGN_AT_LEAST_ATTR(16);
 static crazypod_pixel_t render_pixels[POPUP_MAX_WIDTH * POPUP_MAX_HEIGHT]
     CACHEALIGN_AT_LEAST_ATTR(16);
+#endif
 static lv_image_dsc_t descriptor;
 static bool valid;
 
@@ -63,8 +70,10 @@ void crazypod_overlay_glass_prepare(bool refresh)
 static void prepare_panel_descriptor(
     int x, int y, int width, int height, lv_opa_t tint_opacity)
 {
+#ifndef HAVE_CRAZYPOD_MONO_UI
     const crazypod_pixel_t *framebuffer =
         (const crazypod_pixel_t *)crazypod_platform_display_framebuffer();
+#endif
 
     /*
      * A panel under Reduce Effects is a flat rounded box: the sampled
