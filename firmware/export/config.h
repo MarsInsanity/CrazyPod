@@ -1529,6 +1529,13 @@ Lyre prototype 1 */
  * a build without it has no band to hold ordinary frames back for.
  */
 #define HAVE_CRAZYPOD_NATIVE_CAROUSEL
+/*
+ * Album Flow, the cover carousel the Music menu opens over the album
+ * list. It is drawn by the same code as the home carousel, so a build
+ * without that has nothing to put on the screen and does not offer the
+ * row.
+ */
+#define HAVE_CRAZYPOD_ALBUM_FLOW
 #endif
 #endif
 

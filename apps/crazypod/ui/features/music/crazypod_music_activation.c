@@ -10,6 +10,7 @@
 #include "../../../crazypod_state.h"
 #include "../../presentation/crazypod_ui_text.h"
 #include "crazypod_music_activation.h"
+#include "crazypod_music_feature.h"
 
 #define SEARCH_QUERY_SIZE 33
 #define EDITOR_CHARACTER_COUNT 36
@@ -74,7 +75,9 @@ static struct crazypod_music_activation_result activate_menu(
 {
     static const enum crazypod_route routes[] = {
         MUSIC_ROUTE_NOW_PLAYING,
+#ifdef HAVE_CRAZYPOD_ALBUM_FLOW
         MUSIC_ROUTE_ALBUM_FLOW,
+#endif
         MUSIC_ROUTE_ALL,
         MUSIC_ROUTE_PLAYLISTS,
         MUSIC_ROUTE_ARTISTS,
@@ -91,11 +94,14 @@ static struct crazypod_music_activation_result activate_menu(
         return result(
             CRAZYPOD_MUSIC_ACTIVATION_REQUEST_NOW_PLAYING,
             routes[selected], -1);
+#ifdef HAVE_CRAZYPOD_ALBUM_FLOW
     if(selected == 1)
         return result(
             CRAZYPOD_MUSIC_ACTIVATION_OPEN_ALBUM_FLOW,
             routes[selected], -1);
-    if(selected == 7)
+#endif
+    /* Search is always the last row, wherever the rows above end. */
+    if(selected == CRAZYPOD_MUSIC_MENU_COUNT - 1)
         search_query[0] = '\0';
     return result(
         CRAZYPOD_MUSIC_ACTIVATION_PUSH, routes[selected], -1);

@@ -84,7 +84,7 @@ int crazypod_music_feature_item_count(
 {
     switch(state->route) {
     case MUSIC_ROUTE_MENU:
-        return 8;
+        return CRAZYPOD_MUSIC_MENU_COUNT;
     case MUSIC_ROUTE_ALBUM_FLOW:
     case MUSIC_ROUTE_ALBUMS:
         return crazypod_music_album_count();
@@ -177,11 +177,16 @@ bool crazypod_music_feature_item_title(
     switch(state->route) {
     case MUSIC_ROUTE_MENU: {
         static const char *const titles[] = {
-            CP_TR("Now Playing"), CP_TR("Album Flow"), CP_TR("All Music"), CP_TR("Playlists"),
+            CP_TR("Now Playing"),
+#ifdef HAVE_CRAZYPOD_ALBUM_FLOW
+            CP_TR("Album Flow"),
+#endif
+            CP_TR("All Music"), CP_TR("Playlists"),
             CP_TR("Artists"), CP_TR("Albums"), CP_TR("Songs"), CP_TR("Search")
         };
 
-        *title = index >= 0 && index < 8 ? titles[index] : "";
+        *title = index >= 0 && index < CRAZYPOD_MUSIC_MENU_COUNT
+            ? titles[index] : "";
         return true;
     }
     case MUSIC_ROUTE_SEARCH:
@@ -267,7 +272,9 @@ enum crazypod_menu_icon crazypod_music_feature_item_icon(
 {
     static const enum crazypod_menu_icon root_icons[] = {
         CRAZYPOD_MENU_ICON_NOW_PLAYING,
+#ifdef HAVE_CRAZYPOD_ALBUM_FLOW
         CRAZYPOD_MENU_ICON_ALBUM_FLOW,
+#endif
         CRAZYPOD_MENU_ICON_MUSIC_LIBRARY,
         CRAZYPOD_MENU_ICON_PLAYLIST,
         CRAZYPOD_MENU_ICON_ARTIST,

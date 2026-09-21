@@ -88,4 +88,15 @@ void crazypod_music_feature_render_item_preview(
     const struct crazypod_track *track,
     const lv_font_t *metadata_font);
 
+/*
+ * The Music root menu. Album Flow is drawn by the cover carousel, so a
+ * build without that carousel is one row shorter and every index after
+ * Now Playing shifts up by one.
+ */
+#ifdef HAVE_CRAZYPOD_ALBUM_FLOW
+#define CRAZYPOD_MUSIC_MENU_COUNT 8
+#else
+#define CRAZYPOD_MUSIC_MENU_COUNT 7
+#endif
+
 #endif
