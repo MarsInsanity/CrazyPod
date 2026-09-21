@@ -44,8 +44,23 @@ const char *crazypod_ui_text_clock(char *output, size_t size,
     return output;
 }
 
+#ifdef HAVE_CRAZYPOD_COMPACT_UI
+/*
+ * Thirty-four columns of nine lines is a 300px sheet on a 320px screen.
+ * The compact sheet is 132 wide and 66 tall, which is about twenty-four
+ * columns of five lines at the size its body type resolves to.
+ */
+#define CRAZYPOD_NOTE_WRAP_COLUMNS 24
+#define CRAZYPOD_NOTE_WINDOW_LINES 5
+#else
 #define CRAZYPOD_NOTE_WRAP_COLUMNS 34
 #define CRAZYPOD_NOTE_WINDOW_LINES 9
+#endif
+
+int crazypod_ui_text_note_window_lines(void)
+{
+    return CRAZYPOD_NOTE_WINDOW_LINES;
+}
 
 int crazypod_ui_text_character_size(const char *text)
 {

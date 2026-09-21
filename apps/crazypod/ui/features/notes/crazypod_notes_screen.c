@@ -231,11 +231,62 @@ void crazypod_notes_screen_render_reader(
     lv_obj_t *label;
     char progress[64];
     int lines = crazypod_ui_text_note_line_count(body);
-    int maximum = lines > 9 ? lines - 9 : 0;
+    int window_lines = crazypod_ui_text_note_window_lines();
+    int maximum = lines > window_lines ? lines - window_lines : 0;
     int first = first_line;
 
     if(first > maximum)
         first = maximum;
+    crazypod_ui_text_note_window(body, first,
+                            window, sizeof(window));
+#ifdef HAVE_CRAZYPOD_COMPACT_UI
+    /*
+     * The same plain sheet the composer draws, for the same reasons: the
+     * large canvas puts a 300x145 pad at y=64 with the title above it and
+     * the position line at 216, none of which is on this panel.
+     */
+    label = crazypod_ui_widget_label_shade(
+        content,
+        note != NULL ? note->title : CP_TR("Missing Note"),
+        crazypod_runtime_font_at_size(12), NOTE_DARK, LV_OPA_COVER);
+    lv_obj_set_pos(label, 4, CRAZYPOD_METRIC_STATUS_HEIGHT + 1);
+    lv_obj_set_width(label, LCD_WIDTH - 22);
+    lv_label_set_long_mode(label, LV_LABEL_LONG_MODE_DOTS);
+    if(note != NULL && note->pinned) {
+        label = crazypod_ui_widget_label_shade(
+            content, LV_SYMBOL_OK, &lv_font_montserrat_8,
+            NOTE_DARK, LV_OPA_COVER);
+        lv_obj_set_pos(
+            label, LCD_WIDTH - 14,
+            CRAZYPOD_METRIC_STATUS_HEIGHT + 2);
+    }
+
+    paper = crazypod_ui_widget_box_shade(
+        content, 2, CRAZYPOD_METRIC_STATUS_HEIGHT + 14,
+        LCD_WIDTH - 4, LCD_HEIGHT - CRAZYPOD_METRIC_STATUS_HEIGHT - 28,
+        3, NOTE_PAPER, LV_OPA_COVER);
+    lv_obj_set_style_border_width(paper, 1, 0);
+    lv_obj_set_style_border_color(paper, crazypod_ui_shade(NOTE_DARK), 0);
+    lv_obj_set_style_border_opa(paper, 90, 0);
+    label = crazypod_ui_widget_label_shade(
+        paper,
+        window[0] != '\0' ? window : CP_TR("This note is empty."),
+        crazypod_runtime_font_at_size(12),
+        window[0] != '\0' ? NOTE_DARK : NOTE_MUTED, LV_OPA_COVER);
+    lv_obj_set_pos(label, 3, 2);
+    lv_obj_set_width(label, LCD_WIDTH - 12);
+    lv_obj_set_height(
+        label, LCD_HEIGHT - CRAZYPOD_METRIC_STATUS_HEIGHT - 32);
+    lv_label_set_long_mode(label, LV_LABEL_LONG_MODE_CLIP);
+
+    snprintf(progress, sizeof(progress), "%d / %d", first + 1, lines);
+    label = crazypod_ui_widget_label_shade(
+        content, progress, &lv_font_montserrat_8,
+        NOTE_MUTED, LV_OPA_COVER);
+    lv_obj_set_width(label, LCD_WIDTH - 8);
+    lv_obj_set_style_text_align(label, LV_TEXT_ALIGN_CENTER, 0);
+    lv_obj_set_pos(label, 4, LCD_HEIGHT - 12);
+#else
     label = crazypod_ui_widget_label(content,
                        note != NULL ? note->title : CP_TR("Missing Note"),
                        CRAZYPOD_NOTES_FONT, CRAZYPOD_NOTES_WHITE, LV_OPA_COVER);
@@ -253,8 +304,6 @@ void crazypod_notes_screen_render_reader(
     lv_obj_set_style_border_width(paper, 1, 0);
     lv_obj_set_style_border_color(paper, crazypod_ui_color(0xB7A98E), 0);
     lv_obj_set_style_border_opa(paper, 180, 0);
-    crazypod_ui_text_note_window(body, first,
-                            window, sizeof(window));
     label = crazypod_ui_widget_label(paper,
                        window[0] != '\0' ? window : CP_TR("This note is empty."),
                        CRAZYPOD_NOTES_FONT, 0x302A22,
@@ -271,4 +320,5 @@ void crazypod_notes_screen_render_reader(
     lv_obj_set_width(label, 292);
     lv_obj_set_style_text_align(label, LV_TEXT_ALIGN_CENTER, 0);
     lv_obj_set_pos(label, 14, 216);
+#endif
 }

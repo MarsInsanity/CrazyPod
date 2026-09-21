@@ -1197,6 +1197,27 @@ bool crazypod_simulator_snapshot_prepare(
     /* The letter picker itself, which the row above only highlights. */
     else if(strcmp(screen, "music-search") == 0)
         host->open_root_route(MUSIC_ROUTE_SEARCH);
+    else if(strcmp(screen, "eq-studio") == 0)
+        host->open_root_route(SETTINGS_ROUTE_EQ_STUDIO);
+    /* The note sheet itself. The simdisk starts with no notes, so the
+     * screen above only ever highlighted the row it would open. */
+    else if(strcmp(screen, "note-reader") == 0) {
+        if(crazypod_notes_count(false) <= 0 &&
+           crazypod_note_save(
+               0, "Packing List",
+               "Charger and cable\n"
+               "Spare batteries\n"
+               "Headphones, the wired ones\n"
+               "Passport\n"
+               "Boarding pass printout\n"
+               "Toothbrush\n") == 0)
+            return false;
+        host->open_app(CRAZYPOD_APP_NOTES);
+        select_bounded(host, notes_home_note_start());
+        host->activate_selected();
+        return crazypod_ui_routes_current() != NULL &&
+            crazypod_ui_routes_current()->route == NOTES_ROUTE_READER;
+    }
     else if(strcmp(screen, "notes-deleted") == 0) {
         host->open_app(CRAZYPOD_APP_NOTES);
         select_bounded(host, notes_home_deleted_index());

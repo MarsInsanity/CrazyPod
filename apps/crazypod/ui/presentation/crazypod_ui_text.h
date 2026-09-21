@@ -35,6 +35,8 @@ int crazypod_ui_text_character_size(const char *text);
 int crazypod_ui_text_note_line_count(const char *body);
 void crazypod_ui_text_note_window(const char *body, int first_line,
                                   char *output, size_t size);
+/* How many lines of a note the reader's sheet shows at once. */
+int crazypod_ui_text_note_window_lines(void);
 const char *crazypod_ui_text_with_cursor(const char *text, size_t cursor,
                                          char *output, size_t size);
 
