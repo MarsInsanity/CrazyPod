@@ -13,6 +13,43 @@
 #include "crazypod_books_workflow.h"
 #include "../../../crazypod_color.h"
 
+#ifdef HAVE_CRAZYPOD_COMPACT_UI
+/*
+ * The book-loading screen was a 320 wide layout: a 280px title, a 240px
+ * progress track starting at 40, and a caption at 181. None of it was on
+ * a 138x110 panel.
+ */
+#define LOADING_TITLE_FONT (&lv_font_montserrat_12)
+#define LOADING_TITLE_Y 20
+#define LOADING_SUBTITLE_Y 37
+#define LOADING_INSET 4
+#define LOADING_TRACK_X 8
+#define LOADING_TRACK_Y 56
+#define LOADING_TRACK_WIDTH (LCD_WIDTH - 16)
+#define LOADING_TRACK_HEIGHT 5
+#define LOADING_STAGE_X 8
+#define LOADING_STAGE_Y 66
+#define LOADING_STAGE_WIDTH 84
+#define LOADING_PERCENT_X (LCD_WIDTH - 42)
+#define LOADING_PERCENT_WIDTH 34
+#define LOADING_DETAIL_Y 84
+#else
+#define LOADING_TITLE_FONT (&lv_font_montserrat_16)
+#define LOADING_TITLE_Y 57
+#define LOADING_SUBTITLE_Y 88
+#define LOADING_INSET 20
+#define LOADING_TRACK_X 40
+#define LOADING_TRACK_Y 126
+#define LOADING_TRACK_WIDTH 240
+#define LOADING_TRACK_HEIGHT 7
+#define LOADING_STAGE_X 40
+#define LOADING_STAGE_Y 145
+#define LOADING_STAGE_WIDTH 220
+#define LOADING_PERCENT_X 238
+#define LOADING_PERCENT_WIDTH 42
+#define LOADING_DETAIL_Y 181
+#endif
+
 static struct crazypod_books_workflow_host workflow_host;
 static bool metadata_ready;
 static lv_obj_t *progress_fill;
@@ -63,48 +100,53 @@ static void render_loading(
     label = crazypod_ui_widget_label(
         workflow_host.parent,
         title != NULL ? title : CP_TR("Preparing Book"),
-        &lv_font_montserrat_16, ink_color, LV_OPA_COVER);
-    lv_obj_set_width(label, 280);
+        LOADING_TITLE_FONT, ink_color, LV_OPA_COVER);
+    lv_obj_set_width(label, LCD_WIDTH - 2 * LOADING_INSET);
     lv_obj_set_style_text_align(label, LV_TEXT_ALIGN_CENTER, 0);
     lv_label_set_long_mode(label, LV_LABEL_LONG_MODE_DOTS);
-    lv_obj_set_pos(label, 20, 57);
+    lv_obj_set_pos(label, LOADING_INSET, LOADING_TITLE_Y);
 
     label = crazypod_ui_widget_label(
         workflow_host.parent,
         book != NULL && book->title[0] != '\0'
             ? book->title : CP_TR("Reading local book data"),
         workflow_host.metadata_font, ink_color, 180);
-    lv_obj_set_width(label, 260);
+    lv_obj_set_width(label, LCD_WIDTH - 2 * LOADING_INSET);
     lv_obj_set_style_text_align(label, LV_TEXT_ALIGN_CENTER, 0);
     lv_label_set_long_mode(label, LV_LABEL_LONG_MODE_DOTS);
-    lv_obj_set_pos(label, 30, 88);
+    lv_obj_set_pos(label, LOADING_INSET, LOADING_SUBTITLE_Y);
 
     track = crazypod_ui_widget_box(
-        workflow_host.parent, 40, 126, 240, 7,
+        workflow_host.parent,
+        LOADING_TRACK_X, LOADING_TRACK_Y,
+        LOADING_TRACK_WIDTH, LOADING_TRACK_HEIGHT,
         LV_RADIUS_CIRCLE, ink_color, 32);
     progress_fill = crazypod_ui_widget_box(
-        track, 0, 0, 2, 7,
+        track, 0, 0, 2, LOADING_TRACK_HEIGHT,
         LV_RADIUS_CIRCLE, ink_color, 220);
     progress_label = crazypod_ui_widget_label(
         workflow_host.parent, CP_TR("Starting"),
         &lv_font_montserrat_10, ink_color, 190);
-    lv_obj_set_width(progress_label, 220);
+    lv_obj_set_width(progress_label, LOADING_STAGE_WIDTH);
     lv_label_set_long_mode(
         progress_label, LV_LABEL_LONG_MODE_DOTS);
-    lv_obj_set_pos(progress_label, 40, 145);
+    lv_obj_set_pos(
+        progress_label, LOADING_STAGE_X, LOADING_STAGE_Y);
     percent_label = crazypod_ui_widget_label(
         workflow_host.parent, "0%",
         &lv_font_montserrat_10, ink_color, 190);
-    lv_obj_set_width(percent_label, 42);
+    lv_obj_set_width(percent_label, LOADING_PERCENT_WIDTH);
     lv_obj_set_style_text_align(
         percent_label, LV_TEXT_ALIGN_RIGHT, 0);
-    lv_obj_set_pos(percent_label, 238, 145);
+    lv_obj_set_pos(
+        percent_label, LOADING_PERCENT_X, LOADING_STAGE_Y);
     label = crazypod_ui_widget_label(
         workflow_host.parent, detail != NULL ? detail : "",
         &lv_font_montserrat_8, ink_color, 105);
-    lv_obj_set_width(label, 280);
+    lv_obj_set_width(label, LCD_WIDTH - 2 * LOADING_INSET);
     lv_obj_set_style_text_align(label, LV_TEXT_ALIGN_CENTER, 0);
-    lv_obj_set_pos(label, 20, 181);
+    lv_label_set_long_mode(label, LV_LABEL_LONG_MODE_DOTS);
+    lv_obj_set_pos(label, LOADING_INSET, LOADING_DETAIL_Y);
     workflow_host.status_foreground();
     lv_refr_now(NULL);
     workflow_host.present();
@@ -124,7 +166,7 @@ static void update_progress(
         percent = 0;
     if(percent > 100)
         percent = 100;
-    width = percent * 240 / 100;
+    width = percent * LOADING_TRACK_WIDTH / 100;
     if(width < 2)
         width = 2;
     lv_obj_set_width(progress_fill, width);

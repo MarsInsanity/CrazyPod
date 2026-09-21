@@ -10,6 +10,7 @@
 
 #include "../../../crazypod_organizer.h"
 #include "crazypod_calendar_model.h"
+#include "../../../crazypod_mono.h"
 #include "../../../crazypod_runtime_font.h"
 #include "../../presentation/crazypod_ui_metrics.h"
 #include "../../presentation/crazypod_ui_widgets.h"
@@ -19,6 +20,107 @@
 #define CALENDAR_FONT (&lv_font_source_han_sans_sc_14_cjk)
 #define CALENDAR_WHITE 0xFFFFFF
 #define CALENDAR_PANEL 0x1B1B22
+
+#ifdef HAVE_CRAZYPOD_COMPACT_UI
+/*
+ * The event card. A 284x145 panel at 18,54 is most of a 320x240 screen
+ * and none of a 138x110 one, and its near-black fill is the page it sits
+ * on once the design map has had it.
+ */
+#define CARD_X 3
+#define CARD_Y (CRAZYPOD_METRIC_STATUS_HEIGHT + 2)
+#define CARD_WIDTH (LCD_WIDTH - 6)
+#define CARD_HEIGHT (LCD_HEIGHT - CARD_Y - 3)
+#define CARD_RADIUS 4
+#define CARD_TEXT_X 4
+#define CARD_TEXT_Y 3
+#define CARD_TEXT_WIDTH (CARD_WIDTH - 10)
+#define CARD_TEXT_FONT (crazypod_runtime_font_at_size(11))
+#else
+#define CARD_X 18
+#define CARD_Y 54
+#define CARD_WIDTH 284
+#define CARD_HEIGHT 145
+#define CARD_RADIUS 12
+#define CARD_TEXT_X 14
+#define CARD_TEXT_Y 14
+#define CARD_TEXT_WIDTH 256
+#define CARD_TEXT_FONT CALENDAR_FONT
+#endif
+
+#ifdef HAVE_CRAZYPOD_COMPACT_UI
+/* The day sheet: a 270x172 overlay with 27px rows, on a 110px panel. */
+#define DAY_X 2
+#define DAY_Y (CRAZYPOD_METRIC_STATUS_HEIGHT + 1)
+#define DAY_WIDTH (LCD_WIDTH - 4)
+#define DAY_HEIGHT (LCD_HEIGHT - DAY_Y - 3)
+#define DAY_RADIUS 4
+#define DAY_LABEL_X 4
+/*
+ * No "SCHEDULE" strap. It captions a date that already says what the
+ * sheet is, and the pixels it wants are the ones the date row needs so as
+ * not to sit on the rule below it.
+ */
+#define DAY_SHOW_TAG 0
+#define DAY_TAG_Y 2
+#define DAY_DATE_Y 2
+#define DAY_DATE_FONT (&lv_font_montserrat_12)
+#define DAY_COUNT_WIDTH 40
+#define DAY_COUNT_X (DAY_WIDTH - DAY_LABEL_X - DAY_COUNT_WIDTH)
+#define DAY_COUNT_Y 6
+#define DAY_RULE_X 4
+#define DAY_RULE_Y 19
+#define DAY_RULE_WIDTH (DAY_WIDTH - 8)
+#define DAY_ROW_Y 23
+#define DAY_ROW_STEP 15
+#define DAY_ROW_HEIGHT 14
+#define DAY_SELECT_X 2
+#define DAY_SELECT_WIDTH (DAY_WIDTH - 4)
+#define DAY_ICON_X 4
+#define DAY_ICON_DY 2
+#define DAY_ADD_X 16
+#define DAY_TIME_X 4
+#define DAY_TIME_WIDTH 28
+#define DAY_SEPARATOR_X 34
+#define DAY_SEPARATOR_WIDTH 1
+#define DAY_SEPARATOR_HEIGHT 11
+#define DAY_SUMMARY_X 38
+#define DAY_SUMMARY_WIDTH (DAY_WIDTH - 42)
+#define DAY_ROW_FONT (&lv_font_montserrat_8)
+#else
+#define DAY_X 25
+#define DAY_Y 49
+#define DAY_WIDTH 270
+#define DAY_HEIGHT 172
+#define DAY_RADIUS 12
+#define DAY_LABEL_X 14
+#define DAY_SHOW_TAG 1
+#define DAY_TAG_Y 5
+#define DAY_DATE_Y 22
+#define DAY_DATE_FONT (&lv_font_montserrat_16)
+#define DAY_COUNT_WIDTH 72
+#define DAY_COUNT_X 184
+#define DAY_COUNT_Y 29
+#define DAY_RULE_X 12
+#define DAY_RULE_Y 49
+#define DAY_RULE_WIDTH 246
+#define DAY_ROW_Y 57
+#define DAY_ROW_STEP 27
+#define DAY_ROW_HEIGHT 25
+#define DAY_SELECT_X 10
+#define DAY_SELECT_WIDTH 250
+#define DAY_ICON_X 17
+#define DAY_ICON_DY 4
+#define DAY_ADD_X 43
+#define DAY_TIME_X 17
+#define DAY_TIME_WIDTH 44
+#define DAY_SEPARATOR_X 64
+#define DAY_SEPARATOR_WIDTH 2
+#define DAY_SEPARATOR_HEIGHT 17
+#define DAY_SUMMARY_X 75
+#define DAY_SUMMARY_WIDTH 180
+#define DAY_ROW_FONT (&lv_font_montserrat_10)
+#endif
 
 /*
  * The month sheet is ink on paper like the watch faces, so it names the
@@ -33,6 +135,7 @@
 #define SHEET_DARK 0x000000
 #define SHEET_MUTED 0x555555
 #define SHEET_FAINT 0xAAAAAA
+#define SHEET_SELECTED 0xAAAAAA
 #else
 #define SHEET_BOX crazypod_ui_widget_box
 #define SHEET_LABEL crazypod_ui_widget_label
@@ -41,6 +144,7 @@
 #define SHEET_DARK 0x0E0E0E
 #define SHEET_MUTED 0x5C5C5C
 #define SHEET_FAINT 0x949494
+#define SHEET_SELECTED 0xF3F3F0
 #endif
 
 /*
@@ -412,75 +516,82 @@ void crazypod_calendar_screen_render_day(
     int row;
 
     crazypod_calendar_screen_render_grid(content, date);
-    overlay = crazypod_ui_widget_box(
-        content, 25, 49, 270, 172, 12, 0xFFFFFF, LV_OPA_COVER);
+    /* The same sheet shades the month grid names; see SHEET_BOX above. */
+    overlay = SHEET_BOX(
+        content, DAY_X, DAY_Y, DAY_WIDTH, DAY_HEIGHT, DAY_RADIUS,
+        SHEET_PAPER, LV_OPA_COVER);
     lv_obj_set_style_border_width(overlay, 1, 0);
-    lv_obj_set_style_border_color(
-        overlay, crazypod_ui_color(0x0E0E0E), 0);
+    lv_obj_set_style_border_color(overlay, SHEET_INK(SHEET_DARK), 0);
     lv_obj_set_style_border_opa(overlay, 210, 0);
-    label = crazypod_ui_widget_label(
+#if DAY_SHOW_TAG
+    label = SHEET_LABEL(
         overlay, CP_TR("SCHEDULE"), &lv_font_montserrat_8,
-        0x949494, LV_OPA_COVER);
+        SHEET_FAINT, LV_OPA_COVER);
     lv_obj_set_style_text_letter_space(label, 2, 0);
-    lv_obj_set_pos(label, 14, 5);
+    lv_obj_set_pos(label, DAY_LABEL_X, DAY_TAG_Y);
+#endif
     snprintf(text, sizeof(text), CP_FMT("%04d-%02d-%02d"),
              date->year, date->month + 1, date->day);
-    label = crazypod_ui_widget_label(
-        overlay, text, &lv_font_montserrat_16,
-        0x0E0E0E, LV_OPA_COVER);
-    lv_obj_set_pos(label, 14, 22);
+    label = SHEET_LABEL(
+        overlay, text, DAY_DATE_FONT,
+        SHEET_DARK, LV_OPA_COVER);
+    lv_obj_set_pos(label, DAY_LABEL_X, DAY_DATE_Y);
     snprintf(text, sizeof(text), CP_FMT("%d item%s"),
              events->count, events->count == 1 ? "" : "s");
-    label = crazypod_ui_widget_label(
-        overlay, text, &lv_font_montserrat_8, 0x5C5C5C, 220);
-    lv_obj_set_width(label, 72);
+    label = SHEET_LABEL(
+        overlay, text, &lv_font_montserrat_8, SHEET_MUTED, 220);
+    lv_obj_set_width(label, DAY_COUNT_WIDTH);
     lv_obj_set_style_text_align(label, LV_TEXT_ALIGN_RIGHT, 0);
-    lv_obj_set_pos(label, 184, 29);
-    crazypod_ui_widget_box(
-        overlay, 12, 49, 246, 1, 0, 0x0E0E0E, 205);
+    lv_obj_set_pos(label, DAY_COUNT_X, DAY_COUNT_Y);
+    SHEET_BOX(
+        overlay, DAY_RULE_X, DAY_RULE_Y, DAY_RULE_WIDTH, 1, 0,
+        SHEET_DARK, 205);
 
     for(row = 0; row < 4; ++row) {
         int position = start + row;
         const struct crazypod_calendar_event *event;
-        int y = 57 + row * 27;
+        int y = DAY_ROW_Y + row * DAY_ROW_STEP;
         bool selected;
 
         if(position > events->count)
             break;
         selected = position == events->selected;
         if(selected)
-            crazypod_ui_widget_box(
-                overlay, 10, y - 2, 250, 25, 7,
-                0xF3F3F0, LV_OPA_COVER);
+            SHEET_BOX(
+                overlay, DAY_SELECT_X, y - 2,
+                DAY_SELECT_WIDTH, DAY_ROW_HEIGHT, 5,
+                SHEET_SELECTED, LV_OPA_COVER);
         if(position == events->count) {
-            label = crazypod_ui_widget_label(
-                overlay, LV_SYMBOL_EDIT, &lv_font_montserrat_10,
-                0x0E0E0E, 220);
-            lv_obj_set_pos(label, 17, y + 4);
-            label = crazypod_ui_widget_label(
-                overlay, CP_TR("Add Event"), &lv_font_montserrat_10,
-                0x0E0E0E, LV_OPA_COVER);
-            lv_obj_set_pos(label, 43, y + 3);
+            label = SHEET_LABEL(
+                overlay, LV_SYMBOL_EDIT, DAY_ROW_FONT,
+                SHEET_DARK, 220);
+            lv_obj_set_pos(label, DAY_ICON_X, y + DAY_ICON_DY);
+            label = SHEET_LABEL(
+                overlay, CP_TR("Add Event"), DAY_ROW_FONT,
+                SHEET_DARK, LV_OPA_COVER);
+            lv_obj_set_pos(label, DAY_ADD_X, y + DAY_ICON_DY);
             continue;
         }
         event = crazypod_calendar_event_get(
             events->index_at(events->context, position));
         if(event == NULL)
             continue;
-        label = crazypod_ui_widget_label(
+        label = SHEET_LABEL(
             overlay,
             event->time[0] != '\0' ? event->time : CP_TR("All day"),
-            &lv_font_montserrat_8, 0x5C5C5C, 230);
-        lv_obj_set_width(label, 44);
-        lv_obj_set_pos(label, 17, y + 4);
-        crazypod_ui_widget_box(
-            overlay, 64, y + 2, 2, 17, 1, 0x0E0E0E, 210);
-        label = crazypod_ui_widget_label(
-            overlay, event->summary, &lv_font_montserrat_10,
-            0x0E0E0E, LV_OPA_COVER);
-        lv_obj_set_width(label, 180);
+            &lv_font_montserrat_8, SHEET_MUTED, 230);
+        lv_obj_set_width(label, DAY_TIME_WIDTH);
+        lv_obj_set_pos(label, DAY_TIME_X, y + DAY_ICON_DY);
+        SHEET_BOX(
+            overlay, DAY_SEPARATOR_X, y + 1,
+            DAY_SEPARATOR_WIDTH, DAY_SEPARATOR_HEIGHT, 1,
+            SHEET_DARK, 210);
+        label = SHEET_LABEL(
+            overlay, event->summary, DAY_ROW_FONT,
+            SHEET_DARK, LV_OPA_COVER);
+        lv_obj_set_width(label, DAY_SUMMARY_WIDTH);
         lv_label_set_long_mode(label, LV_LABEL_LONG_MODE_DOTS);
-        lv_obj_set_pos(label, 75, y + 3);
+        lv_obj_set_pos(label, DAY_SUMMARY_X, y + DAY_ICON_DY);
     }
 }
 
@@ -493,8 +604,15 @@ void crazypod_calendar_screen_render_detail(
     lv_obj_t *label;
     char text[180];
 
+#ifdef HAVE_CRAZYPOD_MONO_UI
+    panel = crazypod_ui_widget_box_shade(
+        content, CARD_X, CARD_Y, CARD_WIDTH, CARD_HEIGHT,
+        CARD_RADIUS, CRAZYPOD_MONO_SHADE_PALE, LV_OPA_COVER);
+#else
     panel = crazypod_ui_widget_box(
-        content, 18, 54, 284, 145, 12, CALENDAR_PANEL, 230);
+        content, CARD_X, CARD_Y, CARD_WIDTH, CARD_HEIGHT,
+        CARD_RADIUS, CALENDAR_PANEL, 230);
+#endif
     snprintf(text, sizeof(text),
              CP_FMT("%s\n\n%04d-%02d-%02d\n%s\n\n%s"),
              event != NULL ? event->summary : CP_FMT("No Event"),
@@ -506,10 +624,17 @@ void crazypod_calendar_screen_render_detail(
              event != NULL && event->editable
                 ? CP_FMT("Center: Event Actions")
                 : CP_FMT("Imported from .ics"));
+#ifdef HAVE_CRAZYPOD_MONO_UI
+    label = crazypod_ui_widget_label_shade(
+        panel, text, CARD_TEXT_FONT,
+        CRAZYPOD_MONO_INK, LV_OPA_COVER);
+#else
     label = crazypod_ui_widget_label(
-        panel, text, CALENDAR_FONT, CALENDAR_WHITE, 235);
-    lv_obj_set_pos(label, 14, 14);
-    lv_obj_set_width(label, 256);
+        panel, text, CARD_TEXT_FONT, CALENDAR_WHITE, 235);
+#endif
+    lv_obj_set_pos(label, CARD_TEXT_X, CARD_TEXT_Y);
+    lv_obj_set_width(label, CARD_TEXT_WIDTH);
+    lv_label_set_long_mode(label, LV_LABEL_LONG_MODE_WRAP);
 }
 
 #endif

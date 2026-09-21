@@ -8,6 +8,7 @@
 #include <string.h>
 
 #include "../../../crazypod_workouts.h"
+#include "../../../crazypod_mono.h"
 #include "../../../crazypod_runtime_font.h"
 #include "../../presentation/crazypod_ui_metrics.h"
 #include "../../presentation/crazypod_ui_widgets.h"
@@ -16,6 +17,34 @@
 
 #define CRAZYPOD_WORKOUT_FONT (&lv_font_source_han_sans_sc_14_cjk)
 #define CRAZYPOD_WORKOUT_WHITE 0xFFFFFF
+
+#ifdef HAVE_CRAZYPOD_COMPACT_UI
+/*
+ * The detail card. A 284x150 panel at 18,52 is most of a 320x240 screen
+ * and none of a 138x110 one, and the card is near-black at nine tenths
+ * opacity, which the monochrome map turns into the page it sits on. Here
+ * it is nearly the whole panel and named in shades.
+ */
+#define CARD_X 3
+#define CARD_Y (CRAZYPOD_METRIC_STATUS_HEIGHT + 2)
+#define CARD_WIDTH (LCD_WIDTH - 6)
+#define CARD_HEIGHT (LCD_HEIGHT - CARD_Y - 3)
+#define CARD_RADIUS 4
+#define CARD_TEXT_X 4
+#define CARD_TEXT_Y 3
+#define CARD_TEXT_WIDTH (CARD_WIDTH - 10)
+#define CARD_TEXT_FONT (crazypod_runtime_font_at_size(11))
+#else
+#define CARD_X 18
+#define CARD_Y 52
+#define CARD_WIDTH 284
+#define CARD_HEIGHT 150
+#define CARD_RADIUS 14
+#define CARD_TEXT_X 16
+#define CARD_TEXT_Y 14
+#define CARD_TEXT_WIDTH 252
+#define CARD_TEXT_FONT CRAZYPOD_WORKOUT_FONT
+#endif
 #define CRAZYPOD_WORKOUT_RUNNING 0xA8F12D
 #define CRAZYPOD_WORKOUT_PAUSED 0xFFB340
 
@@ -271,8 +300,15 @@ void crazypod_workout_screen_render_summary(lv_obj_t *content)
         if(workout != NULL)
             total_seconds += workout->duration_seconds;
     }
+#ifdef HAVE_CRAZYPOD_MONO_UI
+    panel = crazypod_ui_widget_box_shade(
+        content, CARD_X, CARD_Y, CARD_WIDTH, CARD_HEIGHT,
+        CARD_RADIUS, CRAZYPOD_MONO_SHADE_PALE, LV_OPA_COVER);
+#else
     panel = crazypod_ui_widget_box(
-        content, 18, 52, 284, 150, 14, 0x111512, 238);
+        content, CARD_X, CARD_Y, CARD_WIDTH, CARD_HEIGHT,
+        CARD_RADIUS, 0x111512, 238);
+#endif
     snprintf(text, sizeof(text),
              CP_FMT("WORKOUT SUMMARY\n\n%d saved workouts\n"
                     "%lu total minutes\n\n"
@@ -280,11 +316,18 @@ void crazypod_workout_screen_render_summary(lv_obj_t *content)
                     "No sensor data is fabricated."),
              crazypod_workouts_count(),
              (unsigned long)(total_seconds / 60u));
+#ifdef HAVE_CRAZYPOD_MONO_UI
+    label = crazypod_ui_widget_label_shade(
+        panel, text, CARD_TEXT_FONT,
+        CRAZYPOD_MONO_INK, LV_OPA_COVER);
+#else
     label = crazypod_ui_widget_label(
-        panel, text, CRAZYPOD_WORKOUT_FONT,
+        panel, text, CARD_TEXT_FONT,
         CRAZYPOD_WORKOUT_WHITE, 230);
-    lv_obj_set_pos(label, 16, 14);
-    lv_obj_set_width(label, 252);
+#endif
+    lv_obj_set_pos(label, CARD_TEXT_X, CARD_TEXT_Y);
+    lv_obj_set_width(label, CARD_TEXT_WIDTH);
+    lv_label_set_long_mode(label, LV_LABEL_LONG_MODE_WRAP);
 }
 
 void crazypod_workout_screen_render_detail(
@@ -300,8 +343,15 @@ void crazypod_workout_screen_render_detail(
     format_duration(
         duration, sizeof(duration),
         workout != NULL ? workout->duration_seconds : 0);
+#ifdef HAVE_CRAZYPOD_MONO_UI
+    panel = crazypod_ui_widget_box_shade(
+        content, CARD_X, CARD_Y, CARD_WIDTH, CARD_HEIGHT,
+        CARD_RADIUS, CRAZYPOD_MONO_SHADE_PALE, LV_OPA_COVER);
+#else
     panel = crazypod_ui_widget_box(
-        content, 18, 52, 284, 150, 14, 0x111512, 238);
+        content, CARD_X, CARD_Y, CARD_WIDTH, CARD_HEIGHT,
+        CARD_RADIUS, 0x111512, 238);
+#endif
     snprintf(text, sizeof(text),
              CP_FMT("%s\n\n%04d-%02d-%02d\n%s\n\n"
                     "Time-only workout\nCenter: Delete"),
@@ -312,11 +362,18 @@ void crazypod_workout_screen_render_detail(
              workout != NULL ? (int)(workout->date / 100 % 100) : 0,
              workout != NULL ? (int)(workout->date % 100) : 0,
              duration);
+#ifdef HAVE_CRAZYPOD_MONO_UI
+    label = crazypod_ui_widget_label_shade(
+        panel, text, CARD_TEXT_FONT,
+        CRAZYPOD_MONO_INK, LV_OPA_COVER);
+#else
     label = crazypod_ui_widget_label(
-        panel, text, CRAZYPOD_WORKOUT_FONT,
+        panel, text, CARD_TEXT_FONT,
         CRAZYPOD_WORKOUT_WHITE, 230);
-    lv_obj_set_pos(label, 16, 14);
-    lv_obj_set_width(label, 252);
+#endif
+    lv_obj_set_pos(label, CARD_TEXT_X, CARD_TEXT_Y);
+    lv_obj_set_width(label, CARD_TEXT_WIDTH);
+    lv_label_set_long_mode(label, LV_LABEL_LONG_MODE_WRAP);
 }
 
 #endif
