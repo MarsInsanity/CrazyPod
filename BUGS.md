@@ -119,7 +119,7 @@ Code: `apps/crazypod/ui/features/now_playing/crazypod_now_playing_overlay.c`.
 
 Commits: `750b389b` (removed real waste under Reduce Effects; did not fix
 this), `de8bac82` (stopped two failing lyrics file opens per menu open),
-`d0311f5c` (measure the whole press, including the draw).
+`f8113812` (measure the whole press, including the draw).
 
 **Closes when** the menu opens in under half a second with Reduce Effects
 off.
