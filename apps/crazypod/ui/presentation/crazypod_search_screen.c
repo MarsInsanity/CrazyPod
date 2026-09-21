@@ -9,23 +9,40 @@
 #include "lvgl.h"
 
 #include "crazypod_ui_menu_layout.h"
+#include "crazypod_ui_metrics.h"
 #include "crazypod_ui_widgets.h"
 #include "crazypod_menu_list.h"
 #include "crazypod_search_screen.h"
 #include "../../crazypod_color.h"
+#include "../../crazypod_mono.h"
 
 #define COLOR_WHITE 0xFFFFFF
-#define CRAZYPOD_VISIBLE_ROWS 6
+#ifdef HAVE_CRAZYPOD_MONO_UI
+/*
+ * The same shades the menu list names for the same reason: the design
+ * paints the selection bar in the accent and the title on it in white, and
+ * both of those land on ink here, so a selected row came out as dark type
+ * on a dark bar. See crazypod_menu_screen.c.
+ */
+#define ROW_SELECTED_FILL CRAZYPOD_MONO_INK
+#define ROW_SELECTED_TEXT CRAZYPOD_MONO_PAPER
+#define ROW_TEXT CRAZYPOD_MONO_INK
+#define HEADER_TEXT CRAZYPOD_MONO_SHADE_DARK
+#define MARKER_TEXT CRAZYPOD_MONO_SHADE_DARK
+#define QUERY_TEXT CRAZYPOD_MONO_INK
+#define QUERY_HINT CRAZYPOD_MONO_SHADE_DARK
+#endif
+#define CRAZYPOD_VISIBLE_ROWS CRAZYPOD_METRIC_SEARCH_ROWS
 #define CRAZYPOD_SEARCH_PREVIEW_ROWS 2
-#define CRAZYPOD_MENU_HEADER_X 16
-#define CRAZYPOD_MENU_HEADER_Y 38
-#define CRAZYPOD_MENU_HEADER_WIDTH 128
-#define CRAZYPOD_MENU_HEADER_HEIGHT 24
-#define CRAZYPOD_MENU_ROW_X 8
-#define CRAZYPOD_MENU_ROW_Y 64
-#define CRAZYPOD_MENU_ROW_WIDTH 140
-#define CRAZYPOD_MENU_ROW_HEIGHT 28
-#define CRAZYPOD_MENU_ROW_STEP 28
+#define CRAZYPOD_MENU_HEADER_X CRAZYPOD_METRIC_MENU_HEADER_X
+#define CRAZYPOD_MENU_HEADER_Y CRAZYPOD_METRIC_MENU_HEADER_Y
+#define CRAZYPOD_MENU_HEADER_WIDTH CRAZYPOD_METRIC_MENU_HEADER_WIDTH
+#define CRAZYPOD_MENU_HEADER_HEIGHT CRAZYPOD_METRIC_MENU_HEADER_HEIGHT
+#define CRAZYPOD_MENU_ROW_X CRAZYPOD_METRIC_MENU_ROW_X
+#define CRAZYPOD_MENU_ROW_Y CRAZYPOD_METRIC_SEARCH_ROWS_Y
+#define CRAZYPOD_MENU_ROW_WIDTH CRAZYPOD_METRIC_MENU_ROW_WIDTH
+#define CRAZYPOD_MENU_ROW_HEIGHT CRAZYPOD_METRIC_MENU_ROW_HEIGHT
+#define CRAZYPOD_MENU_ROW_STEP CRAZYPOD_METRIC_MENU_ROW_STEP
 
 static lv_obj_t *make_box(
     lv_obj_t *parent, int x, int y, int width, int height,
@@ -58,9 +75,15 @@ void crazypod_search_screen_render(
 
     crazypod_menu_list_reset(state->route);
 
+#ifdef HAVE_CRAZYPOD_MONO_UI
+    label = crazypod_ui_widget_label_shade(
+        context->parent, CP_TR("SEARCH"),
+        context->metadata_font, HEADER_TEXT, LV_OPA_COVER);
+#else
     label = make_label(context->parent, CP_TR("SEARCH"),
                        context->metadata_font,
                        COLOR_WHITE, 85);
+#endif
     lv_obj_set_pos(label, CRAZYPOD_MENU_HEADER_X,
                    CRAZYPOD_MENU_HEADER_Y);
     lv_obj_set_width(label, CRAZYPOD_MENU_HEADER_WIDTH);
@@ -68,10 +91,17 @@ void crazypod_search_screen_render(
 
     query_box = context->make_panel(
         context->parent, CRAZYPOD_GLASS_SLOT_SEARCH_QUERY,
-        170, 43, 136, 38, 12);
+        CRAZYPOD_METRIC_SEARCH_QUERY_X,
+        CRAZYPOD_METRIC_SEARCH_QUERY_Y,
+        CRAZYPOD_METRIC_SEARCH_QUERY_WIDTH,
+        CRAZYPOD_METRIC_SEARCH_QUERY_HEIGHT,
+        CRAZYPOD_METRIC_SEARCH_QUERY_RADIUS);
     if(context->query[0] != '\0') {
         lv_obj_t *active = make_box(
-            query_box, 0, 0, 136, 38, 12,
+            query_box, 0, 0,
+            CRAZYPOD_METRIC_SEARCH_QUERY_WIDTH,
+            CRAZYPOD_METRIC_SEARCH_QUERY_HEIGHT,
+            CRAZYPOD_METRIC_SEARCH_QUERY_RADIUS,
             context->primary_color, 82);
 
         if(context->gradient_highlight) {
@@ -82,19 +112,60 @@ void crazypod_search_screen_render(
         lv_obj_remove_flag(active, LV_OBJ_FLAG_CLICKABLE);
     }
     label = make_label(query_box, LV_SYMBOL_KEYBOARD,
-                       &lv_font_montserrat_12,
+                       CRAZYPOD_METRIC_SEARCH_QUERY_ICON_FONT,
                        COLOR_WHITE, context->query[0] != '\0' ? 235 : 90);
-    lv_obj_set_pos(label, 10, 12);
+    lv_obj_set_pos(label,
+                   CRAZYPOD_METRIC_SEARCH_QUERY_ICON_X,
+                   CRAZYPOD_METRIC_SEARCH_QUERY_ICON_Y);
+#ifdef HAVE_CRAZYPOD_MONO_UI
+    label = crazypod_ui_widget_label_shade(
+        query_box,
+        context->query[0] != '\0'
+            ? context->query : CP_TR("Start typing"),
+        context->metadata_font,
+        context->query[0] != '\0' ? QUERY_TEXT : QUERY_HINT,
+        LV_OPA_COVER);
+#else
     label = make_label(query_box,
                        context->query[0] != '\0'
                            ? context->query : CP_TR("Start typing"),
                        context->metadata_font,
                        COLOR_WHITE,
                        context->query[0] != '\0' ? 255 : 120);
-    lv_obj_set_pos(label, 31, 10);
-    lv_obj_set_width(label, 92);
-    lv_obj_set_height(label, 23);
+#endif
+    lv_obj_set_pos(label,
+                   CRAZYPOD_METRIC_SEARCH_QUERY_TEXT_X,
+                   CRAZYPOD_METRIC_SEARCH_QUERY_TEXT_Y);
+    lv_obj_set_width(
+        label,
+        CRAZYPOD_METRIC_SEARCH_QUERY_WIDTH -
+            CRAZYPOD_METRIC_SEARCH_QUERY_TEXT_X -
+            CRAZYPOD_METRIC_SEARCH_QUERY_TEXT_TRAIL);
+    lv_obj_set_height(
+        label, CRAZYPOD_METRIC_SEARCH_QUERY_TEXT_HEIGHT);
     lv_label_set_long_mode(label, LV_LABEL_LONG_MODE_DOTS);
+#if CRAZYPOD_METRIC_SEARCH_SHOW_COUNT
+    /* The count the wide layout prints over its results preview. */
+    snprintf(text, sizeof(text), CP_FMT("%d match%s"),
+             result_count, result_count == 1 ? "" : "es");
+#ifdef HAVE_CRAZYPOD_MONO_UI
+    label = crazypod_ui_widget_label_shade(
+        query_box, context->query[0] != '\0' ? text : "",
+        &lv_font_montserrat_8, QUERY_TEXT, LV_OPA_COVER);
+#else
+    label = make_label(query_box,
+                       context->query[0] != '\0' ? text : "",
+                       &lv_font_montserrat_8, COLOR_WHITE, 205);
+#endif
+    lv_obj_set_pos(
+        label,
+        CRAZYPOD_METRIC_SEARCH_QUERY_WIDTH -
+            CRAZYPOD_METRIC_SEARCH_COUNT_BACK,
+        CRAZYPOD_METRIC_SEARCH_QUERY_TEXT_Y + 1);
+    lv_obj_set_width(label, CRAZYPOD_METRIC_SEARCH_COUNT_WIDTH);
+    lv_obj_set_style_text_align(label, LV_TEXT_ALIGN_RIGHT, 0);
+    lv_label_set_long_mode(label, LV_LABEL_LONG_MODE_DOTS);
+#endif
 
     start = crazypod_ui_menu_window_start(
         count, state->selected, CRAZYPOD_VISIBLE_ROWS);
@@ -106,10 +177,23 @@ void crazypod_search_screen_render(
         lv_obj_t *row_box;
         lv_obj_t *marker;
         const char *title;
+#ifdef HAVE_CRAZYPOD_MONO_UI
+        uint32_t text_color = selected ? ROW_SELECTED_TEXT : ROW_TEXT;
+#endif
 
         if(index >= count)
             break;
 
+#ifdef HAVE_CRAZYPOD_MONO_UI
+        row_box = crazypod_ui_widget_box_shade(
+            context->parent,
+            CRAZYPOD_MENU_ROW_X, y,
+            CRAZYPOD_MENU_ROW_WIDTH,
+            CRAZYPOD_MENU_ROW_HEIGHT,
+            CRAZYPOD_METRIC_MENU_ROW_RADIUS,
+            ROW_SELECTED_FILL,
+            selected ? LV_OPA_COVER : LV_OPA_TRANSP);
+#else
         row_box = make_box(context->parent,
                            CRAZYPOD_MENU_ROW_X, y,
                            CRAZYPOD_MENU_ROW_WIDTH,
@@ -127,26 +211,45 @@ void crazypod_search_screen_render(
                                            crazypod_ui_color(COLOR_WHITE), 0);
             lv_obj_set_style_border_opa(row_box, 90, 0);
         }
+#endif
 
         title = context->item_title(state, index);
+#ifdef HAVE_CRAZYPOD_MONO_UI
+        label = crazypod_ui_widget_label_shade(
+            row_box, title != NULL ? title : "",
+            context->metadata_font, text_color, LV_OPA_COVER);
+#else
         label = make_label(row_box, title != NULL ? title : "",
                            context->metadata_font,
                            COLOR_WHITE,
                            selected ? 255 : 150);
-        lv_obj_set_width(label, 104);
+#endif
+        lv_obj_set_width(
+            label,
+            CRAZYPOD_MENU_ROW_WIDTH - CRAZYPOD_METRIC_ROW_TEXT_X - 22);
         crazypod_ui_widget_align_row_label(
-            label, 14, CRAZYPOD_UI_ROW_LABEL_TEXT);
+            label, CRAZYPOD_METRIC_ROW_TEXT_X,
+            CRAZYPOD_UI_ROW_LABEL_TEXT);
         lv_label_set_long_mode(label, LV_LABEL_LONG_MODE_DOTS);
 
+#ifdef HAVE_CRAZYPOD_MONO_UI
+        marker = crazypod_ui_widget_label_shade(
+            row_box, selected ? LV_SYMBOL_PLAY : LV_SYMBOL_BULLET,
+            &lv_font_montserrat_8,
+            selected ? ROW_SELECTED_TEXT : MARKER_TEXT, LV_OPA_COVER);
+#else
         marker = make_label(row_box,
                             selected ? LV_SYMBOL_PLAY : "",
                             &lv_font_montserrat_8,
                             COLOR_WHITE, selected ? 205 : 75);
+#endif
         crazypod_ui_widget_align_row_label(
-            marker, 128, CRAZYPOD_UI_ROW_LABEL_MARKER);
+            marker, CRAZYPOD_METRIC_ROW_MARKER_X,
+            CRAZYPOD_UI_ROW_LABEL_MARKER);
         crazypod_menu_list_bind_row(row, row_box, label, marker);
     }
 
+#if CRAZYPOD_METRIC_SEARCH_SHOW_RESULTS
     context->make_panel(
         context->parent, CRAZYPOD_GLASS_SLOT_SEARCH_RESULTS,
         170, 91, 136, 104, 12);
@@ -214,7 +317,9 @@ void crazypod_search_screen_render(
             lv_label_set_long_mode(label, LV_LABEL_LONG_MODE_DOTS);
         }
     }
+#endif
 
+#if CRAZYPOD_METRIC_SEARCH_SHOW_HINTS
     label = make_label(context->parent,
                        CP_TR("Wheel Choose  Select Action"),
                        &lv_font_montserrat_8,
@@ -229,6 +334,7 @@ void crazypod_search_screen_render(
     lv_obj_set_pos(label, 174, 216);
     lv_obj_set_width(label, 128);
     lv_obj_set_style_text_align(label, LV_TEXT_ALIGN_CENTER, 0);
+#endif
 }
 
 

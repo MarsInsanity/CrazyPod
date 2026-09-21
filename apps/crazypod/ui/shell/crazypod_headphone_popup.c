@@ -28,8 +28,43 @@
 #define COLOR_GOLD 0xD9B45B
 #define COLOR_GREEN 0x5CCA6B
 
+#ifdef HAVE_CRAZYPOD_COMPACT_UI
+/*
+ * No device drawing here. It is 168 by 105 of ceramic gradients, two
+ * pixel cables and a soft shadow, drawn wider than this whole panel; the
+ * card ran off every edge, which is why the Mini showed two giant earbuds
+ * and no words. Scaled down to what fits it would be a grey smudge on
+ * four shades anyway, so the compact card keeps only what the popup is
+ * for: which headphones, and whether they are connected yet.
+ */
+#define PANEL_WIDTH (LCD_WIDTH - 16)
+#define PANEL_HEIGHT 44
+#define SHOW_DEVICE 0
+#define TITLE_FONT (&lv_font_montserrat_10)
+#define TITLE_INSET 5
+#define TITLE_Y 6
+#define TITLE_HEIGHT 14
+#define TITLE_IDLE_OPA LV_OPA_COVER
+#define TITLE_ENTRANCE_OPA LV_OPA_COVER
+#define STATUS_FONT (&lv_font_montserrat_8)
+#define STATUS_Y 24
+#define STATUS_HEIGHT 12
+#define STATUS_IDLE_OPA LV_OPA_COVER
+#else
 #define PANEL_WIDTH 184
 #define PANEL_HEIGHT 158
+#define SHOW_DEVICE 1
+#define TITLE_FONT (&lv_font_montserrat_12)
+#define TITLE_INSET 10
+#define TITLE_Y 7
+#define TITLE_HEIGHT 20
+#define TITLE_IDLE_OPA 245
+#define TITLE_ENTRANCE_OPA 150
+#define STATUS_FONT (&lv_font_montserrat_10)
+#define STATUS_Y 133
+#define STATUS_HEIGHT 18
+#define STATUS_IDLE_OPA 110
+#endif
 #define PANEL_X ((LCD_WIDTH - PANEL_WIDTH) / 2)
 #define PANEL_Y ((LCD_HEIGHT - PANEL_HEIGHT) / 2)
 #define DEVICE_X 8
@@ -674,13 +709,17 @@ static void apply_timeline(int timeline_ms)
         lv_obj_set_style_opa(popup.panel, LV_OPA_COVER, 0);
     if(popup.title != NULL)
         lv_obj_set_style_text_opa(
-            popup.title, (lv_opa_t)lerp(150, 245, entrance), 0);
+            popup.title,
+            (lv_opa_t)lerp(
+                TITLE_ENTRANCE_OPA, TITLE_IDLE_OPA, entrance),
+            0);
     if(popup.status != NULL)
         lv_obj_set_style_text_opa(
             popup.status,
             connected
-                ? (lv_opa_t)lerp(110, 255, smooth_step(reveal))
-                : 110,
+                ? (lv_opa_t)lerp(STATUS_IDLE_OPA, 255,
+                                 smooth_step(reveal))
+                : STATUS_IDLE_OPA,
             0);
     if(popup.surface != NULL)
         lv_obj_invalidate(popup.surface);
@@ -880,15 +919,17 @@ static void show_popup(enum crazypod_headphone_popup_style style)
             ? CP_TR("Over-Ear Headphones")
             : CP_TR("Wired Earphones");
     popup.title = crazypod_ui_widget_label(
-        popup.panel, title_text, &lv_font_montserrat_12,
-        COLOR_WHITE, 245);
-    lv_obj_set_size(popup.title, PANEL_WIDTH - 20, 20);
-    lv_obj_set_pos(popup.title, 10, 7);
+        popup.panel, title_text, TITLE_FONT,
+        COLOR_WHITE, TITLE_IDLE_OPA);
+    lv_obj_set_size(
+        popup.title, PANEL_WIDTH - 2 * TITLE_INSET, TITLE_HEIGHT);
+    lv_obj_set_pos(popup.title, TITLE_INSET, TITLE_Y);
     lv_obj_set_style_text_align(
         popup.title, LV_TEXT_ALIGN_CENTER, 0);
     lv_label_set_long_mode(
         popup.title, LV_LABEL_LONG_MODE_DOTS);
 
+#if SHOW_DEVICE
     popup.surface = crazypod_ui_widget_box(
         popup.panel, DEVICE_X, DEVICE_Y,
         DEVICE_WIDTH, DEVICE_HEIGHT, 0,
@@ -896,12 +937,14 @@ static void show_popup(enum crazypod_headphone_popup_style style)
     lv_obj_remove_flag(popup.surface, LV_OBJ_FLAG_CLICKABLE);
     lv_obj_add_event_cb(
         popup.surface, draw_device, LV_EVENT_DRAW_MAIN, NULL);
+#endif
 
     popup.status = crazypod_ui_widget_label(
         popup.panel, CP_TR("Connecting..."),
-        &lv_font_montserrat_10, COLOR_WHITE, 110);
-    lv_obj_set_size(popup.status, PANEL_WIDTH - 20, 18);
-    lv_obj_set_pos(popup.status, 10, 133);
+        STATUS_FONT, COLOR_WHITE, STATUS_IDLE_OPA);
+    lv_obj_set_size(
+        popup.status, PANEL_WIDTH - 2 * TITLE_INSET, STATUS_HEIGHT);
+    lv_obj_set_pos(popup.status, TITLE_INSET, STATUS_Y);
     lv_obj_set_style_text_align(
         popup.status, LV_TEXT_ALIGN_CENTER, 0);
     lv_label_set_long_mode(

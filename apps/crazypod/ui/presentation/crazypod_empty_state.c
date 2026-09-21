@@ -8,6 +8,33 @@
 #include "crazypod_ui_widgets.h"
 
 #define COLOR_WHITE 0xFFFFFF
+#ifdef HAVE_CRAZYPOD_COMPACT_UI
+/*
+ * A 24px symbol over a 168px minimum card is most of this panel, and the
+ * message under it was set at a half opacity that has no shade here: on
+ * four steps it landed on the card it was printed on, so "Add local music
+ * and rescan" was there but could not be read.
+ */
+#define EMPTY_SYMBOL_FONT (&lv_font_montserrat_16)
+#define EMPTY_SYMBOL_STEP 22
+#define EMPTY_SYMBOL_OPA LV_OPA_COVER
+#define EMPTY_TITLE_FONT (&lv_font_montserrat_12)
+#define EMPTY_MESSAGE_OPA LV_OPA_COVER
+#define EMPTY_INSET 5
+#define EMPTY_PADDING 6
+#define EMPTY_MIN_WIDTH 0
+#define EMPTY_MAX_WIDTH (LCD_WIDTH - 8)
+#else
+#define EMPTY_SYMBOL_FONT (&lv_font_montserrat_24)
+#define EMPTY_SYMBOL_STEP 38
+#define EMPTY_SYMBOL_OPA 155
+#define EMPTY_TITLE_FONT (&lv_font_montserrat_12)
+#define EMPTY_MESSAGE_OPA 135
+#define EMPTY_INSET 14
+#define EMPTY_PADDING 16
+#define EMPTY_MIN_WIDTH 168
+#define EMPTY_MAX_WIDTH (LCD_WIDTH - 32)
+#endif
 
 void crazypod_empty_state_render(
     lv_obj_t *parent, const char *symbol,
@@ -26,24 +53,25 @@ void crazypod_empty_state_render(
     if(parent == NULL || title == NULL || message == NULL)
         return;
     measured_width = crazypod_popup_text_width(
-        title, &lv_font_montserrat_12);
+        title, EMPTY_TITLE_FONT);
     content_width = crazypod_popup_text_width(
         message, &lv_font_montserrat_8);
     if(content_width > measured_width)
         measured_width = content_width;
     geometry = crazypod_popup_centered_geometry(
         crazypod_popup_clamp_width(
-            measured_width, 18, 168, LCD_WIDTH - 32),
+            measured_width, EMPTY_INSET + 4,
+            EMPTY_MIN_WIDTH, EMPTY_MAX_WIDTH),
         1);
-    content_width = geometry.width - 28;
+    content_width = geometry.width - 2 * EMPTY_INSET;
     message_height = crazypod_popup_wrapped_text_height(
         message, &lv_font_montserrat_8,
         content_width, 2);
     geometry = crazypod_popup_centered_geometry(
         geometry.width,
-        16 + (has_symbol ? 38 : 0) +
-        lv_font_get_line_height(&lv_font_montserrat_12) +
-        8 + message_height + 16);
+        EMPTY_PADDING + (has_symbol ? EMPTY_SYMBOL_STEP : 0) +
+        lv_font_get_line_height(EMPTY_TITLE_FONT) +
+        8 + message_height + EMPTY_PADDING);
     root = crazypod_ui_widget_box(
         parent, 0, 0, LCD_WIDTH, LCD_HEIGHT,
         0, 0x000000, LV_OPA_TRANSP);
@@ -54,36 +82,35 @@ void crazypod_empty_state_render(
         geometry.width, geometry.height);
     lv_obj_remove_flag(panel, LV_OBJ_FLAG_CLICKABLE);
 
-    y = 16;
+    y = EMPTY_PADDING;
     if(has_symbol) {
         label = crazypod_ui_widget_label(
-            panel, symbol, &lv_font_montserrat_24,
-            COLOR_WHITE, 155);
+            panel, symbol, EMPTY_SYMBOL_FONT,
+            COLOR_WHITE, EMPTY_SYMBOL_OPA);
         lv_obj_set_width(label, geometry.width);
         lv_obj_set_style_text_align(
             label, LV_TEXT_ALIGN_CENTER, 0);
         lv_obj_set_pos(label, 0, y);
-        y += 38;
+        y += EMPTY_SYMBOL_STEP;
     }
     label = crazypod_ui_widget_label(
-        panel, title, &lv_font_montserrat_12,
+        panel, title, EMPTY_TITLE_FONT,
         COLOR_WHITE, LV_OPA_COVER);
     lv_obj_set_width(label, content_width);
     lv_obj_set_style_text_align(
         label, LV_TEXT_ALIGN_CENTER, 0);
-    lv_obj_set_pos(label, 14, y);
-    y += lv_font_get_line_height(
-        &lv_font_montserrat_12) + 8;
+    lv_obj_set_pos(label, EMPTY_INSET, y);
+    y += lv_font_get_line_height(EMPTY_TITLE_FONT) + 8;
     label = crazypod_ui_widget_label(
         panel, message, &lv_font_montserrat_8,
-        COLOR_WHITE, 135);
+        COLOR_WHITE, EMPTY_MESSAGE_OPA);
     lv_obj_set_width(label, content_width);
     lv_obj_set_height(label, message_height);
     lv_obj_set_style_text_align(
         label, LV_TEXT_ALIGN_CENTER, 0);
     lv_label_set_long_mode(label, LV_LABEL_LONG_MODE_WRAP);
     lv_obj_set_style_text_line_space(label, 2, 0);
-    lv_obj_set_pos(label, 14, y);
+    lv_obj_set_pos(label, EMPTY_INSET, y);
 }
 
 #endif
