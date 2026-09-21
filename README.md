@@ -617,7 +617,8 @@ the queue. The Favorite action adds or removes the current track from
   the iPod 6G platform.
 
 See [release-notes.md](release-notes.md) for the current feature delta and
-[PROJECT_STATUS.md](PROJECT_STATUS.md) for validation details. Read
+[PROJECT_STATUS.md](PROJECT_STATUS.md) for validation details.
+[BUGS.md](BUGS.md) lists every known defect and what would close it. Read
 [CONTRIBUTING.md](CONTRIBUTING.md) before submitting changes.
 
 ## License

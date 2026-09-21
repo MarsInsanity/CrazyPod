@@ -68,6 +68,12 @@ enum crazypod_now_playing_overlay
 crazypod_now_playing_overlay_kind(void);
 bool crazypod_now_playing_lyrics_mode(void);
 void crazypod_now_playing_overlay_show_actions(void);
+/*
+ * Called once per frame, with the tick the frame's work started at, so an
+ * Actions open that is still waiting to be drawn can report how long the
+ * whole press took. Does nothing when nothing is waiting.
+ */
+void crazypod_now_playing_overlay_note_frame(long frame_begin);
 void crazypod_now_playing_overlay_show_queue(void);
 void crazypod_now_playing_overlay_show_progress(void);
 void crazypod_now_playing_overlay_restore(

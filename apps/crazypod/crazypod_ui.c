@@ -1051,11 +1051,15 @@ void crazypod_ui_run(void)
          */
         if(drained > 0 ||
            crazypod_frameclock_due(&lvgl_clock, current_tick)) {
+            long frame_begin;
+
             if(drained > 0)
                 crazypod_present_request_immediate();
+            frame_begin = current_tick;
             crazypod_perf_log_lv_begin();
             lv_timer_handler();
             crazypod_perf_log_lv_end();
+            crazypod_now_playing_overlay_note_frame(frame_begin);
             crazypod_frameclock_schedule_next(&lvgl_clock, current_tick);
         }
         if(!locked) {
