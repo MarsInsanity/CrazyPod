@@ -44,11 +44,67 @@
  * Menu cancels" is three hints in a card with room for none of them, and
  * it drives the card's width through now_playback_popup_width().
  */
-#define NOW_PLAYBACK_ROW_HEIGHT 15
+#define NOW_PLAYBACK_ROW_HEIGHT 18
+#define NOW_PLAYBACK_TITLE_Y 2
+#define NOW_PLAYBACK_TITLE_GAP 2
+#define NOW_PLAYBACK_TITLE_OPA LV_OPA_COVER
+#define NOW_PLAYBACK_ROWS_GAP 3
+#define NOW_PLAYBACK_ICON_X 2
+#define NOW_PLAYBACK_ICON_Y 1
+#define NOW_PLAYBACK_LABEL_X 20
+#define NOW_PLAYBACK_LABEL_Y 3
+#define NOW_PLAYBACK_LABEL_TRAIL 22
+#define NOW_PLAYBACK_MARKER_BACK 19
+#define NOW_PLAYBACK_MARKER_W 16
+#define NOW_PLAYBACK_MARKER_Y 3
+#define NOW_PLAYBACK_MIN_WIDTH 0
+#define NOW_PLAYBACK_MAX_WIDTH (LCD_WIDTH - 8)
 #define NOW_QUEUE_HEADER_HEIGHT 16
 #define NOW_QUEUE_ROW_HEIGHT 14
 #define NOW_QUEUE_POPUP_WIDTH (LCD_WIDTH - 8)
 #define NOW_SHOW_INSTRUCTIONS 0
+/*
+ * The Actions card. Every number below was a 320x240 number, and on this
+ * panel they put the cells and the detail line off the bottom edge: the
+ * queue row alone is 36 tall with a 23px disc in it, and the detail begins
+ * 137 pixels down a card that cannot be taller than the screen. What was
+ * left for the row's label was twenty-odd pixels, so "View Playback Queue"
+ * came out as "Vie w".
+ *
+ * The disc goes for the reason the menu rows dropped theirs: white at a
+ * twelfth opacity has no shade here and lands on a solid blob. The cell
+ * captions go because a quarter of this card is 28 pixels and "Playback"
+ * is not 28 pixels wide; the detail line under them already names what
+ * the selected cell does.
+ */
+#define NOW_ACTIONS_MIN_WIDTH 0
+#define NOW_ACTIONS_MAX_WIDTH (LCD_WIDTH - 8)
+#define NOW_ACTIONS_TEXT_INSET 5
+#define NOW_ACTIONS_ROW_INSET 4
+#define NOW_ACTIONS_CELLS_INSET 4
+#define NOW_ACTIONS_TITLE_Y 2
+#define NOW_ACTIONS_TITLE_GAP 2
+#define NOW_ACTIONS_TITLE_OPA LV_OPA_COVER
+#define NOW_ACTIONS_QUEUE_HEIGHT 18
+#define NOW_ACTIONS_QUEUE_GAP 3
+#define NOW_ACTIONS_QUEUE_DISC 0
+#define NOW_ACTIONS_QUEUE_ICON_X 3
+#define NOW_ACTIONS_QUEUE_ICON_Y 1
+#define NOW_ACTIONS_QUEUE_LABEL_X 22
+#define NOW_ACTIONS_QUEUE_LABEL_Y 3
+#define NOW_ACTIONS_QUEUE_TRAIL 14
+#define NOW_ACTIONS_CHEVRON_W 12
+#define NOW_ACTIONS_CHEVRON_BACK 13
+#define NOW_ACTIONS_CHEVRON_Y 1
+#define NOW_ACTIONS_CELL_HEIGHT 26
+#define NOW_ACTIONS_CELL_GAP 3
+#define NOW_ACTIONS_CELL_ICON_Y 5
+#define NOW_ACTIONS_CELL_LABELS 0
+#define NOW_ACTIONS_CELL_LABEL_Y 0
+#define NOW_ACTIONS_IDLE_ICON_OPA 200
+#define NOW_ACTIONS_DETAIL_GAP 3
+#define NOW_ACTIONS_DETAIL_OPA LV_OPA_COVER
+#define NOW_ACTIONS_BOTTOM_GAP 3
 #define NOW_POPUP_INSET 4
 #define NOW_PROGRESS_STEP_MS 5000
 #define NOW_VOLUME_HUD_X 0
@@ -60,10 +116,52 @@
 #define NOW_VOLUME_TRACK_HEIGHT 58
 #else
 #define NOW_PLAYBACK_ROW_HEIGHT 31
+#define NOW_PLAYBACK_TITLE_Y 12
+#define NOW_PLAYBACK_TITLE_GAP 8
+#define NOW_PLAYBACK_TITLE_OPA 110
+#define NOW_PLAYBACK_ROWS_GAP 8
+#define NOW_PLAYBACK_ICON_X 9
+#define NOW_PLAYBACK_ICON_Y 7
+#define NOW_PLAYBACK_LABEL_X 36
+#define NOW_PLAYBACK_LABEL_Y 10
+#define NOW_PLAYBACK_LABEL_TRAIL 34
+#define NOW_PLAYBACK_MARKER_BACK 27
+#define NOW_PLAYBACK_MARKER_W 18
+#define NOW_PLAYBACK_MARKER_Y 10
+#define NOW_PLAYBACK_MIN_WIDTH 184
+#define NOW_PLAYBACK_MAX_WIDTH (LCD_WIDTH - 32)
 #define NOW_QUEUE_HEADER_HEIGHT 34
 #define NOW_QUEUE_ROW_HEIGHT 28
 #define NOW_QUEUE_POPUP_WIDTH 200
 #define NOW_SHOW_INSTRUCTIONS 1
+#define NOW_ACTIONS_MIN_WIDTH 250
+#define NOW_ACTIONS_MAX_WIDTH (LCD_WIDTH - 32)
+#define NOW_ACTIONS_TEXT_INSET 14
+#define NOW_ACTIONS_ROW_INSET 12
+#define NOW_ACTIONS_CELLS_INSET 16
+#define NOW_ACTIONS_TITLE_Y 12
+#define NOW_ACTIONS_TITLE_GAP 9
+#define NOW_ACTIONS_TITLE_OPA 92
+#define NOW_ACTIONS_QUEUE_HEIGHT 36
+#define NOW_ACTIONS_QUEUE_GAP 8
+#define NOW_ACTIONS_QUEUE_DISC 1
+#define NOW_ACTIONS_QUEUE_ICON_X 10
+#define NOW_ACTIONS_QUEUE_ICON_Y 7
+#define NOW_ACTIONS_QUEUE_LABEL_X 34
+#define NOW_ACTIONS_QUEUE_LABEL_Y 11
+#define NOW_ACTIONS_QUEUE_TRAIL 34
+#define NOW_ACTIONS_CHEVRON_W 16
+#define NOW_ACTIONS_CHEVRON_BACK 25
+#define NOW_ACTIONS_CHEVRON_Y 10
+#define NOW_ACTIONS_CELL_HEIGHT 52
+#define NOW_ACTIONS_CELL_GAP 7
+#define NOW_ACTIONS_CELL_ICON_Y 7
+#define NOW_ACTIONS_CELL_LABELS 1
+#define NOW_ACTIONS_CELL_LABEL_Y 32
+#define NOW_ACTIONS_IDLE_ICON_OPA 124
+#define NOW_ACTIONS_DETAIL_GAP 7
+#define NOW_ACTIONS_DETAIL_OPA 174
+#define NOW_ACTIONS_BOTTOM_GAP 9
 #define NOW_POPUP_INSET 14
 #define NOW_PROGRESS_STEP_MS 5000
 #define NOW_VOLUME_HUD_X 0
@@ -75,6 +173,15 @@
 #define NOW_VOLUME_TRACK_HEIGHT 84
 #endif
 #define NOW_VOLUME_HUD_MS 1200
+#ifdef HAVE_CRAZYPOD_COMPACT_UI
+/*
+ * "View Playback Queue" is wider than any row this panel can give it. The
+ * shorter name is already in the catalog, so this costs no translation.
+ */
+#define NOW_ACTIONS_QUEUE_TEXT CP_TR("Playback Queue")
+#else
+#define NOW_ACTIONS_QUEUE_TEXT CP_TR("View Playback Queue")
+#endif
 #define CRAZYPOD_METADATA_FONT (crazypod_runtime_font_at_size(18))
 #define NOW_QUEUE_TITLE_FONT (crazypod_runtime_font_at_size(15))
 
@@ -500,10 +607,13 @@ static void retain_larger(int *value, int candidate)
 
 static int now_actions_content_width(void)
 {
+#if NOW_ACTIONS_CELL_LABELS
     static const char *const labels[NOW_ACTION_CELL_COUNT] = {
         CP_TR("Favorite"), CP_TR("Playback"),
         CP_TR("Lyrics"), CP_TR("Progress")
     };
+    int longest_cell = 0;
+#endif
     const char *const details[] = {
         CP_TR("Scroll browse  Center play  Menu exits"),
         CP_TR("No track available"),
@@ -513,17 +623,20 @@ static int now_actions_content_width(void)
     };
     char playback[96];
     char lyrics[96];
-    int longest_cell = 0;
     int width;
     int index;
 
     width = crazypod_popup_text_width(
-        CP_TR("ACTIONS"), &lv_font_montserrat_10) + 28;
+        CP_TR("ACTIONS"), &lv_font_montserrat_10) +
+        2 * NOW_ACTIONS_TEXT_INSET;
     retain_larger(
         &width,
         crazypod_popup_text_width(
-            CP_TR("View Playback Queue"),
-            &lv_font_montserrat_10) + 76);
+            NOW_ACTIONS_QUEUE_TEXT,
+            &lv_font_montserrat_10) +
+            2 * NOW_ACTIONS_ROW_INSET +
+            NOW_ACTIONS_QUEUE_LABEL_X + NOW_ACTIONS_QUEUE_TRAIL);
+#if NOW_ACTIONS_CELL_LABELS
     for(index = 0; index < NOW_ACTION_CELL_COUNT; ++index)
         retain_larger(
             &longest_cell,
@@ -531,15 +644,25 @@ static int now_actions_content_width(void)
                 labels[index], &lv_font_montserrat_8));
     retain_larger(
         &width,
-        32 + 7 * (NOW_ACTION_CELL_COUNT - 1) +
+        2 * NOW_ACTIONS_CELLS_INSET +
+            NOW_ACTIONS_CELL_GAP * (NOW_ACTION_CELL_COUNT - 1) +
             NOW_ACTION_CELL_COUNT * (longest_cell + 6));
+#else
+    /* Icons only, so the cells need room for a 16px glyph and no more. */
+    retain_larger(
+        &width,
+        2 * NOW_ACTIONS_CELLS_INSET +
+            NOW_ACTIONS_CELL_GAP * (NOW_ACTION_CELL_COUNT - 1) +
+            NOW_ACTION_CELL_COUNT * 22);
+#endif
     for(index = 0;
         index < (int)(sizeof(details) / sizeof(details[0]));
         ++index) {
         retain_larger(
             &width,
             crazypod_popup_text_width(
-                details[index], &lv_font_montserrat_8) + 28);
+                details[index], &lv_font_montserrat_8) +
+                2 * NOW_ACTIONS_TEXT_INSET);
     }
     snprintf(
         playback, sizeof(playback), "%s  %s",
@@ -547,21 +670,24 @@ static int now_actions_content_width(void)
     retain_larger(
         &width,
         crazypod_popup_text_width(
-            playback, &lv_font_montserrat_8) + 28);
+            playback, &lv_font_montserrat_8) +
+            2 * NOW_ACTIONS_TEXT_INSET);
     snprintf(
         lyrics, sizeof(lyrics), "%s  %s",
         CP_FMT("Lyrics visible"), CP_FMT("Local LRC"));
     retain_larger(
         &width,
         crazypod_popup_text_width(
-            lyrics, &lv_font_montserrat_8) + 28);
+            lyrics, &lv_font_montserrat_8) +
+            2 * NOW_ACTIONS_TEXT_INSET);
     snprintf(
         lyrics, sizeof(lyrics), "%s  %s",
         CP_FMT("Lyrics hidden"), CP_FMT("No local LRC"));
     retain_larger(
         &width,
         crazypod_popup_text_width(
-            lyrics, &lv_font_montserrat_8) + 28);
+            lyrics, &lv_font_montserrat_8) +
+            2 * NOW_ACTIONS_TEXT_INSET);
     return width;
 }
 
@@ -640,7 +766,8 @@ static void refresh_now_favorite_icon(bool selected, bool favorite)
         return;
     lv_obj_set_style_opa(
         icon,
-        selected ? LV_OPA_COVER : favorite ? 235 : 124, 0);
+        selected ? LV_OPA_COVER
+            : favorite ? 235 : NOW_ACTIONS_IDLE_ICON_OPA, 0);
     crazypod_ui_widget_icon_set_color(
         icon, favorite ? COLOR_FAVORITE : COLOR_WHITE);
 }
@@ -670,11 +797,18 @@ static void refresh_now_actions_popup(void)
         crazypod_ui_color(queue_selected ? 0xDBD1BD : COLOR_WHITE), 0);
     lv_obj_set_style_border_opa(
         now_actions_view.queue_row, queue_selected ? 148 : 23, 0);
+#if NOW_ACTIONS_QUEUE_DISC
     lv_obj_set_style_bg_color(
         now_actions_view.queue_icon,
         crazypod_ui_color(queue_selected ? 0xDBD1BD : COLOR_WHITE), 0);
     lv_obj_set_style_bg_opa(
         now_actions_view.queue_icon, queue_selected ? 224 : 20, 0);
+#else
+    /* No disc to fill, so the glyph itself carries the selection. */
+    lv_obj_set_style_opa(
+        now_actions_view.queue_icon,
+        queue_selected ? LV_OPA_COVER : NOW_ACTIONS_IDLE_ICON_OPA, 0);
+#endif
     lv_obj_set_style_text_color(
         now_actions_view.queue_label, crazypod_ui_color(COLOR_WHITE), 0);
     lv_obj_set_style_text_opa(
@@ -699,9 +833,11 @@ static void refresh_now_actions_popup(void)
         else
             lv_obj_set_style_opa(
                 now_actions_view.cell_icons[i],
-                selected ? 245 : 124, 0);
+                selected ? 245 : NOW_ACTIONS_IDLE_ICON_OPA, 0);
+#if NOW_ACTIONS_CELL_LABELS
         lv_obj_set_style_text_opa(
             now_actions_view.cell_labels[i], selected ? 230 : 120, 0);
+#endif
     }
 
     crazypod_ui_widget_icon_set(
@@ -751,12 +887,12 @@ static void show_now_actions_popup(void)
     int row_width;
     int cells_width;
     int cell_width;
-    int cell_gap = 7;
-    int title_y = 12;
+    const int cell_gap = NOW_ACTIONS_CELL_GAP;
+    const int title_y = NOW_ACTIONS_TITLE_Y;
     int queue_y;
-    int queue_height = 36;
+    const int queue_height = NOW_ACTIONS_QUEUE_HEIGHT;
     int cells_y;
-    int cells_height = 52;
+    const int cells_height = NOW_ACTIONS_CELL_HEIGHT;
     int detail_height;
     int detail_y;
     int i;
@@ -783,19 +919,21 @@ static void show_now_actions_popup(void)
     geometry = crazypod_popup_centered_geometry(
         crazypod_popup_clamp_width(
             now_actions_content_width(),
-            0, 250, LCD_WIDTH - 32),
+            0, NOW_ACTIONS_MIN_WIDTH, NOW_ACTIONS_MAX_WIDTH),
         1);
     detail_height = now_actions_detail_height(
-        geometry.width - 28);
+        geometry.width - 2 * NOW_ACTIONS_TEXT_INSET);
     open_timing.measured = current_tick;
     queue_y = title_y +
-        lv_font_get_line_height(&lv_font_montserrat_10) + 9;
-    cells_y = queue_y + queue_height + 8;
-    detail_y = cells_y + cells_height + 7;
+        lv_font_get_line_height(&lv_font_montserrat_10) +
+        NOW_ACTIONS_TITLE_GAP;
+    cells_y = queue_y + queue_height + NOW_ACTIONS_QUEUE_GAP;
+    detail_y = cells_y + cells_height + NOW_ACTIONS_DETAIL_GAP;
     geometry = crazypod_popup_centered_geometry(
-        geometry.width, detail_y + detail_height + 9);
-    row_width = geometry.width - 24;
-    cells_width = geometry.width - 32;
+        geometry.width,
+        detail_y + detail_height + NOW_ACTIONS_BOTTOM_GAP);
+    row_width = geometry.width - 2 * NOW_ACTIONS_ROW_INSET;
+    cells_width = geometry.width - 2 * NOW_ACTIONS_CELLS_INSET;
     cell_width =
         (cells_width - cell_gap *
          (NOW_ACTION_CELL_COUNT - 1)) /
@@ -807,33 +945,49 @@ static void show_now_actions_popup(void)
     title = crazypod_ui_widget_label(
         now_overlay_panel, CP_TR("ACTIONS"),
         &lv_font_montserrat_10,
-        COLOR_WHITE, 92);
-    lv_obj_set_width(title, geometry.width - 28);
+        COLOR_WHITE, NOW_ACTIONS_TITLE_OPA);
+    lv_obj_set_width(
+        title, geometry.width - 2 * NOW_ACTIONS_TEXT_INSET);
     lv_obj_set_style_text_align(title, LV_TEXT_ALIGN_CENTER, 0);
-    lv_obj_set_pos(title, 14, title_y);
+    lv_obj_set_pos(title, NOW_ACTIONS_TEXT_INSET, title_y);
 
     now_actions_view.queue_row = crazypod_ui_widget_box(
-        now_overlay_panel, 12, queue_y,
+        now_overlay_panel, NOW_ACTIONS_ROW_INSET, queue_y,
         row_width, queue_height, 10,
         COLOR_WHITE, LV_OPA_TRANSP);
+#if NOW_ACTIONS_QUEUE_DISC
     now_actions_view.queue_icon = crazypod_ui_widget_box(
-        now_actions_view.queue_row, 10, 7, 23, 23,
-        LV_RADIUS_CIRCLE, COLOR_WHITE, 20);
+        now_actions_view.queue_row,
+        NOW_ACTIONS_QUEUE_ICON_X, NOW_ACTIONS_QUEUE_ICON_Y,
+        23, 23, LV_RADIUS_CIRCLE, COLOR_WHITE, 20);
     crazypod_ui_widget_icon(
         now_actions_view.queue_icon, 4, 4,
         CRAZYPOD_UI_ICON_LIST, COLOR_DETAIL, 220);
+#else
+    now_actions_view.queue_icon = crazypod_ui_widget_icon(
+        now_actions_view.queue_row,
+        NOW_ACTIONS_QUEUE_ICON_X, NOW_ACTIONS_QUEUE_ICON_Y,
+        CRAZYPOD_UI_ICON_LIST, COLOR_WHITE,
+        NOW_ACTIONS_IDLE_ICON_OPA);
+#endif
     now_actions_view.queue_label = crazypod_ui_widget_label(
-        now_actions_view.queue_row, CP_TR("View Playback Queue"),
+        now_actions_view.queue_row, NOW_ACTIONS_QUEUE_TEXT,
         &lv_font_montserrat_10, COLOR_WHITE, 215);
-    lv_obj_set_pos(now_actions_view.queue_label, 34, 11);
+    lv_obj_set_pos(
+        now_actions_view.queue_label,
+        NOW_ACTIONS_QUEUE_LABEL_X, NOW_ACTIONS_QUEUE_LABEL_Y);
     lv_obj_set_width(
-        now_actions_view.queue_label, row_width - 68);
+        now_actions_view.queue_label,
+        row_width - NOW_ACTIONS_QUEUE_LABEL_X -
+            NOW_ACTIONS_QUEUE_TRAIL);
     lv_obj_set_style_text_align(
         now_actions_view.queue_label,
         LV_TEXT_ALIGN_LEFT, 0);
     chevron_box = crazypod_ui_widget_box(
         now_actions_view.queue_row,
-        row_width - 25, 10, 16, 16, 0,
+        row_width - NOW_ACTIONS_CHEVRON_BACK,
+        NOW_ACTIONS_CHEVRON_Y,
+        NOW_ACTIONS_CHEVRON_W, 16, 0,
         COLOR_WHITE, LV_OPA_TRANSP);
     chevron = crazypod_ui_widget_label(
         chevron_box, LV_SYMBOL_RIGHT,
@@ -841,17 +995,19 @@ static void show_now_actions_popup(void)
     lv_obj_center(chevron);
 
     for(i = 0; i < NOW_ACTION_CELL_COUNT; ++i) {
+#if NOW_ACTIONS_CELL_LABELS
         static const char *const labels[NOW_ACTION_CELL_COUNT] = {
             CP_TR("Favorite"), CP_TR("Playback"),
             CP_TR("Lyrics"), CP_TR("Progress")
         };
+#endif
         static const enum crazypod_ui_icon icons[NOW_ACTION_CELL_COUNT] = {
             CRAZYPOD_UI_ICON_HEART,
             CRAZYPOD_UI_ICON_PLAY,
             CRAZYPOD_UI_ICON_FILE,
             CRAZYPOD_UI_ICON_BARS
         };
-        int x = 16 + i * (cell_width + cell_gap);
+        int x = NOW_ACTIONS_CELLS_INSET + i * (cell_width + cell_gap);
 
         now_actions_view.cells[i] = crazypod_ui_widget_box(
             now_overlay_panel, x, cells_y,
@@ -860,8 +1016,10 @@ static void show_now_actions_popup(void)
         now_actions_view.cell_icons[i] =
             crazypod_ui_widget_icon(
                 now_actions_view.cells[i],
-                (cell_width - 16) / 2, 7,
-                icons[i], COLOR_WHITE, 124);
+                (cell_width - 16) / 2, NOW_ACTIONS_CELL_ICON_Y,
+                icons[i], COLOR_WHITE,
+                NOW_ACTIONS_IDLE_ICON_OPA);
+#if NOW_ACTIONS_CELL_LABELS
         now_actions_view.cell_labels[i] = crazypod_ui_widget_label(
             now_actions_view.cells[i], labels[i],
             &lv_font_montserrat_8,
@@ -870,15 +1028,21 @@ static void show_now_actions_popup(void)
             now_actions_view.cell_labels[i], cell_width);
         lv_obj_set_style_text_align(
             now_actions_view.cell_labels[i], LV_TEXT_ALIGN_CENTER, 0);
-        lv_obj_set_pos(now_actions_view.cell_labels[i], 0, 32);
+        lv_obj_set_pos(
+            now_actions_view.cell_labels[i], 0,
+            NOW_ACTIONS_CELL_LABEL_Y);
+#else
+        now_actions_view.cell_labels[i] = NULL;
+#endif
     }
 
     now_actions_view.detail = crazypod_ui_widget_label(
         now_overlay_panel, "",
         &lv_font_montserrat_8,
-        COLOR_WHITE, 174);
+        COLOR_WHITE, NOW_ACTIONS_DETAIL_OPA);
     lv_obj_set_width(
-        now_actions_view.detail, geometry.width - 28);
+        now_actions_view.detail,
+        geometry.width - 2 * NOW_ACTIONS_TEXT_INSET);
     lv_obj_set_height(
         now_actions_view.detail, detail_height);
     lv_obj_set_style_text_align(
@@ -887,7 +1051,8 @@ static void show_now_actions_popup(void)
         now_actions_view.detail, LV_LABEL_LONG_MODE_WRAP);
     lv_obj_set_style_text_line_space(
         now_actions_view.detail, 1, 0);
-    lv_obj_set_pos(now_actions_view.detail, 14, detail_y);
+    lv_obj_set_pos(
+        now_actions_view.detail, NOW_ACTIONS_TEXT_INSET, detail_y);
     refresh_now_actions_popup();
     animate_now_popup(now_overlay_panel, geometry.y);
     open_timing.built = current_tick;
@@ -915,10 +1080,12 @@ static int now_playback_popup_width(void)
             crazypod_popup_text_width(
                 now_playback_mode_label_for(
                     (enum now_playback_mode)mode),
-                &lv_font_montserrat_10) + 76);
+                &lv_font_montserrat_10) +
+                2 * NOW_POPUP_INSET + NOW_PLAYBACK_LABEL_X +
+                NOW_PLAYBACK_LABEL_TRAIL);
     }
     return crazypod_popup_clamp_width(
-        width, 0, 184, LCD_WIDTH - 32);
+        width, 0, NOW_PLAYBACK_MIN_WIDTH, NOW_PLAYBACK_MAX_WIDTH);
 }
 
 static void refresh_now_playback_popup(void)
@@ -964,7 +1131,7 @@ static void show_now_playback_popup(void)
     lv_obj_t *title;
     lv_obj_t *instruction;
     struct crazypod_popup_geometry geometry;
-    int title_y = 12;
+    const int title_y = NOW_PLAYBACK_TITLE_Y;
     int rows_y;
     int instruction_y;
     int instruction_height;
@@ -988,9 +1155,11 @@ static void show_now_playback_popup(void)
     instruction_height = 0;
 #endif
     rows_y = title_y +
-        lv_font_get_line_height(&lv_font_montserrat_10) + 8;
+        lv_font_get_line_height(&lv_font_montserrat_10) +
+        NOW_PLAYBACK_TITLE_GAP;
     instruction_y = rows_y +
-        NOW_PLAYBACK_MODE_COUNT * NOW_PLAYBACK_ROW_HEIGHT + 8;
+        NOW_PLAYBACK_MODE_COUNT * NOW_PLAYBACK_ROW_HEIGHT +
+        NOW_PLAYBACK_ROWS_GAP;
     geometry = crazypod_popup_centered_geometry(
         geometry.width,
         instruction_y + instruction_height + NOW_POPUP_INSET);
@@ -1000,7 +1169,8 @@ static void show_now_playback_popup(void)
         geometry.width, geometry.height);
     title = crazypod_ui_widget_label(
         now_overlay_panel, CP_TR("Play Mode"),
-        &lv_font_montserrat_10, COLOR_WHITE, 110);
+        &lv_font_montserrat_10, COLOR_WHITE,
+        NOW_PLAYBACK_TITLE_OPA);
     lv_obj_set_pos(title, NOW_POPUP_INSET, title_y);
     lv_obj_set_width(title, geometry.width - 2 * NOW_POPUP_INSET);
     lv_obj_set_style_text_align(
@@ -1014,7 +1184,8 @@ static void show_now_playback_popup(void)
             row_width, NOW_PLAYBACK_ROW_HEIGHT, 7,
             COLOR_WHITE, LV_OPA_TRANSP);
         now_playback_view.icons[mode] = crazypod_ui_widget_icon(
-            now_playback_view.rows[mode], 9, 7,
+            now_playback_view.rows[mode],
+            NOW_PLAYBACK_ICON_X, NOW_PLAYBACK_ICON_Y,
             now_playback_mode_icon_for(
                 (enum now_playback_mode)mode),
             COLOR_WHITE, 118);
@@ -1025,9 +1196,13 @@ static void show_now_playback_popup(void)
                     (enum now_playback_mode)mode),
                 &lv_font_montserrat_10,
                 COLOR_WHITE, 150);
-        lv_obj_set_pos(now_playback_view.labels[mode], 36, 10);
+        lv_obj_set_pos(
+            now_playback_view.labels[mode],
+            NOW_PLAYBACK_LABEL_X, NOW_PLAYBACK_LABEL_Y);
         lv_obj_set_width(
-            now_playback_view.labels[mode], row_width - 70);
+            now_playback_view.labels[mode],
+            row_width - NOW_PLAYBACK_LABEL_X -
+                NOW_PLAYBACK_LABEL_TRAIL);
         now_playback_view.markers[mode] =
             crazypod_ui_widget_label(
                 now_playback_view.rows[mode], "",
@@ -1035,8 +1210,10 @@ static void show_now_playback_popup(void)
                 COLOR_CYAN, LV_OPA_COVER);
         lv_obj_set_pos(
             now_playback_view.markers[mode],
-            row_width - 27, 10);
-        lv_obj_set_width(now_playback_view.markers[mode], 18);
+            row_width - NOW_PLAYBACK_MARKER_BACK,
+            NOW_PLAYBACK_MARKER_Y);
+        lv_obj_set_width(
+            now_playback_view.markers[mode], NOW_PLAYBACK_MARKER_W);
         lv_obj_set_style_text_align(
             now_playback_view.markers[mode],
             LV_TEXT_ALIGN_CENTER, 0);

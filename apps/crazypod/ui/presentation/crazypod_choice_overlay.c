@@ -34,6 +34,17 @@
 #define POPUP_ACTION_ROW_Y 18
 #define POPUP_CHOICE_ROW_Y 24
 #define POPUP_BOTTOM_PADDING 4
+/*
+ * The title and the "<value> n/m" caption under it. Both sat at the
+ * offsets a 320px card uses, which put the caption at 29 -- five pixels
+ * into the first row, so "English" and "English 1/9" were printed over
+ * each other.
+ */
+#define POPUP_SIDE_INSET 4
+#define POPUP_TITLE_Y 2
+#define POPUP_VALUE_Y 13
+#define POPUP_SCROLL_BACK 5
+#define POPUP_ROW_TRAIL 9
 /* Row chrome: a small swatch, the label, then the marker. */
 #define POPUP_SWATCH_X 3
 #define POPUP_SWATCH_SIZE 5
@@ -55,6 +66,11 @@
 #define POPUP_ACTION_ROW_Y 38
 #define POPUP_CHOICE_ROW_Y 50
 #define POPUP_BOTTOM_PADDING 10
+#define POPUP_SIDE_INSET 12
+#define POPUP_TITLE_Y 12
+#define POPUP_VALUE_Y 29
+#define POPUP_SCROLL_BACK 8
+#define POPUP_ROW_TRAIL 12
 #define POPUP_SWATCH_X 9
 #define POPUP_SWATCH_SIZE 9
 #define POPUP_LABEL_X 24
@@ -173,7 +189,7 @@ static struct crazypod_popup_geometry calculate_geometry(void)
         if(item_width > longest_item)
             longest_item = item_width;
     }
-    content_width = title_width + 28;
+    content_width = title_width + 2 * POPUP_SIDE_INSET;
     if(longest_item + POPUP_ROW_LABEL_CHROME_WIDTH > content_width)
         content_width = longest_item + POPUP_ROW_LABEL_CHROME_WIDTH;
     width = crazypod_popup_clamp_width(
@@ -359,7 +375,9 @@ void crazypod_choice_overlay_show(
     view.metadata_font = metadata_font;
     view.count = callbacks->count(kind, id, callbacks->context);
     view.geometry = calculate_geometry();
-    view.row_width = view.geometry.width - 24;
+    /* The rows stop short of the scroll track on the right. */
+    view.row_width =
+        view.geometry.width - POPUP_SIDE_INSET - POPUP_ROW_TRAIL;
     view.selected = selected < 0
         ? callbacks->current_index(kind, id, callbacks->context)
         : selected;
@@ -382,20 +400,22 @@ void crazypod_choice_overlay_show(
     view.title = crazypod_ui_widget_label(
         view.panel, "", &lv_font_montserrat_10,
         COLOR_WHITE, POPUP_TITLE_OPA);
-    lv_obj_set_width(view.title, view.geometry.width - 24);
+    lv_obj_set_width(
+        view.title, view.geometry.width - 2 * POPUP_SIDE_INSET);
     lv_obj_set_style_text_align(
         view.title, LV_TEXT_ALIGN_CENTER, 0);
     lv_label_set_long_mode(view.title, LV_LABEL_LONG_MODE_DOTS);
-    lv_obj_set_pos(view.title, 12, 12);
+    lv_obj_set_pos(view.title, POPUP_SIDE_INSET, POPUP_TITLE_Y);
 
     view.value = crazypod_ui_widget_label(
         view.panel, "", &lv_font_montserrat_8,
         COLOR_WHITE, 170);
-    lv_obj_set_width(view.value, view.geometry.width - 24);
+    lv_obj_set_width(
+        view.value, view.geometry.width - 2 * POPUP_SIDE_INSET);
     lv_obj_set_style_text_align(
         view.value, LV_TEXT_ALIGN_CENTER, 0);
     lv_label_set_long_mode(view.value, LV_LABEL_LONG_MODE_DOTS);
-    lv_obj_set_pos(view.value, 12, 29);
+    lv_obj_set_pos(view.value, POPUP_SIDE_INSET, POPUP_VALUE_Y);
     if(view.action_layout)
         lv_obj_add_flag(view.value, LV_OBJ_FLAG_HIDDEN);
 
@@ -403,7 +423,7 @@ void crazypod_choice_overlay_show(
         int y = view.row_y + row * POPUP_ROW_HEIGHT;
 
         view.rows[row] = crazypod_ui_widget_box(
-            view.panel, 12, y,
+            view.panel, POPUP_SIDE_INSET, y,
             view.row_width, POPUP_ROW_HEIGHT, 8,
             COLOR_WHITE, LV_OPA_TRANSP);
         view.hold_fills[row] = crazypod_ui_widget_box(
@@ -440,13 +460,13 @@ void crazypod_choice_overlay_show(
     }
 
     track = crazypod_ui_widget_box(
-        view.panel, view.geometry.width - 8,
+        view.panel, view.geometry.width - POPUP_SCROLL_BACK,
         view.row_y + 3, 2,
         CHOICE_ROWS * POPUP_ROW_HEIGHT - 6, 1,
         COLOR_WHITE, 24);
     view.scroll_track = track;
     view.scroll_thumb = crazypod_ui_widget_box(
-        view.panel, view.geometry.width - 8,
+        view.panel, view.geometry.width - POPUP_SCROLL_BACK,
         view.row_y + 3, 2, 20, 1,
         COLOR_WHITE, 150);
 

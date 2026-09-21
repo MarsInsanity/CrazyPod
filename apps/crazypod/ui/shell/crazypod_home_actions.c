@@ -233,12 +233,16 @@ static void show_action_list(void)
             actions.panel, x, cells_y,
             cell_width, cell_height, 10,
             COLOR_WHITE, 9);
+#if CRAZYPOD_METRIC_HOME_ACTIONS_DISC
         circle = make_box(
             actions.cells[index], 0, 0,
             CRAZYPOD_METRIC_HOME_ACTIONS_CIRCLE,
             CRAZYPOD_METRIC_HOME_ACTIONS_CIRCLE,
             LV_RADIUS_CIRCLE, COLOR_WHITE, 20);
         lv_obj_center(circle);
+#else
+        circle = actions.cells[index];
+#endif
         actions.icons[index] = lv_image_create(circle);
         lv_image_set_src(actions.icons[index], asset);
         lv_image_set_scale(

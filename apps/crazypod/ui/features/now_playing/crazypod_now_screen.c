@@ -40,8 +40,23 @@
 #define CRAZYPOD_NOW_LYRICS_COVER_SIZE 44
 #define CRAZYPOD_NOW_META_X 54
 #define CRAZYPOD_NOW_META_WIDTH (LCD_WIDTH - CRAZYPOD_NOW_META_X - 4)
-#define CRAZYPOD_NOW_META_ROW_HEIGHT 14
+/*
+ * Fifteen, not fourteen: the metadata face resolves to 11px here and its
+ * line box is about fifteen, and every one of these labels is built a
+ * pixel shorter than its row. At 24 against a 24px row that pixel does not
+ * show; at 14 the text bled into the row beneath it.
+ */
+#define CRAZYPOD_NOW_META_ROW_HEIGHT 15
 #define CRAZYPOD_NOW_TITLE_Y 16
+/*
+ * Title and artist only. The album row and the favourite and play-mode
+ * badges below it want another twenty-nine pixels, and the wave starts at
+ * sixty-eight: with a real track the badges were drawn over it. The sim's
+ * "No Track" path builds neither, which is why this looked right there and
+ * wrong on the device.
+ */
+#define CRAZYPOD_NOW_SHOW_ALBUM 0
+#define CRAZYPOD_NOW_SHOW_BADGES 0
 #define CRAZYPOD_NOW_BADGE_Y 58
 #define CRAZYPOD_NOW_BADGE_GAP 16
 #else
@@ -52,6 +67,8 @@
 #define CRAZYPOD_NOW_META_WIDTH 158
 #define CRAZYPOD_NOW_META_ROW_HEIGHT 24
 #define CRAZYPOD_NOW_TITLE_Y 71
+#define CRAZYPOD_NOW_SHOW_ALBUM 1
+#define CRAZYPOD_NOW_SHOW_BADGES 1
 #define CRAZYPOD_NOW_BADGE_Y 143
 #define CRAZYPOD_NOW_BADGE_GAP 25
 #endif
@@ -517,6 +534,7 @@ void crazypod_now_screen_render(
                 artist, CRAZYPOD_NOW_META_X,
                 CRAZYPOD_NOW_TITLE_Y + CRAZYPOD_NOW_META_ROW_HEIGHT);
 
+#if CRAZYPOD_NOW_SHOW_ALBUM
             album = make_label(
                 context->parent,
                 track != NULL && track->album[0] != '\0'
@@ -531,7 +549,10 @@ void crazypod_now_screen_render(
             lv_obj_set_pos(
                 album, CRAZYPOD_NOW_META_X,
                 CRAZYPOD_NOW_TITLE_Y + 2 * CRAZYPOD_NOW_META_ROW_HEIGHT);
-
+#else
+            (void)album;
+#endif
+#if CRAZYPOD_NOW_SHOW_BADGES
             crazypod_ui_widget_icon(
                 context->parent,
                 CRAZYPOD_NOW_META_X +
@@ -556,6 +577,10 @@ void crazypod_now_screen_render(
                 crazypod_queue_repeat() != REPEAT_OFF ||
                 crazypod_queue_shuffle() ? COLOR_CYAN : content_color,
                 220);
+#else
+            (void)favorite;
+            (void)mode_icon;
+#endif
         }
     }
 

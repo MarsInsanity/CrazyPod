@@ -64,8 +64,19 @@ struct crazypod_popup_geometry crazypod_popup_centered_geometry(
     int width, int height)
 {
     struct crazypod_popup_geometry geometry;
+    /*
+     * Twelve pixels of margin on each side is a twelfth of a 320px screen
+     * and a sixth of this one, so the compact panel keeps its cards nearly
+     * edge to edge: every pixel it gives back here is a pixel a label does
+     * not have to wrap in.
+     */
+#ifdef HAVE_CRAZYPOD_COMPACT_UI
+    const int maximum_width = LCD_WIDTH - 8;
+    const int maximum_height = LCD_HEIGHT - 6;
+#else
     const int maximum_width = LCD_WIDTH - 24;
     const int maximum_height = LCD_HEIGHT - 16;
+#endif
 
     if(width < 1)
         width = 1;

@@ -70,6 +70,35 @@
 #define CRAZYPOD_METRIC_HEADER_TEXT_SIZE 10
 
 /*
+ * Search. The large canvas puts the letter list down the left and a query
+ * card, a results preview and two lines of hints down the right; here
+ * there is one column, so the query card goes across the top of the list
+ * and carries the match count itself. The preview and the hints go: two
+ * result titles with subtitles is another sixty pixels this panel does
+ * not have, and the list under the query says the same thing when the
+ * search is run.
+ */
+#define CRAZYPOD_METRIC_SEARCH_ROWS 4
+#define CRAZYPOD_METRIC_SEARCH_ROWS_Y 45
+#define CRAZYPOD_METRIC_SEARCH_QUERY_X 3
+#define CRAZYPOD_METRIC_SEARCH_QUERY_Y 26
+#define CRAZYPOD_METRIC_SEARCH_QUERY_WIDTH (LCD_WIDTH - 6)
+#define CRAZYPOD_METRIC_SEARCH_QUERY_HEIGHT 16
+#define CRAZYPOD_METRIC_SEARCH_QUERY_RADIUS 6
+#define CRAZYPOD_METRIC_SEARCH_QUERY_ICON_X 3
+#define CRAZYPOD_METRIC_SEARCH_QUERY_ICON_Y 2
+#define CRAZYPOD_METRIC_SEARCH_QUERY_ICON_FONT (&lv_font_montserrat_8)
+#define CRAZYPOD_METRIC_SEARCH_QUERY_TEXT_X 16
+#define CRAZYPOD_METRIC_SEARCH_QUERY_TEXT_Y 2
+#define CRAZYPOD_METRIC_SEARCH_QUERY_TEXT_TRAIL 34
+#define CRAZYPOD_METRIC_SEARCH_QUERY_TEXT_HEIGHT 12
+#define CRAZYPOD_METRIC_SEARCH_COUNT_WIDTH 28
+#define CRAZYPOD_METRIC_SEARCH_COUNT_BACK 31
+#define CRAZYPOD_METRIC_SEARCH_SHOW_COUNT 1
+#define CRAZYPOD_METRIC_SEARCH_SHOW_RESULTS 0
+#define CRAZYPOD_METRIC_SEARCH_SHOW_HINTS 0
+
+/*
  * The watch faces. On the large canvas the dial sits on the left of a wide
  * card with the time and date in a column beside it; there is no room for
  * two columns here, so the dial is centred and the readout goes under it.
@@ -175,8 +204,16 @@
 #define CRAZYPOD_METRIC_HOME_ACTIONS_TITLE_Y 3
 #define CRAZYPOD_METRIC_HOME_ACTIONS_CELLS_Y 17
 #define CRAZYPOD_METRIC_HOME_ACTIONS_CELL_HEIGHT 44
+/*
+ * No disc behind the icon. The design draws one as white at a twelfth
+ * opacity, a hint of a surface under the glyph; the four shades here have
+ * no twelfth, so it lands on a solid mid-grey that fills four fifths of a
+ * 38px cell and reads as a blob with something faint on it. The menu rows
+ * already drop theirs for the same reason.
+ */
+#define CRAZYPOD_METRIC_HOME_ACTIONS_DISC 0
 #define CRAZYPOD_METRIC_HOME_ACTIONS_CIRCLE 30
-#define CRAZYPOD_METRIC_HOME_ACTIONS_ICON 20
+#define CRAZYPOD_METRIC_HOME_ACTIONS_ICON 24
 #define CRAZYPOD_METRIC_HOME_ADJUST_WIDTH (LCD_WIDTH - 16)
 #define CRAZYPOD_METRIC_HOME_ADJUST_HEIGHT 92
 #define CRAZYPOD_METRIC_HOME_ADJUST_ARC 56
@@ -206,6 +243,26 @@
 #define CRAZYPOD_METRIC_MENU_ROW_HEIGHT 28
 #define CRAZYPOD_METRIC_MENU_ROW_STEP 28
 #define CRAZYPOD_METRIC_MENU_ROW_RADIUS 8
+
+#define CRAZYPOD_METRIC_SEARCH_ROWS 6
+#define CRAZYPOD_METRIC_SEARCH_ROWS_Y 64
+#define CRAZYPOD_METRIC_SEARCH_QUERY_X 170
+#define CRAZYPOD_METRIC_SEARCH_QUERY_Y 43
+#define CRAZYPOD_METRIC_SEARCH_QUERY_WIDTH 136
+#define CRAZYPOD_METRIC_SEARCH_QUERY_HEIGHT 38
+#define CRAZYPOD_METRIC_SEARCH_QUERY_RADIUS 12
+#define CRAZYPOD_METRIC_SEARCH_QUERY_ICON_X 10
+#define CRAZYPOD_METRIC_SEARCH_QUERY_ICON_Y 12
+#define CRAZYPOD_METRIC_SEARCH_QUERY_ICON_FONT (&lv_font_montserrat_12)
+#define CRAZYPOD_METRIC_SEARCH_QUERY_TEXT_X 31
+#define CRAZYPOD_METRIC_SEARCH_QUERY_TEXT_Y 10
+#define CRAZYPOD_METRIC_SEARCH_QUERY_TEXT_TRAIL 13
+#define CRAZYPOD_METRIC_SEARCH_QUERY_TEXT_HEIGHT 23
+#define CRAZYPOD_METRIC_SEARCH_COUNT_WIDTH 0
+#define CRAZYPOD_METRIC_SEARCH_COUNT_BACK 0
+#define CRAZYPOD_METRIC_SEARCH_SHOW_COUNT 0
+#define CRAZYPOD_METRIC_SEARCH_SHOW_RESULTS 1
+#define CRAZYPOD_METRIC_SEARCH_SHOW_HINTS 1
 
 #define CRAZYPOD_METRIC_FACE_PANEL_X 10
 #define CRAZYPOD_METRIC_FACE_PANEL_Y 40
@@ -285,6 +342,7 @@
 #define CRAZYPOD_METRIC_HOME_ACTIONS_TITLE_Y 11
 #define CRAZYPOD_METRIC_HOME_ACTIONS_CELLS_Y 35
 #define CRAZYPOD_METRIC_HOME_ACTIONS_CELL_HEIGHT 58
+#define CRAZYPOD_METRIC_HOME_ACTIONS_DISC 1
 #define CRAZYPOD_METRIC_HOME_ACTIONS_CIRCLE 42
 #define CRAZYPOD_METRIC_HOME_ACTIONS_ICON 28
 #define CRAZYPOD_METRIC_HOME_ADJUST_WIDTH 198

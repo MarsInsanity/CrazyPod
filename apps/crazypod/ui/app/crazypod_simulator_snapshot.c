@@ -35,6 +35,7 @@
 #include "../navigation/crazypod_route_query.h"
 #include "../shell/crazypod_desktop.h"
 #include "../shell/crazypod_headphone_popup.h"
+#include "../shell/crazypod_home_actions.h"
 #include "../shell/crazypod_lock_screen.h"
 #include "../shell/crazypod_notification.h"
 #include "../shell/crazypod_shell.h"
@@ -1193,6 +1194,9 @@ bool crazypod_simulator_snapshot_prepare(
         host->open_app(CRAZYPOD_APP_NOTES);
         select_bounded(host, notes_home_deleted_index() - 1);
     }
+    /* The letter picker itself, which the row above only highlights. */
+    else if(strcmp(screen, "music-search") == 0)
+        host->open_root_route(MUSIC_ROUTE_SEARCH);
     else if(strcmp(screen, "notes-deleted") == 0) {
         host->open_app(CRAZYPOD_APP_NOTES);
         select_bounded(host, notes_home_deleted_index());
@@ -1319,6 +1323,45 @@ bool crazypod_simulator_snapshot_prepare(
         return open_now_playing_default_lyrics(host);
     else if(strcmp(screen, "now-playing-default") == 0)
         return open_now_playing_theme_snapshot(host, NULL);
+    /*
+     * The overlays the default Now Playing screen puts over itself, with
+     * no track loaded. The "-default-" screens above need a two-track
+     * library to reach these, which a bare simdisk does not have, so the
+     * cards they draw went unseen on the compact panel.
+     */
+    else if(strcmp(screen, "now-playing-actions") == 0 ||
+            sscanf(screen, "now-playing-actions-%d",
+                   &preview_index) == 1) {
+        if(strcmp(screen, "now-playing-actions") == 0)
+            preview_index = 0;
+        if(!open_now_playing_theme_snapshot(host, NULL))
+            return false;
+        crazypod_now_playing_overlay_show_actions();
+        crazypod_now_playing_overlay_move(preview_index);
+        return crazypod_now_playing_overlay_kind() ==
+            CRAZYPOD_NOW_OVERLAY_ACTIONS;
+    }
+    else if(strcmp(screen, "now-playing-queue") == 0) {
+        if(!open_now_playing_theme_snapshot(host, NULL))
+            return false;
+        crazypod_now_playing_overlay_show_actions();
+        crazypod_now_playing_overlay_activate();
+        return crazypod_now_playing_overlay_kind() ==
+            CRAZYPOD_NOW_OVERLAY_QUEUE;
+    }
+    else if(strcmp(screen, "now-playing-mode") == 0) {
+        if(!open_now_playing_theme_snapshot(host, NULL))
+            return false;
+        crazypod_now_playing_overlay_show_actions();
+        crazypod_now_playing_overlay_move(2);
+        crazypod_now_playing_overlay_activate();
+        return crazypod_now_playing_overlay_kind() ==
+            CRAZYPOD_NOW_OVERLAY_PLAYBACK;
+    }
+    else if(strcmp(screen, "home-actions") == 0) {
+        crazypod_home_actions_show();
+        return crazypod_home_actions_visible();
+    }
     else if(strcmp(screen, "note-compose") == 0) {
         host->open_app(CRAZYPOD_APP_NOTES);
         host->begin_note_composer(0, false);
