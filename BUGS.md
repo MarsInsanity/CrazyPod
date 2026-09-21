@@ -96,15 +96,30 @@ which rules out the effects path by itself.
 Remaining hypothesis: opening the popup forces a redraw of the Now Playing
 screen underneath it, and that screen is the expensive one.
 
-Diagnostic on the branch: `nowactions screen=Ams glass=Bms build=Cms`, logged
-when an open takes longer than a quarter second. If no such line appears at
-all, the popup is fast and the wait is somewhere before the popup is asked
-for, which is a different search.
+The first round of timing measured the wrong window: it stopped when the
+widgets existed, which is not when the popup appears. LVGL draws them on the
+next frame, and that draw was outside the measurement. The diagnostic now
+covers the whole press and reports, in milliseconds:
+
+```
+nowactions refr=A under=B meas=C panel=D build=E wait=F draw=G total=H
+```
+
+`refr` is the forced screen redraw, `under` the framebuffer copy behind the
+popup, `meas` the text measuring that sizes it, `panel` the glass sample,
+`build` the widgets, `wait` the gap before the next frame, and `draw` that
+frame. One press names the step.
+
+Worth knowing while reading it: the Home Actions menu forces the same screen
+redraw and is fast, so that call is not the difference by itself. Home is
+drawn into the framebuffer natively rather than by LVGL, so there is little
+for a redraw to do there and a great deal on Now Playing.
 
 Code: `apps/crazypod/ui/features/now_playing/crazypod_now_playing_overlay.c`.
 
 Commits: `750b389b` (removed real waste under Reduce Effects; did not fix
-this), `de8bac82` (stopped two failing lyrics file opens per menu open).
+this), `de8bac82` (stopped two failing lyrics file opens per menu open),
+`d0311f5c` (measure the whole press, including the draw).
 
 **Closes when** the menu opens in under half a second with Reduce Effects
 off.

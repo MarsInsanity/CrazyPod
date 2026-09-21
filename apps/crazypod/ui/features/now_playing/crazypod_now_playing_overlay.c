@@ -106,6 +106,22 @@ struct now_volume_hud_view {
     lv_timer_t *hide_timer;
 };
 
+/*
+ * Where the wait between pressing Center in Now Playing and seeing the
+ * Actions menu actually goes. Each field is the tick at which that step
+ * finished, and "drawn" is filled in by the frame that renders it, which
+ * happens after this function has already returned.
+ */
+static struct {
+    long opened;
+    long refreshed;
+    long underlaid;
+    long measured;
+    long panelled;
+    long built;
+    bool pending;
+} open_timing;
+
 static struct crazypod_now_playing_overlay_host overlay_host;
 static struct now_queue_popup_view now_queue_view;
 static struct now_actions_popup_view now_actions_view;
@@ -716,19 +732,20 @@ static void show_now_actions_popup(void)
     int i;
 
     /*
-     * Opening this took two to three seconds on the device and the three
-     * things it does are indistinguishable from outside: bringing the
-     * screen up to date so the panel can sample it, sampling it, and
-     * building thirty-odd widgets. Time them apart rather than guess.
+     * Opening this takes two to three seconds on the device, and every
+     * step of it is indistinguishable from outside. The last round of
+     * timing measured only up to the point where the widgets exist, which
+     * is not when the popup appears: LVGL draws them on the next frame,
+     * and that draw was never in the window. Time the whole press, ending
+     * at the frame that puts it on the glass.
      */
-    long opened = current_tick;
-    long glass_ready;
-    long panel_ready;
+    open_timing.opened = current_tick;
 
     if(now_overlay == CRAZYPOD_NOW_OVERLAY_NONE)
         prepare_now_overlay_glass(true);
-    glass_ready = current_tick;
+    open_timing.refreshed = current_tick;
     begin_now_overlay(CRAZYPOD_NOW_OVERLAY_ACTIONS);
+    open_timing.underlaid = current_tick;
     if(now_action_selected < 0 ||
        now_action_selected >= NOW_ACTION_COUNT)
         now_action_selected = NOW_ACTION_QUEUE;
@@ -740,6 +757,7 @@ static void show_now_actions_popup(void)
         1);
     detail_height = now_actions_detail_height(
         geometry.width - 28);
+    open_timing.measured = current_tick;
     queue_y = title_y +
         lv_font_get_line_height(&lv_font_montserrat_10) + 9;
     cells_y = queue_y + queue_height + 8;
@@ -755,7 +773,7 @@ static void show_now_actions_popup(void)
     now_overlay_panel = make_now_glass_panel(
         geometry.x, geometry.y,
         geometry.width, geometry.height);
-    panel_ready = current_tick;
+    open_timing.panelled = current_tick;
     title = crazypod_ui_widget_label(
         now_overlay_panel, CP_TR("ACTIONS"),
         &lv_font_montserrat_10,
@@ -842,13 +860,8 @@ static void show_now_actions_popup(void)
     lv_obj_set_pos(now_actions_view.detail, 14, detail_y);
     refresh_now_actions_popup();
     animate_now_popup(now_overlay_panel, geometry.y);
-    /* Only when it was slow enough to be the wait that was reported. */
-    if(current_tick - opened >= HZ / 4)
-        crazypod_diag_log(
-            "nowactions", "screen=%ldms glass=%ldms build=%ldms",
-            (glass_ready - opened) * 1000 / HZ,
-            (panel_ready - glass_ready) * 1000 / HZ,
-            (current_tick - panel_ready) * 1000 / HZ);
+    open_timing.built = current_tick;
+    open_timing.pending = true;
 }
 
 static int now_playback_popup_width(void)
@@ -1569,6 +1582,30 @@ crazypod_now_playing_overlay_kind(void)
 bool crazypod_now_playing_lyrics_mode(void)
 {
     return crazypod_state_lyrics_mode();
+}
+
+static long open_span_ms(long from, long to)
+{
+    return (to - from) * 1000 / HZ;
+}
+
+void crazypod_now_playing_overlay_note_frame(long frame_begin)
+{
+    if(!open_timing.pending)
+        return;
+    open_timing.pending = false;
+    crazypod_diag_log(
+        "nowactions",
+        "refr=%ld under=%ld meas=%ld panel=%ld build=%ld "
+        "wait=%ld draw=%ld total=%ld",
+        open_span_ms(open_timing.opened, open_timing.refreshed),
+        open_span_ms(open_timing.refreshed, open_timing.underlaid),
+        open_span_ms(open_timing.underlaid, open_timing.measured),
+        open_span_ms(open_timing.measured, open_timing.panelled),
+        open_span_ms(open_timing.panelled, open_timing.built),
+        open_span_ms(open_timing.built, frame_begin),
+        open_span_ms(frame_begin, current_tick),
+        open_span_ms(open_timing.opened, current_tick));
 }
 
 void crazypod_now_playing_overlay_show_actions(void)
