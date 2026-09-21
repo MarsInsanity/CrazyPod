@@ -3,11 +3,13 @@
 The list of record. Every known defect gets an entry here, and a bug that
 is not here is a bug one of us forgets between test rounds.
 
-- Status date: 2026-09-20
+- Status date: 2026-09-21
 - Branch under test: `claude/rockbox-ipod-classic-5th-port-nhvtu1`
 - Newest build on that branch: `254edd14`
 - Hardware under test: iPod Classic 5.5G (`ipodvideo`, PP5022, 32 MiB),
   microSD through an iFlash-style ATA adapter
+- Also under test: `claude/happy-albattani-b9woty` on an iPod Mini 2G
+  (`ipodmini2g`, PP5022, 32 MiB, 138x110 at two bits per pixel)
 
 ## How to use this file
 
@@ -225,6 +227,90 @@ Commit: `4a37d26e`.
 
 **Closes when** the cover appears on the Home widget after a reboot, from a
 cold start with no other screen opened first.
+
+### CP-014 — Overlays and cards on the iPod Mini were drawn at 320x240
+
+**High. Shipped, unconfirmed.**
+
+Reported from the device with photographs: the Now Playing Actions card
+showed a single row with a black blob where its icon should be and the
+label wrapped to "Vie w", and nothing below it.
+
+The cause is the same everywhere it appeared. These screens carry the
+offsets a 320x240 panel uses, and the Mini is 138x110, so anything past
+those bounds is simply not on the glass. The Actions card puts its detail
+line 137 pixels down a card that cannot be taller than the screen; the
+Play Mode card declares four 31px rows at 15, so each label was clipped to
+a sliver and the fourth row fell off the bottom; the choice overlay printed
+its "<value> n/m" caption five pixels into the first row; the headphone
+card drew a 184x158 panel, so the Mini showed two giant earbuds and no
+words; Search was a two-column layout whose right-hand column began at
+x=170; EQ Studio put its graph, footer and hints past both edges; the note
+sheet, the book reader, its Stats and Info cards, the book loading screen,
+the workout and calendar detail cards and the contact card were all the
+same error.
+
+Three of them were palette rather than geometry: the home Actions cells
+drew a disc behind each icon at a twelfth opacity, which has no shade on a
+four-shade panel and lands on a solid blob; the organizer cards are
+near-black at nine tenths, which the design map turns into the page they
+sit on; the calendar day sheet is white with near-black type, which is
+exactly the pair the map inverts, so it came out white on black.
+
+Code: `apps/crazypod/ui/features/now_playing/crazypod_now_playing_overlay.c`,
+`apps/crazypod/ui/presentation/crazypod_choice_overlay.c`,
+`crazypod_popup_layout.c`, `crazypod_search_screen.c`,
+`crazypod_empty_state.c`, `apps/crazypod/ui/shell/crazypod_home_actions.c`,
+`crazypod_headphone_popup.c`,
+`apps/crazypod/ui/features/settings/crazypod_eq_studio_screen.c`,
+`apps/crazypod/ui/features/notes/crazypod_notes_screen.c`,
+`apps/crazypod/ui/features/books/`, `apps/crazypod/ui/features/organizer/`.
+
+Commits: `14dd2be0`, `21ca35bf`, `c4c815f0`, `cb297334`.
+
+**Closes when** each of these opens on a Mini with everything inside the
+panel and readable: the Now Playing Actions and Play Mode cards, a choice
+list, the home Actions menu, the headphone card, Search, EQ Studio, a note,
+a book and its Stats and Info screens, a workout, a calendar day and event,
+and a contact.
+
+### CP-015 — Now Playing drew its album row and badges over the waveform
+
+**Medium. Shipped, unconfirmed.**
+
+On the Mini the metadata column ran into the waveform below it. The rows
+are 14 pixels apart for a face whose line box is fifteen, and the album row
+and the favourite and play-mode badges want another twenty-nine pixels
+before a waveform that starts at sixty-eight.
+
+The simulator never showed it: its "No Track" path builds neither the album
+row nor the badges, so the collision only existed with a real track loaded.
+The compact screen now shows title and artist only.
+
+Code: `apps/crazypod/ui/features/now_playing/crazypod_now_screen.c`.
+
+Commit: `14dd2be0`.
+
+**Closes when** a playing track on a Mini shows its title and artist clear
+of the waveform.
+
+### CP-016 — Album Flow on the Mini opened a route with nothing to draw
+
+**Medium. Shipped, unconfirmed.**
+
+The monochrome build does not compile the cover flow, because it writes
+past the end of a packed 2bpp framebuffer (the data abort behind the first
+CrazyPod Panic). The Music menu still offered the row, so opening it gave a
+route whose only contents were three labels placed off the panel.
+
+Code: `firmware/export/config.h`,
+`apps/crazypod/ui/features/music/crazypod_music_feature.c`,
+`crazypod_music_activation.c`.
+
+Commit: `fd3bcc6a`.
+
+**Closes when** the Music menu on a Mini lists Now Playing, All Music,
+Playlists, Artists, Albums, Songs and Search, and Search still opens.
 
 ## Watch
 
